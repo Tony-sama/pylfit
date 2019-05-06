@@ -48,6 +48,8 @@ class GULA:
             x_size = 0
 
             for row in csv_reader:
+                if len(row) == 0:
+                    continue
                 if line_count == 0:
                     x_size = row.index("y0")
                     x = row[:x_size]
@@ -102,7 +104,7 @@ class GULA:
     @staticmethod
     def interprete(transitions, variable, value):
         """
-        Split transition into positive/negatives states for the given variable/value
+        Split transitions into positive/negatives states for the given variable/value
 
         Args:
             transitions: list of tuple (list of int, list of int)

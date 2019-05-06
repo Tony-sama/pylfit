@@ -31,7 +31,7 @@ class LFkTTest(unittest.TestCase):
 
     __nb_unit_test = 10
 
-    __nb_variables = 3
+    __nb_variables = 2
 
     __nb_values = 2
 

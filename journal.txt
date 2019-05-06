@@ -6,3 +6,10 @@
     - LUST
     - ACEDIA
     - GULA
+
+2019/05/06
+
+  - add examples folder
+    - add logic program file + csv example for LF1T, GULA, ACEDIA
+    - add LFkT example using repressilator delayed, lp file only
+    - add LUST example using disjonctive boolean network of repressilator, csv only

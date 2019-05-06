@@ -136,9 +136,12 @@ class LogicProgram:
         		value = condition[beg:end]
         		val_id = variables_values[var_id].index(value)
 
-        		# TODO: delay
+                # Extract delay
+        		beg = end+1
+        		end = condition.index(')')
 
-        		#eprint("Condition extracted: ",variable,"=",value)
+        		delay = int(condition[beg+2:end])
+        		var_id = var_id + len(variables) * (delay-1)
 
         		body.append((var_id,val_id))
 
@@ -401,10 +404,21 @@ class LogicProgram:
                 all possible time series of given length
                 according to the rules of the logic program.
         """
+        # extract max delay
+        delay = 1
+        for r in self.get_rules():
+            for var, val in r.get_body():
+                local_delay = int(var / len(self.get_variables())) + 1
+                delay = max(local_delay, delay)
+
+        states = self.states()
+        series = [ [s] for s in states]
+
+        for d in range(1, delay):
+            series = [[j]+k for j in states for k in series]
 
         output = []
-        for s1 in self.states():
-            serie = [s1]
+        for serie in series:
             for i in range(length):
                 s2 = self.next_state(serie)
                 for i in range(len(s2)): # default to previous value
