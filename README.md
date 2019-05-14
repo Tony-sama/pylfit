@@ -1,16 +1,16 @@
 # pylfit
 Python implementation of the main algorithms of the Learning From Interpretation Transitions (LFIT) framework.
-	- LF1T: Learning From 1-step transitions
-	- LFkT: Learning From k-step Transtions
-	- LUST: Learning From Uncertain State Transtions
-	- GULA: General Usage LFIT Algorithm
-	- ACEDIA: Abstraction-free Continuum Environment Dynamics Inference Algorithm
+- LF1T: Learning From 1-step transitions
+- LFkT: Learning From k-step Transtions
+- LUST: Learning From Uncertain State Transtions
+- GULA: General Usage LFIT Algorithm
+- ACEDIA: Abstraction-free Continuum Environment Dynamics Inference Algorithm
 
 Example of the usage of the different algorithms can be found in the examples/ folder
 use the following command from the root of the repository:
-
+```
 python3 examples/example_lf1t.py
-
+```
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
@@ -29,9 +29,9 @@ python3 examples/example_lf1t.py
 ```
 
 Add the following folders to the path:
-	- src/
-	- src/algorithms
-	- src/objects
+- src/
+- src/algorithms
+- src/objects
 
 ```
 import sys
@@ -92,7 +92,6 @@ input = LF1T.load_input_from_csv("benchmarks/transitions/repressilator.csv")
 
 Using the previous code you get more or less the example file examles/example_lf1t.py.
 Its expected output is as follows.
-Expected output from examples/example_lf1t.py
 
 ```
 Example using logic program definition file:
@@ -165,7 +164,7 @@ LFkT input can be generated as follows:
 time_serie_size = 10
 input = benchmark.generate_all_time_series(time_serie_size)
 ```
-See examples/example_lfkt.py for more details.
+- See examples/example_lfkt.py for more details.
 
 #### LUST
 
@@ -174,7 +173,7 @@ from lust import LUST
 ```
 
 LUST algorithm learned non-determistic systems in the form of a set of deterministic logic programs.
-See examples/example_lust.py for the details of how to deal with its output.
+- See examples/example_lust.py for more details.
 
 #### GULA
 
@@ -183,6 +182,7 @@ from gula import GULA
 ```
 
 GULA algorithm can be used exactly like LF1T. The difference is that it is semantic free where LF1T can only learn from sycnhronous deterministic transitions.
+- See examples/example_gula.py for more details.
 
 #### ACEDIA
 
@@ -253,7 +253,7 @@ domains = [ Continuum(0.0,1.0,True,True) for v in variables ]
 model = ACEDIA.fit(variables, domains, input)
 ```
 
-See examples/example_acedia.py for more details.
+- See examples/example_acedia.py for more details.
 
 ## Running the tests
 
@@ -311,7 +311,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Acknowledgments
 
-More material about the LFIT framework and its applications can be found at http://www.tonyribeiro.fr/.
+More material about the LFIT framework and its applications can be found at http://www.tonyribeiro.fr/
 - General explanation of the framework: http://www.tonyribeiro.fr/research_main.html
 - Biofinformatics applications: http://www.tonyribeiro.fr/research_bioinformatics.html
 - Robotics applications: http://www.tonyribeiro.fr/research_robotics.html
@@ -319,34 +319,34 @@ More material about the LFIT framework and its applications can be found at http
 
 Main related scientifics publications:
 
-	- LF1T:
-		- MLJ 2014: Learning from Interpretation Transition
-			http://link.springer.com/article/10.1007%2Fs10994-013-5353-8
-		- ILP 2014: Learning Prime Implicant Conditions From Interpretation Transition
-			http://link.springer.com/chapter/10.1007%2F978-3-319-23708-4_8
-		- PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
-			http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
+- LF1T:
+	- MLJ 2014: Learning from Interpretation Transition
+		- http://link.springer.com/article/10.1007%2Fs10994-013-5353-8
+	- ILP 2014: Learning Prime Implicant Conditions From Interpretation Transition
+		- http://link.springer.com/chapter/10.1007%2F978-3-319-23708-4_8
+	- PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
+		- http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
 
-	- LFkT:
-		- Frontiers 2015: Learning delayed influences of biological systems
-			http://www.frontiersin.org/Journal/Abstract.aspx?s=1267&name=bioinformatics_and_computational_biology&ART_DOI=10.3389/fbioe.2014.00081
-		- ILP 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
-			http://www.ilp2015.jp/papers/ILP2015_submission_44.pdf
-		- ICMLA 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
-			https://ieeexplore.ieee.org/document/7424281
-		- PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
-			http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
+- LFkT:
+	- Frontiers 2015: Learning delayed influences of biological systems
+		- http://www.frontiersin.org/Journal/Abstract.aspx?s=1267&name=bioinformatics_and_computational_biology&ART_DOI=10.3389/fbioe.2014.00081
+	- ILP 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
+		- http://www.ilp2015.jp/papers/ILP2015_submission_44.pdf
+	- ICMLA 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
+		- https://ieeexplore.ieee.org/document/7424281
+	- PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
+		- http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
 
-	- LUST:
-		- ICLP 2015: Learning probabilistic action models from interpretation transitions
-			http://www.tonyribeiro.fr/material/publications/iclp_2015.pdf
-		- PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
-			http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
+- LUST:
+	- ICLP 2015: Learning probabilistic action models from interpretation transitions
+		- http://www.tonyribeiro.fr/material/publications/iclp_2015.pdf
+	- PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
+		- http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
 
-	- GULA:
-		- ILP 2018: Learning Dynamics with Synchronous, Asynchronous and General Semantics
-			https://hal.archives-ouvertes.fr/hal-01826564
+- GULA:
+	- ILP 2018: Learning Dynamics with Synchronous, Asynchronous and General Semantics
+		- https://hal.archives-ouvertes.fr/hal-01826564
 
-	- ACEDIA:
-		- ILP 2017: Inductive Learning from State Transitions over Continuous Domains
-			https://hal.archives-ouvertes.fr/hal-01655644
+- ACEDIA:
+	- ILP 2017: Inductive Learning from State Transitions over Continuous Domains
+		- https://hal.archives-ouvertes.fr/hal-01655644
