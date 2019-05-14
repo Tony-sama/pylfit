@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     eprint("Example with disjonctive Boolean Network")
 
-    transitions = GULA.load_input_from_csv("benchmarks/transitions/disjonctive_boolean_network.csv")
+    transitions = LUST.load_input_from_csv("benchmarks/transitions/disjonctive_boolean_network.csv")
 
     eprint("transitions: \n", transitions)
 

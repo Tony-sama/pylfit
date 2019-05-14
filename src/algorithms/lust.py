@@ -38,6 +38,38 @@ class LUST:
     """
 
     @staticmethod
+    def load_input_from_csv(filepath):
+        """
+        Load transitions from a csv file
+
+        Args:
+            filepath: String
+                Path to csv file encoding transitions
+        """
+        output = []
+        with open(filepath) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            x_size = 0
+
+            for row in csv_reader:
+                if len(row) == 0:
+                    continue
+                if line_count == 0:
+                    x_size = row.index("y0")
+                    x = row[:x_size]
+                    y = row[x_size:]
+                    #eprint("x: "+str(x))
+                    #eprint("y: "+str(y))
+                else:
+                    row = [int(i) for i in row] # integer convertion
+                    output.append([row[:x_size], row[x_size:]]) # x/y split
+                line_count += 1
+
+            #eprint(f'Processed {line_count} lines.')
+        return output
+
+    @staticmethod
     def fit(variables, values, transitions):
         """
         Preprocess transitions and learn rules for all variables/values.

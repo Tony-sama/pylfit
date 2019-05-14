@@ -6,10 +6,13 @@
 # @desc: simple LFkT implementation, extension of LF1T for learning delayed influences.
 #   - INPUT: time series of discrete muli-valued states
 #   - OUTPUT: all minimal delayed rules that realizes the input
+#   - THEORY:
 #       - Frontiers 2015: Learning delayed influences of biological systems
 #           http://www.frontiersin.org/Journal/Abstract.aspx?s=1267&name=bioinformatics_and_computational_biology&ART_DOI=10.3389/fbioe.2014.00081
 #       - ILP 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
+#           http://www.ilp2015.jp/papers/ILP2015_submission_44.pdf
 #       - ICMLA 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
+#           https://ieeexplore.ieee.org/document/7424281
 #       - PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
 #           http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
 #   - COMPLEXITY:
