@@ -89,7 +89,7 @@ class LFkT:
 
 
     @staticmethod
-    def interprete(variables, values, time_series, variable, value):
+    def interprete(variables, values, time_series, variable, value): #TODO: factorise delay detection to variable level
         """
         Split the time series into positive/negatives meta-states for the given variable/value
 

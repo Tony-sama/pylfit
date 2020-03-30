@@ -33,7 +33,7 @@ nb_artificial_transition = 100
 #------------
 if __name__ == '__main__':
     # Learning algorithm, choose from: LF1T / SLOTH
-    algorithm = LF1T
+    algorithm = GULA
     NN = False
 
     perfect_test = True
