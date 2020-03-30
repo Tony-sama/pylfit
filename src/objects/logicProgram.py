@@ -513,6 +513,7 @@ class LogicProgram:
     @staticmethod
     def precision(expected, predicted):
         """
+        Evaluate prediction precision on deterministic sets of transitions
         Args:
             expected: list of tuple (list of int, list of int)
                 originals transitions of a system
@@ -536,16 +537,20 @@ class LogicProgram:
 
         for i in range(len(expected)):
             s1, s2 = expected[i]
-            s1_, s2_ = predicted[i]
 
-            if s1 != s1_ or len(s2) != len(s2_):
-                raise ValueError("Invalid prediction set")
+            for j in range(len(predicted)):
+                s1_, s2_ = predicted[j]
 
-            #eprint("Compare: "+str(s2)+" VS "+str(s2_))
+                if len(s1) != len(s1_) or len(s2) != len(s2_):
+                    raise ValueError("Invalid prediction set")
 
-            for var in range(len(s2)):
-                if s2_[var] != s2[var]:
-                    error += 1
+                if s1 == s1_:
+                    #eprint("Compare: "+str(s2)+" VS "+str(s2_))
+
+                    for var in range(len(s2)):
+                        if s2_[var] != s2[var]:
+                            error += 1
+                    break
 
             #eprint("new error: "+str(error))
 

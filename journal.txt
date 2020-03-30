@@ -13,3 +13,9 @@
     - add logic program file + csv example for LF1T, GULA, ACEDIA
     - add LFkT example using repressilator delayed, lp file only
     - add LUST example using disjonctive boolean network of repressilator, csv only
+
+2020/03/30
+  - add example multi-valued
+    - two variables
+    - first variable auto activate and reset loop: a=0 -> a=1 -> a=2 -> a=0
+    - second variable auto inhibate and max lvl by a=2: if a=2 then b=2 else if b > 0 then b = b-1

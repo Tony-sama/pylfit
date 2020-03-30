@@ -62,12 +62,50 @@ if __name__ == '__main__':
 
     eprint("GULA input: \n", input)
 
-    model = GULA.fit(benchmark.get_variables(), benchmark.get_values(), input)
+    variables = ["p", "q", "r"]
+    values = [[0,1],[0,1],[0,1]]
+
+    model = GULA.fit(variables, values, input)
 
     eprint("GULA output: \n", model.logic_form())
 
-    expected = benchmark.generate_all_transitions()
+    expected = input
     predicted = model.generate_all_transitions()
+
+    print(predicted)
+
+    precision = LogicProgram.precision(expected, predicted) * 100
+
+    eprint("Model accuracy: ", precision, "%")
+
+    state = [1,1,1]
+    next = model.next(state)
+
+    eprint("Next state of ", state, " is ", next, " according to learned model")
+
+    eprint("----------------------------------------------")
+
+    # 1) Example from csv file encoding transitions
+    #--------------------------------------------------------
+    eprint()
+    eprint("Example using transition from csv file:")
+    eprint("----------------------------------------------")
+
+    input = GULA.load_input_from_csv("benchmarks/transitions/multi_valued_loop_up_down.csv")
+
+    eprint("GULA input: \n", input)
+
+    variables = ["a", "b"]
+    values = [[0,1,2],[0,1,2]]
+
+    model = GULA.fit(variables, values, input)
+
+    eprint("GULA output: \n", model.logic_form())
+
+    expected = input
+    predicted = model.generate_all_transitions()
+
+    print(predicted)
 
     precision = LogicProgram.precision(expected, predicted) * 100
 
