@@ -21,6 +21,7 @@ from unit_tests_continuum import ContinuumTest
 from unit_tests_continuumRule import ContinuumRuleTest
 from unit_tests_continuumLogicProgram import ContinuumLogicProgramTest
 
+from unit_tests_pride import PRIDETest
 from unit_tests_lf1t import LF1TTest
 from unit_tests_gula import GULATest
 from unit_tests_lfkt import LFkTTest

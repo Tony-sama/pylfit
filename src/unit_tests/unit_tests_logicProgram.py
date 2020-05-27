@@ -557,13 +557,25 @@ class LogicProgramTest(unittest.TestCase):
             precision = LogicProgram.precision(expected, predicted)
 
             error = 0
-            for j in range(len(expected)):
-                s1, s2 = expected[j]
-                s1_, s2_ = predicted[j]
+            for i in range(len(expected)):
+                s1, s2 = expected[i]
 
-                for k in range(len(s2)):
-                    if s2[k] != s2_[k]:
-                        error += 1
+                for j in range(len(predicted)):
+                    s1_, s2_ = predicted[j]
+
+                    if s1 == s1_:
+                        for var in range(len(s2)):
+                            if s2_[var] != s2[var]:
+                                error += 1
+                        break
+            
+            #for i in range(len(expected)):
+            #    s1, s2 = expected[i]
+            #    s1_, s2_ = predicted[j]
+
+            #    for k in range(len(s2)):
+            #        if s2[k] != s2_[k]:
+            #           error += 1
 
             total = nb_states * nb_var
 

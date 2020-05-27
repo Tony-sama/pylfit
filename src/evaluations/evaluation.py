@@ -16,6 +16,7 @@ from utils import eprint
 from lf1t import LF1T
 from gula import GULA
 from lfkt import LFkT
+from pride import PRIDE
 from lust import LUST
 from evaluation_benchmarks import evaluate_on_benchmark, evaluate_on_benchmark_with_NN
 
@@ -32,8 +33,8 @@ nb_artificial_transition = 100
 # 1: Main
 #------------
 if __name__ == '__main__':
-    # Learning algorithm, choose from: LF1T / SLOTH
-    algorithm = GULA
+    # Learning algorithm, choose from: LF1T / PRIDE
+    algorithm = PRIDE
     NN = False
 
     perfect_test = True
