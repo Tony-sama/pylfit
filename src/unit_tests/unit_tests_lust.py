@@ -15,11 +15,13 @@ import os
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
 
 from utils import eprint
 from lust import LUST
 from rule import Rule
 from logicProgram import LogicProgram
+from synchronous import Synchronous
 
 #random.seed(0)
 
@@ -30,7 +32,9 @@ class LUSTTest(unittest.TestCase):
 
     __nb_unit_test = 100
 
-    __nb_variables = 6
+    __nb_features = 4
+
+    __nb_targets = 3
 
     __nb_values = 2
 
@@ -45,56 +49,46 @@ class LUSTTest(unittest.TestCase):
     #------------------
 
     def test_fit(self):
-        print(">> LUST.fit(variables, values, transitions)")
+        print(">> LUST.fit(data, features, targets)")
 
         # No transitions
-        variables = ["x"+str(i) for i in range(random.randint(1,self.__nb_variables))]
-        values = []
-
-        for var in range(len(variables)):
-            values.append([val for val in range(random.randint(2,self.__nb_values))])
-
-        min_body_size = 0
-        max_body_size = random.randint(min_body_size, len(variables))
-        p = LogicProgram.random(variables, values, min_body_size, max_body_size)
-        p_ = LUST.fit(p.get_variables(), p.get_values(), [])
+        p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+        p_ = LUST.fit([], p.get_features(), p.get_targets())
         self.assertEqual(len(p_),1)
         p_ = p_[0]
-        self.assertEqual(p_.get_variables(),p.get_variables())
-        self.assertEqual(p_.get_values(),p.get_values())
+        self.assertEqual(p_.get_features(),p.get_features())
+        self.assertEqual(p_.get_targets(),p.get_targets())
         self.assertEqual(p_.get_rules(),[])
 
         for i in range(self.__nb_unit_test):
             #eprint("test: ", i, "/", self.__nb_unit_test)
 
-            variables = ["x"+str(i) for i in range(random.randint(1,self.__nb_variables))]
-            values = []
-
-            for var in range(len(variables)):
-                values.append([val for val in range(random.randint(2,self.__nb_values))])
-
             nb_programs = random.randint(1,self.__max_programs)
             transitions = []
+
+            p_ = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            features = p_.get_features()
+            targets = p.get_targets()
 
             for j in range(nb_programs):
                 # Generate transitions
                 min_body_size = 0
-                max_body_size = random.randint(min_body_size, len(variables))
+                max_body_size = random.randint(min_body_size, len(features))
 
-                p = LogicProgram.random(variables, values, min_body_size, max_body_size)
-                transitions += p.generate_all_transitions()
+                p = LogicProgram.random(features, targets, min_body_size, max_body_size)
+                transitions += Synchronous.transitions(p)
 
                 #eprint(p.logic_form())
             #eprint(transitions)
 
-            P = LUST.fit(p.get_variables(), p.get_values(), transitions)
+            P = LUST.fit(transitions, features, targets)
             #rules = p_.get_rules()
 
             # Generate transitions
             predictions = []
             for p in P:
                 #eprint(p.logic_form())
-                predictions += p.generate_all_transitions()
+                predictions += Synchronous.transitions(p)
 
             # Remove incomplete states
             #predictions = [ [s1,s2] for s1,s2 in predictions if -1 not in s2 ]
@@ -120,48 +114,34 @@ class LUSTTest(unittest.TestCase):
             #eprint("test: ", i, "/", self.__nb_unit_test)
 
             # No transitions
-            variables = ["x"+str(i) for i in range(random.randint(1,self.__nb_variables))]
-            values = []
-
-            for var in range(len(variables)):
-                values.append([val for val in range(random.randint(2,self.__nb_values))])
+            p_ = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            features = p_.get_features()
+            targets = p_.get_targets()
 
             min_body_size = 0
-            max_body_size = random.randint(min_body_size, len(variables))
-            p = LogicProgram.random(variables, values, min_body_size, max_body_size)
+            max_body_size = random.randint(min_body_size, len(features))
+            p = LogicProgram.random(features, targets, min_body_size, max_body_size)
 
-            var = random.randint(0, len(p.get_variables())-1)
-            val = random.randint(0, len(p.get_values()[var])-1)
-
-            DC, DS = LUST.interprete(p.get_variables(), p.get_values(), [])
+            DC, DS = LUST.interprete([])
             self.assertEqual(DC,[])
             self.assertEqual(DS,[])
 
             # Regular case
-            variables = ["x"+str(i) for i in range(random.randint(1,self.__nb_variables))]
-            values = []
-
-            for var in range(len(variables)):
-                values.append([val for val in range(random.randint(2,self.__nb_values))])
-
             nb_programs = random.randint(1,self.__max_programs)
             transitions = []
 
             for j in range(nb_programs):
                 # Generate transitions
                 min_body_size = 0
-                max_body_size = random.randint(min_body_size, len(variables))
+                max_body_size = random.randint(min_body_size, len(features))
 
-                p = LogicProgram.random(variables, values, min_body_size, max_body_size)
-                transitions += p.generate_all_transitions()
+                p = LogicProgram.random(features, targets, min_body_size, max_body_size)
+                transitions += Synchronous.transitions(p)
 
                 #eprint(p.logic_form())
             #eprint(transitions)
 
-            var = random.randint(0, len(p.get_variables())-1)
-            val = random.randint(0, len(p.get_values()[var])-1)
-
-            DC, DS = LUST.interprete(p.get_variables(), p.get_values(), transitions)
+            DC, DS = LUST.interprete(transitions)
             D = []
             ND = []
 
@@ -218,6 +198,33 @@ class LUSTTest(unittest.TestCase):
     #------------------
     # Tool functions
     #------------------
+
+    def random_rule(self, features, targets, body_size):
+        head_var = random.randint(0,len(targets)-1)
+        head_val = random.randint(0,len(targets[head_var][1])-1)
+        body = []
+        conditions = []
+
+        for j in range(0, random.randint(0,body_size)):
+            var = random.randint(0,len(features)-1)
+            val = random.randint(0,len(features[var][1])-1)
+            if var not in conditions:
+                body.append( (var, val) )
+                conditions.append(var)
+
+        return  Rule(head_var,head_val,len(features),body)
+
+
+    def random_program(self, nb_features, nb_targets, nb_values, body_size):
+        features = [("x"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
+        targets = [("y"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
+        rules = []
+
+        for j in range(random.randint(0,100)):
+            r = self.random_rule(features, targets, body_size)
+            rules.append(r)
+
+        return LogicProgram(features, targets, rules)
 
 
 if __name__ == '__main__':

@@ -6,13 +6,10 @@
 # @desc: simple LFkT implementation, extension of LF1T for learning delayed influences.
 #   - INPUT: time series of discrete muli-valued states
 #   - OUTPUT: all minimal delayed rules that realizes the input
-#   - THEORY:
 #       - Frontiers 2015: Learning delayed influences of biological systems
 #           http://www.frontiersin.org/Journal/Abstract.aspx?s=1267&name=bioinformatics_and_computational_biology&ART_DOI=10.3389/fbioe.2014.00081
 #       - ILP 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
-#           http://www.ilp2015.jp/papers/ILP2015_submission_44.pdf
 #       - ICMLA 2015: Learning Multi-Valued Biological Models with Delayed Influence from Time-Series Observations
-#           https://ieeexplore.ieee.org/document/7424281
 #       - PhD Thesis 2015: Studies on Learning Dynamics of Systems from State Transitions
 #           http://www.tonyribeiro.fr/material/thesis/phd_thesis.pdf
 #   - COMPLEXITY:
@@ -42,7 +39,7 @@ class LFkT:
     """
 
     @staticmethod
-    def fit(variables, values, time_series):
+    def fit(data, features, targets): #variables, values, time_series):
         """
         Preprocess transitions and learn rules for all variables/values.
 
@@ -51,7 +48,7 @@ class LFkT:
                 variables of the system
             values: list of list of string
                 possible value of each variable
-            time_series: list of list (list of int, list of int)
+            data: list of list (list of int, list of int)
                 sequences of state transitions of the system
 
         Returns:
@@ -63,43 +60,46 @@ class LFkT:
         #eprint("Start LFkT learning...")
 
         # Nothing to learn
-        if len(time_series) == 0:
-            return LogicProgram(variables, values, [])
+        if len(data) == 0:
+            return LogicProgram(features, targets, [])
 
         rules = []
 
+        final_features = features
+
         # Learn rules for each variable/value
-        for var in range(0, len(variables)):
-            for val in range(0, len(values[var])):
-                positives, negatives, delay = LFkT.interprete(variables, values, time_series, var, val)
+        for var in range(0, len(targets)):
+            for val in range(0, len(targets[var][1])):
+                positives, negatives, delay = LFkT.interprete(data, features, targets, var, val)
 
                 # Extend Herbrand Base
-                extended_variables = variables.copy()
-                extended_values = values.copy()
-                for d in range(1,delay):
-                    extended_variables += [var+"_"+str(d) for var in variables]
-                    extended_values += values
+                extended_features = []
+                for d in range(1,delay+1):
+                    extended_features = [(var+"_"+str(d),vals) for (var,vals) in features] + extended_features
 
-                rules += GULA.fit_var_val(extended_variables, extended_values, var, val, positives, negatives)
+                rules += GULA.fit_var_val(extended_features, var, val, negatives)
+
+                if len(extended_features) > len(final_features):
+                    final_features = extended_features
 
         # Instanciate output logic program
-        output = LogicProgram(variables, values, rules)
+        output = LogicProgram(final_features, targets, rules)
 
         return output
 
 
     @staticmethod
-    def interprete(variables, values, time_series, variable, value): #TODO: factorise delay detection to variable level
+    def interprete(time_series, features, targets, variable, value):
         """
         Split the time series into positive/negatives meta-states for the given variable/value
 
         Args:
-            variables: list of string
-                variables of the system
-            values: list of list of string
-                possible value of each variable
             time_series: list of list (list of int, list of int)
                 sequences of state transitions of the system
+            features: list of (String, list of String)
+                feature variables of the system and their values
+            targets: list of (String, list of String)
+                targets variables of the system and their values
             variable: int
                 variable id
             value: int
@@ -147,7 +147,7 @@ class LFkT:
             state_id = len(serie)-1
             while state_id >= global_delay:
                 state = serie[state_id-global_delay:state_id].copy() # extract states
-                state.reverse()
+                #state.reverse()
                 state = [y for x in state for y in x] # fusion states
                 if serie[state_id][variable] == value:
                     positives.append(state)

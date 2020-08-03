@@ -41,27 +41,35 @@ class RuleTest(unittest.TestCase):
     #------------------
 
     def test_empty_constructor(self):
-        print(">> Rule.__init__(self, head_variable, head_value)")
+        print(">> Rule.__init__(self, head_variable, head_value, nb_body_variables)")
         for i in range(self.__nb_unit_test):
-            var = random.randint(0,self.__var_size)
-            val = random.randint(0,self.__val_size)
-            r = Rule(var,val)
+            var = random.randint(0,self.__var_size-1)
+            val = random.randint(0,self.__val_size-1)
+            nb_var = random.randint(var,self.__var_size)
+            r = Rule(var,val,nb_var)
             self.assertEqual(r.get_head_variable(),var)
             self.assertEqual(r.get_head_value(),val)
             self.assertEqual(r.get_body(),[])
 
     def test_body_constructor(self):
-        print(">> Rule.__init__(self, head_variable, head_value, body)")
+        print(">> Rule.__init__(self, head_variable, head_value, nb_body_variables, body)")
         for i in range(self.__nb_unit_test):
-            var = random.randint(0,self.__var_size)
-            val = random.randint(0,self.__val_size)
+            var = random.randint(0,self.__var_size-1)
+            val = random.randint(0,self.__val_size-1)
+            nb_var = random.randint(1+var,self.__var_size)
             body = []
-            for j in range(0, random.randint(0,self.__body_size)):
-                body += (random.randint(0,self.__var_size), random.randint(0,self.__val_size))
-            r = Rule(var,val,body)
+            cond_var = set()
+            for j in range(0, random.randint(0,nb_var)):
+                var = random.randint(0,nb_var-1)
+                if var not in cond_var:
+                    body.append((var, random.randint(0,self.__val_size-1)))
+                    cond_var.add(var)
+                else:
+                    j-=1
+            r = Rule(var,val,nb_var,body)
             self.assertEqual(r.get_head_variable(),var)
             self.assertEqual(r.get_head_value(),val)
-            self.assertEqual(r.get_body(),body)
+            self.assertEqual(sorted(body),sorted(r.get_body()))
 
     def test_copy(self):
         print(">> Rule.copy(self)")
@@ -71,13 +79,13 @@ class RuleTest(unittest.TestCase):
 
             self.assertEqual(r1.get_head_variable(), r2.get_head_variable())
             self.assertEqual(r1.get_head_value(), r2.get_head_value())
-            self.assertEqual(r1.get_body(), r2.get_body())
+            self.assertEqual(sorted(r1.get_body()), sorted(r2.get_body()))
 
     def test_static_random(self):
         print(">> Rule.static random(head_variable, head_value, variables, values, min_body_size, max_body_size)")
         for i in range(self.__nb_unit_test):
-            var = random.randint(0, self.__var_size)
-            val = random.randint(0, self.__val_size)
+            var = random.randint(0, self.__var_size-1)
+            val = random.randint(0, self.__val_size-1)
             variables = ["x"+str(var) for var in range(self.__var_size)]
             values = [ ["v"+str(val) for val in range(self.__val_size)] for var in variables ]
             min_size = random.randint(0, self.__body_size)
@@ -145,7 +153,7 @@ class RuleTest(unittest.TestCase):
             self.assertEqual(r.to_string(), r.__repr__())
 
     def test_logic_form(self):
-        print(">> Rule.logic_form(self, variables, values)")
+        print(">> Rule.logic_form(self, features, targets)")
 
         # One step rules
         for i in range(self.__nb_unit_test):
@@ -159,55 +167,29 @@ class RuleTest(unittest.TestCase):
                 if val > max_val_id:
                     max_val_id = val
 
-            variables = ["x"+str(var) for var in range(max_var_id+1)]
-            values = [ ["v"+str(val) for val in range(max_val_id+1)] for var in variables ]
+            features = [("x"+str(var), ["v"+str(val) for val in range(max_val_id+1)]) for var in range(max_var_id+1)]
+            targets = [("y"+str(var), ["v"+str(val) for val in range(max_val_id+1)]) for var in range(max_var_id+1)]
 
-            string = variables[r.get_head_variable()] + "(" + values[r.get_head_variable()][r.get_head_value()] + ",T) :- "
+            string = targets[r.get_head_variable()][0] + "(" + targets[r.get_head_variable()][1][r.get_head_value()] + ") :- "
             for var, val in r.get_body():
-                string += variables[var] + "(" + values[var][val] + ",T-1), "
+                string += features[var][0] + "(" + features[var][1][val] + "), "
 
             if len(r.get_body()) > 0:
                 string = string[:-2]
             string += "."
 
-            self.assertEqual(r.logic_form(variables, values),string)
-
-        # Delayed rules
-        for i in range(self.__nb_unit_test):
-            r = self.random_rule()
-
-            max_var_id = r.get_head_variable()
-            max_val_id = r.get_head_value()
-            for var, val in r.get_body():
-                if var > max_var_id:
-                    max_var_id = var
-                if val > max_val_id:
-                    max_val_id = val
-
-            variables = ["x"+str(var) for var in range(int(max_var_id/3)+1)]
-            values = [ ["v"+str(val) for val in range(max_val_id+1)] for var in variables ]
-
-            string = variables[r.get_head_variable() % len(variables)] + "(" + values[r.get_head_variable() % len(variables)][r.get_head_value()] + ",T) :- "
-            for var, val in r.get_body():
-                delay = int(var / len(variables)) + 1
-                string += variables[var % len(variables)] + "(" + values[var % len(variables)][val] + ",T-" + str(delay) + "), "
-
-            if len(r.get_body()) > 0:
-                string = string[:-2]
-            string += "."
-
-            self.assertEqual(r.logic_form(variables, values),string)
+            self.assertEqual(r.logic_form(features, targets),string)
 
     def test_get_condition(self):
         print(">> Rule.get_condition(self, variable)")
 
         # Empty rule
         for i in range(self.__nb_unit_test):
-            var = random.randint(0,self.__var_size)
-            val = random.randint(0,self.__val_size)
-            r = Rule(var,val)
+            var = random.randint(0,self.__var_size-1)
+            val = random.randint(0,self.__val_size-1)
+            r = Rule(var,val,self.__var_size)
 
-            self.assertEqual(r.get_condition(random.randint(0,self.__var_size)),None)
+            self.assertEqual(r.get_condition(random.randint(0,self.__var_size-1)),-1)
 
         for i in range(self.__nb_unit_test):
             r = self.random_rule()
@@ -236,7 +218,7 @@ class RuleTest(unittest.TestCase):
             for j in range(10):
                 conditions = [var for var, val in body]
 
-                var = random.randint(0,self.__var_size)
+                var = random.randint(0,self.__var_size-1)
                 if var in conditions:
                     self.assertTrue(r.has_condition(var))
                 else:
@@ -362,7 +344,7 @@ class RuleTest(unittest.TestCase):
         print(">> Rule.__eq__(self, other)")
 
         for i in range(self.__nb_unit_test):
-            r0 = Rule(0,0)
+            r0 = Rule(0,0,self.__var_size)
 
             r1 = self.random_rule()
             while r1.size() == 0:
@@ -381,7 +363,7 @@ class RuleTest(unittest.TestCase):
             # r3 is a complication of r1
             to_add = random.randint(1,self.__var_size - len(r3.get_body()))
             while to_add > 0:
-                var = random.randint(0, self.__var_size)
+                var = random.randint(0, self.__var_size-1)
                 val = random.randint(0, self.__val_size)
                 if r3.has_condition(var):
                     continue
@@ -424,11 +406,11 @@ class RuleTest(unittest.TestCase):
 
         # Empty rule
         for i in range(self.__nb_unit_test):
-            var = random.randint(0,self.__var_size)
+            var = random.randint(0,self.__var_size-1)
             val = random.randint(0,self.__val_size)
-            r = Rule(var,val)
+            r = Rule(var,val,self.__var_size)
 
-            var = random.randint(0,self.__var_size)
+            var = random.randint(0,self.__var_size-1)
             val = random.randint(0,self.__val_size)
 
             self.assertFalse(r.has_condition(var))
@@ -448,7 +430,7 @@ class RuleTest(unittest.TestCase):
 
             var = conditions[0]
             while var in conditions:
-                var = random.randint(0,self.__var_size)
+                var = random.randint(0,self.__var_size-1)
 
             val = random.randint(0,self.__val_size)
 
@@ -461,11 +443,11 @@ class RuleTest(unittest.TestCase):
 
         # Empty rule
         for i in range(self.__nb_unit_test):
-            var = random.randint(0,self.__var_size)
+            var = random.randint(0,self.__var_size-1)
             val = random.randint(0,self.__val_size)
-            r = Rule(var,val)
+            r = Rule(var,val,self.__var_size)
 
-            var = random.randint(0,self.__var_size)
+            var = random.randint(0,self.__var_size-1)
 
             self.assertFalse(r.has_condition(var))
             r.remove_condition(var)
@@ -500,7 +482,7 @@ class RuleTest(unittest.TestCase):
             if var not in conditions:
                 body.append( (var, val) )
                 conditions.append(var)
-        r = Rule(var,val,body)
+        r = Rule(var,val,self.__var_size,body)
 
         return r
 

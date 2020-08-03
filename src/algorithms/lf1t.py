@@ -37,7 +37,7 @@ class LF1T:
     """
 
     @staticmethod
-    def load_input_from_csv(filepath):
+    def load_input_from_csv(filepath, nb_features):
         """
         Load transitions from a csv file
 
@@ -49,11 +49,12 @@ class LF1T:
         with open(filepath) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             line_count = 0
-            x_size = 0
+            x_size = nb_features
+
 
             for row in csv_reader:
                 if line_count == 0:
-                    x_size = row.index("y0")
+                    #x_size = row.index("y0")
                     x = row[:x_size]
                     y = row[x_size:]
                     #eprint("x: "+str(x))
@@ -67,60 +68,58 @@ class LF1T:
         return output
 
     @staticmethod
-    def fit(variables, values, transitions):
+    def fit(data, features, targets):
         """
         Preprocess transitions and learn rules for all observed variables/values.
         Assume deterministics transitions: only one future for each state.
 
         Args:
-            variables: list of string
-                variables of the system
-            values: list of list of string
-                possible value of each variable
-            transitions: list of tuple (list of int, list of int)
+            data: list of tuple (list of int, list of int)
                 state transitions of a the system
+            features: list of (String, list of String)
+                feature variables of the system and their values
+            targets: list of (String, list of String)
+                targets variables of the system and their values
 
         Returns:
             LogicProgram
                 A logic program whose rules:
                     - explain/reproduce all the input transitions
-                        - are minimals
+                    - are minimals
         """
         #eprint("Start LF1T learning...")
 
         rules = []
 
         # Learn rules for each variable/value
-        for var in range(0, len(variables)):
-            for val in range(0, len(values[var])):
-                rules += LF1T.fit_var_val(variables, values, transitions, var, val)
+        for var in range(0, len(targets)):
+            for val in range(0, len(targets[var][1])):
+                rules += LF1T.fit_var_val(features, var, val, data)
 
         # Instanciate output logic program
-        output = LogicProgram(variables, values, rules)
+        output = LogicProgram(features, targets, rules)
 
         return output
 
     @staticmethod
-    def fit_var_val(variables, values, transitions, variable, value):
+    def fit_var_val(features, variable, value, transitions):
         """
         Learn minimal rules that explain positive examples while consistent with negatives examples
 
         Args:
-            variables: list of string
+            features: list of string
                 variables of the system
-            values: list of list of string
-                possible value of each variable
-            transitions: list of tuple (list of int, list of int)
-                state transitions of a the system
             variable: int
                 variable id
             value: int
                 variable value id
+            transitions: list of tuple (list of int, list of int)
+                state transitions of a the system
         """
         #eprint("\rLearning var="+str(variable+1)+"/"+str(len(variables))+", val="+str(value+1)+"/"+str(len(values[variable])), end='')
 
         # 0) Start with the empty rule
-        minimal_rules = [Rule(variable, value)]
+        minimal_rules = [Rule(variable, value, len(features))]
 
         # Revise learned rules agains each transition
         for state_1, state_2 in transitions:
@@ -134,8 +133,8 @@ class LF1T:
 
                 # Generates all least specialisation of the rule
                 ls = []
-                for var in range(len(variables)):
-                    for val in range(len(values[var])):
+                for var in range(len(features)):
+                    for val in range(len(features[var][1])):
 
                         # Variable availability
                         if unconsistent.has_condition(var):

@@ -2,11 +2,13 @@ import sys
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
 
 from utils import eprint
 from logicProgram import LogicProgram
 from gula import GULA
 from lust import LUST
+from synchronous import Synchronous
 
 # 1: Main
 #------------
@@ -14,17 +16,18 @@ if __name__ == '__main__':
 
     eprint("Example with disjonctive Boolean Network")
 
-    transitions = LUST.load_input_from_csv("benchmarks/transitions/disjonctive_boolean_network.csv")
+    features = [("a",[0,1]), ("b",[0,1]), ("c",[0,1])]
+    targets = [("a_t",[0,1]), ("b_t",[0,1]), ("c_t",[0,1])]
+
+    transitions = GULA.load_input_from_csv("benchmarks/transitions/disjonctive_boolean_network.csv", len(features))
 
     eprint("transitions: \n", transitions)
 
-    variables = ["p","q","r"]
-    values = [ [0,1] for i in variables ]
 
-    eprint("variables: ", variables)
-    eprint("values: ", values)
+    eprint("features: ", features)
+    eprint("targets: ", targets)
 
-    programs = LUST.fit(variables, values, transitions)
+    programs = LUST.fit(transitions, features, targets)
 
     eprint()
     eprint("Model learned: ")
@@ -34,7 +37,7 @@ if __name__ == '__main__':
     predicted = []
 
     for p in programs:
-        predicted += p.generate_all_transitions()
+        predicted += Synchronous.transitions(p)
 
     missing = 0
     unexpected = 0

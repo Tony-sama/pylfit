@@ -50,13 +50,17 @@ class PRIDE:
         return output
 
     @staticmethod
-    def fit(variables, values, transitions):
+    def fit(data, features, targets): # variables, values, transitions):
         """
         Preprocess transitions and learn rules for all observed variables/values.
 
         Args:
-            transitions: list of tuple (list of int, list of int)
-                state transitions of dynamic system
+            data: list of tuple (list of int, list of int)
+                state transitions of a the system
+            features: list of (String, list of String)
+                feature variables of the system and their values
+            targets: list of (String, list of String)
+                targets variables of the system and their values
 
         Returns:
             LogicProgram
@@ -67,34 +71,34 @@ class PRIDE:
         #eprint("Start PRIDE learning...")
 
         # Nothing to learn
-        if len(transitions) == 0:
-            return LogicProgram(variables, values, [])
+        if len(data) == 0:
+            return LogicProgram(features, targets, [])
 
         rules = []
-        nb_variables = len(transitions[0][1])
+        #nb_variables = len(data[0][1])
 
         # Extract observed values
-        values = []
-        for var in range(0, nb_variables):
-            v = []
+        #values = []
+        #for var in range(0, nb_variables):
+        #    v = []
 
-            for t1, t2 in transitions:
-                if t2[var] not in v:
-                    v.append(t2[var])
+        #    for t1, t2 in transitions:
+        #        if t2[var] not in v:
+        #            v.append(t2[var])
 
-            values.append(v)
+        #    values.append(v)
 
         #print("Set of values: "+str(values))
 
         # Learn rules for each observed variable/value
-        for var in range(0, nb_variables):
-            for val in values[var]:
-                positives, negatives = PRIDE.interprete(transitions, var, val)
-                rules += PRIDE.fit_var_val(var, val, positives, negatives)
+        for var in range(0, len(targets)):
+            for val in range(0, len(targets[var][1])):
+                positives, negatives = PRIDE.interprete(data, var, val)
+                rules += PRIDE.fit_var_val(var, val, len(features), positives, negatives)
 
         # Instanciate output logic program
-        variables = [var for var in range(nb_variables)]
-        output = LogicProgram(variables, values, rules)
+        #variables = [var for var in range(nb_variables)]
+        output = LogicProgram(features, targets, rules)
 
         return output
 
@@ -121,7 +125,7 @@ class PRIDE:
 
 
     @staticmethod
-    def fit_var_val(variable, value, positives, negatives):
+    def fit_var_val(variable, value, nb_variables, positives, negatives):
         """
         Learn minimal rules that explain positive examples while consistent with negatives examples
 
@@ -147,7 +151,7 @@ class PRIDE:
             target = remaining[0]
             #eprint("new target: "+str(target))
 
-            R = Rule(variable, value)
+            R = Rule(variable, value, nb_variables)
             #eprint(R.to_string())
 
             # 1) Consistency: against negatives examples

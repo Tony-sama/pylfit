@@ -10,10 +10,14 @@ import sys
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
+
+from itertools import islice
 
 from utils import eprint
 from logicProgram import LogicProgram
 from lfkt import LFkT
+from synchronous import Synchronous
 
 # 1: Main
 #------------
@@ -24,26 +28,43 @@ if __name__ == '__main__':
     eprint("Example using logic program definition file:")
     eprint("----------------------------------------------")
 
-    benchmark = LogicProgram.load_from_file("benchmarks/logic_programs/repressilator_delayed.lp")
+    # Delay are encoded as regular feature variables
+    encoded_benchmark = LogicProgram.load_from_file("benchmarks/logic_programs/repressilator_delayed.lp")
 
-    eprint("Original logic program: \n", benchmark.logic_form())
+    eprint("Original logic program with delay encoded in features variables: \n", encoded_benchmark.logic_form())
 
-    time_serie_size = 10
+    time_serie_size = 5
 
-    eprint("Generating time series of size ", time_serie_size)
+    print("Generating decoded time series of size ", time_serie_size)
 
-    input = benchmark.generate_all_time_series(time_serie_size)
+    raw_features = [("p", [0,1]),("q", [0,1]), ("r", [0,1])]
+    raw_target = [("p_t", [0,1]),("q_t", [0,1]), ("r_t", [0,1])]
+
+    #time_series = [[list(s[:len(raw_features)]),list(s[len(raw_features):])] for s in encoded_benchmark.states()]
+    cut = len(raw_target)
+    delay = 2
+    time_series = [[list(s[cut*(d-1):cut*d]) for d in range(1,delay+1)] for s in encoded_benchmark.states()]
+
+    for serie in time_series:
+        while len(serie) < time_serie_size:
+            serie.append(Synchronous.next(encoded_benchmark, serie[-2]+serie[-1])[0])
+
+    #eprint(raw_series)
 
     eprint("LFkT input:")
-    for s in input:
+    for s in time_series:
         eprint(s)
 
-    model = LFkT.fit(benchmark.get_variables(), benchmark.get_values(), input)
+    model = LFkT.fit(time_series, raw_features, raw_target)
 
     eprint("LFkT output: \n", model.logic_form())
 
-    expected = benchmark.generate_all_time_series(time_serie_size)
-    predicted = model.generate_all_time_series(time_serie_size)
+    expected = time_series
+    predicted = [[list(s[:len(raw_features)]),list(s[len(raw_features):])] for s in model.states()]
+
+    for serie in predicted:
+        while len(serie) < time_serie_size:
+            serie.append(Synchronous.next(model, serie[-2]+serie[-1])[0])
 
     eprint("Predicted: ")
     for s in predicted:
@@ -71,7 +92,7 @@ if __name__ == '__main__':
         eprint("FAILURE: learned model predictions are wrong")
 
     serie = [[1,1,1], [0,0,0], [0,1,0]]
-    next = model.next_state(serie)
+    next = Synchronous.next(model, serie[-2]+serie[-1])
 
     eprint("Next state of ", serie, " is ", next, " according to learned model")
 

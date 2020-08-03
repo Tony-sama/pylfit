@@ -10,10 +10,12 @@ import sys
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
 
 from utils import eprint
 from logicProgram import LogicProgram
 from pride import PRIDE
+from synchronous import Synchronous
 
 # 1: Main
 #------------
@@ -30,23 +32,23 @@ if __name__ == '__main__':
 
     eprint("Generating transitions...")
 
-    input = benchmark.generate_all_transitions()
+    input = Synchronous.transitions(benchmark)
 
     eprint("PRIDE input: \n", input)
 
-    model = PRIDE.fit(benchmark.get_variables(), benchmark.get_values(), input)
+    model = PRIDE.fit(input, benchmark.get_features(), benchmark.get_targets())
 
     eprint("PRIDE output: \n", model.logic_form())
 
-    expected = benchmark.generate_all_transitions()
-    predicted = model.generate_all_transitions()
+    expected = input
+    predicted = Synchronous.transitions(model)
 
     precision = LogicProgram.precision(expected, predicted) * 100
 
     eprint("Model accuracy: ", precision, "%")
 
     state = [1,1,1]
-    next = model.next(state)
+    next = Synchronous.next(model, state)
 
     eprint("Next state of ", state, " is ", next, " according to learned model")
 
@@ -62,19 +64,22 @@ if __name__ == '__main__':
 
     eprint("PRIDE input: \n", input)
 
-    model = PRIDE.fit(benchmark.get_variables(), benchmark.get_values(), input)
+    features = [["a_t_1",[0,1]], ["b_t_1",[0,1]], ["c_t_1",[0,1]]]
+    targets = [["a_t",[0,1]], ["b_t",[1]], ["c_t",[]]] # Reduced domains of targets to only learn those
+
+    model = PRIDE.fit(input, features, targets)
 
     eprint("PRIDE output: \n", model.logic_form())
 
-    expected = benchmark.generate_all_transitions()
-    predicted = model.generate_all_transitions()
+    expected = input
+    predicted = Synchronous.transitions(model)
 
     precision = LogicProgram.precision(expected, predicted) * 100
 
     eprint("Model accuracy: ", precision, "%")
 
     state = [1,1,1]
-    next = model.next(state)
+    next = Synchronous.next(model, state)
 
     eprint("Next state of ", state, " is ", next, " according to learned model")
 

@@ -20,6 +20,7 @@ from utils import eprint
 from rule import Rule
 from logicProgram import LogicProgram
 import csv
+import numpy as np
 
 class GULA:
     """
@@ -33,7 +34,7 @@ class GULA:
     """
 
     @staticmethod
-    def load_input_from_csv(filepath):
+    def load_input_from_csv(filepath, nb_features):
         """
         Load transitions from a csv file
 
@@ -45,13 +46,11 @@ class GULA:
         with open(filepath) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             line_count = 0
-            x_size = 0
+            x_size = nb_features
 
             for row in csv_reader:
-                if len(row) == 0:
-                    continue
                 if line_count == 0:
-                    x_size = row.index("y0")
+                    #x_size = row.index("y0")
                     x = row[:x_size]
                     y = row[x_size:]
                     #eprint("x: "+str(x))
@@ -65,19 +64,17 @@ class GULA:
         return output
 
     @staticmethod
-    def fit(variables, values, transitions, program=None):
+    def fit(data, features, targets): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
         """
         Preprocess transitions and learn rules for all observed variables/values.
 
         Args:
-            variables: list of string
-                variables of the system
-            values: list of list of string
-                possible value of each variable
-            transitions: list of tuple (list of int, list of int)
-                state transitions of dynamic system
-            program: LogicProgram
-                A logic program to be fitted (kind of background knowledge)
+            data: list of tuple (list of int, list of int)
+                state transitions of a the system
+            features: list of (String, list of String)
+                feature variables of the system and their values
+            targets: list of (String, list of String)
+                targets variables of the system and their values
 
         Returns:
             LogicProgram
@@ -89,76 +86,152 @@ class GULA:
 
         rules = []
 
+        #if conclusion_values == None:
+        #    conclusion_values = values
+
+        #eprint(transitions)
+        eprint("\nConverting transitions to nparray...")
+        processed_transitions = np.array([tuple(s1)+tuple(s2) for s1,s2 in data])
+
+        if len(processed_transitions) > 0:
+            #eprint("flattened: ", processed_transitions)
+            eprint("Sorting transitions...")
+            processed_transitions = processed_transitions[np.lexsort(tuple([processed_transitions[:,col] for col in reversed(range(0,len(features)))]))]
+            #for i in range(0,len(variables)):
+            #processed_transitions = processed_transitions[np.argsort(processed_transitions[:,i])]
+            #eprint("sorted: ", processed_transitions)
+
+            eprint("Grouping transitions by initial state...")
+            #processed_transitions = np.array([ (row[:len(variables)], row[len(variables):]) for row in processed_transitions])
+
+            processed_transitions_ = []
+            s1 = processed_transitions[0][:len(features)]
+            S2 = []
+            for row in processed_transitions:
+                if not np.array_equal(row[:len(features)], s1): # New initial state
+                    #eprint("new state: ", s1)
+                    processed_transitions_.append((s1,S2))
+                    s1 = row[:len(features)]
+                    S2 = []
+
+                #eprint("adding ", row[len(features):], " to ", s1)
+                S2.append(row[len(features):]) # Add new next state
+
+            # Last state
+            processed_transitions_.append((s1,S2))
+
+            processed_transitions = processed_transitions_
+
         # Learn rules for each observed variable/value
-        for var in range(0, len(variables)):
-            for val in range(0, len(values[var])):
-                positives, negatives = GULA.interprete(transitions, var, val)
-                rules += GULA.fit_var_val(variables, values, var, val, positives, negatives, program)
+        for var in range(0, len(targets)):
+            for val in range(0, len(targets[var][1])):
+                negatives = GULA.interprete(processed_transitions, var, val)#, partial_heuristic)
+                # DBG
+                #eprint(negatives)
+                eprint("\nStart learning of var=", var+1,"/", len(targets), ", val=", val+1, "/", len(targets[var][1]))
+                rules += GULA.fit_var_val(features, var, val, negatives) #variables, values, var, val, negatives, program)#, partial_heuristic)
 
         # Instanciate output logic program
-        output = LogicProgram(variables, values, rules)
+        output = LogicProgram(features, targets, rules)
 
         return output
 
 
     @staticmethod
-    def interprete(transitions, variable, value):
+    def interprete(transitions, variable, value): #, partial_heuristic=False):
         """
-        Split transitions into positive/negatives states for the given variable/value
+        Split transition into positive/negatives states for the given variable/value
 
         Args:
-            transitions: list of tuple (list of int, list of int)
-                state transitions of dynamic system
+            transitions: list of tuple (tuple of int, list of tuple of int)
+                state transitions grouped by intiial state
             variable: int
                 variable id
             value: int
                 variable value id
         """
-        #eprint("Interpreting transitions...")
-        positives = [t1 for t1,t2 in transitions if t2[variable] == value]
-        negatives = [t1 for t1,t2 in transitions if t1 not in positives]
+        # DBG
+        #eprint("Interpreting transitions to:",variable,"=",value)
+        #positives = [t1 for t1,t2 in transitions if t2[variable] == value]
+        #negatives = [t1 for t1,t2 in transitions if t1 not in positives]
 
-        return positives, negatives
+        #positives = []
+        negatives = []
+        for s1, S2 in transitions:
+            negative = True
+            for s2 in S2:
+                if s2[variable] == value:
+                    negative = False
+                    break
+            if negative:
+                negatives.append(s1)
+            #elif partial_heuristic:
+            #    positives.append(s1)
+
+        return negatives
 
 
     @staticmethod
-    def fit_var_val(variables, values, variable, value, positives, negatives, program=None):
+    def fit_var_val(features, variable, value, negatives): #variables, values, variable, value, negatives, program=None):#, partial_heuristic=False):
         """
         Learn minimal rules that explain positive examples while consistent with negatives examples
 
         Args:
+            features: list of (name, list of int)
+                Features variables
             variable: int
                 variable id
             value: int
                 variable value id
-            positive: list of (list of int)
-                States of the system where the variable can take this value in the next state
-            negative: list of (list of int)
+            negatives: list of (list of int)
                 States of the system where the variable cannot take this value in the next state
         """
-        #eprint("\rStart learning of var="+str(variable)+", val="+str(value), end='')
 
         # 0) Initialize program as most the general rule
         #------------------------------------------------
-        minimal_rules = [Rule(variable, value)]
+        minimal_rules = [Rule(variable, value, len(features), [])]
 
-        if program is not None:
-            minimal_rules = program.get_rules_of(variable, value)
+        #if program is not None:
+        #    minimal_rules = program.get_rules_of(variable, value)
 
-        # Revise learned rules agains each negative example
+        # DBG
+        neg_count = 0
+
+        # Revise learned rules against each negative example
         for neg in negatives:
+
+            neg_count += 1
+            eprint("\rNegative examples satisfied: ",neg_count,"/",len(negatives), ", rules: ", len(minimal_rules), "               ", end='')
 
             # 1) Extract unconsistents rules
             #--------------------------------
-            unconsistents = [ rule for rule in minimal_rules if rule.matches(neg) ]
-            minimal_rules = [ rule for rule in minimal_rules if rule not in unconsistents ]
+
+            # Simple way
+            #unconsistents = [ rule for rule in minimal_rules if rule.matches(neg) ]
+            #minimal_rules = [ rule for rule in minimal_rules if rule not in unconsistents ]
+
+            # Efficient way
+            unconsistents = []
+            index=0
+            while index < len(minimal_rules):
+                if minimal_rules[index].matches(neg):
+                    #print "length of %s is: %s" %(x[index], len(x[index]))
+                    unconsistents.append(minimal_rules[index])
+                    del minimal_rules[index]
+                    continue
+                index+=1
+
+            # 2) Revise unconsistents rules
+            #--------------------------------
+
+            new_rules = []
 
             for unconsistent in unconsistents:
 
                 # Generates all least specialisation of the rule
                 ls = []
-                for var in range(len(variables)):
-                    for val in range(len(values[var])):
+                for var in range(len(features)):
+                    for val in range(len(features[var][1])):
 
                         # Variable availability
                         if unconsistent.has_condition(var):
@@ -169,20 +242,57 @@ class GULA:
                             continue
 
                         # Create least specialization of r on var/val
-                        least_specialization = unconsistent.copy()
-                        least_specialization.add_condition(var,val)
+                        #least_specialization = unconsistent#.copy()
+                        unconsistent.add_condition(var,val)
+
+                        # Heuristic: discard rule that cover no positives example (partial input only)
+                        #if partial_heuristic:
+                        #    supported = False
+                        #    for s in positives:
+                        #        if unconsistent.matches(s):
+                        #            supported = True
+                        #            break
+                        #    if not supported:
+                        #        unconsistent.pop_condition()
+                        #        continue
 
                         # Discard if subsumed by a consistent minimal rule
                         subsumed = False
                         for minimal_rule in minimal_rules:
-                            if minimal_rule.subsumes(least_specialization):
+                            if minimal_rule.subsumes(unconsistent):
                                 subsumed = True
                                 break
 
-                        # New consistent minimal rule
-                        if not subsumed:
-                            minimal_rules = [ minimal_rule for minimal_rule in minimal_rules if not least_specialization.subsumes(minimal_rule) ]
-                            minimal_rules.append(least_specialization)
+                        if subsumed:
+                            unconsistent.pop_condition()
+                            continue
+
+                        # Discard if subsumed by another least specialization
+                        subsumed = False
+                        for new_rule in new_rules:
+                            if new_rule.subsumes(unconsistent):
+                                subsumed = True
+                                break
+
+                        if subsumed:
+                            unconsistent.pop_condition()
+                            continue
+
+                        # Discard other least specialization subsumed by this least specialization
+                        #new_rules = [new_rule for new_rule in new_rules if not least_specialization.subsumes(new_rule)]
+                        index=0
+                        while index < len(new_rules):
+                            if unconsistent.subsumes(new_rules[index]):
+                                del new_rules[index]
+                                continue
+                            index+=1
+                        least_specialization = unconsistent.copy()
+                        new_rules.append(least_specialization)
+                        unconsistent.pop_condition()
+
+            # Add new minimal rules
+            for new_rule in new_rules:
+                minimal_rules.append(new_rule)
 
         #DBG
         #eprint("\r",end='')

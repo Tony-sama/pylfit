@@ -15,11 +15,14 @@ import os
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
 
 from utils import eprint
 from pride import PRIDE
 from rule import Rule
 from logicProgram import LogicProgram
+from semantics import Semantics
+from synchronous import Synchronous
 
 #random.seed(0)
 
@@ -29,11 +32,13 @@ class PRIDETest(unittest.TestCase):
         Unit test of class PRIDE from pride.py
     """
 
-    __nb_unit_test = 10
+    __nb_unit_test = 100
 
-    __nb_variables = 10
+    __nb_features = 5
 
-    __nb_values = 2
+    __nb_targets = 3
+
+    __nb_values = 3
 
     __body_size = 10
 
@@ -48,11 +53,11 @@ class PRIDETest(unittest.TestCase):
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t1 = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t1 = Synchronous.transitions(p)
 
             # Save to csv
-            p.transitions_to_csv(self.__tmp_file_path,t1)
+            Semantics.transitions_to_csv(self.__tmp_file_path, t1, p.get_features(), p.get_targets())
 
             # Extract csv
             t2 = PRIDE.load_input_from_csv(self.__tmp_file_path)
@@ -66,22 +71,22 @@ class PRIDETest(unittest.TestCase):
         print(">> PRIDE.fit(transitions)")
 
         # No transitions
-        p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-        p_ = PRIDE.fit(p.get_variables(), p.get_values(), [])
-        self.assertEqual(p_.get_variables(),p.get_variables())
-        self.assertEqual(p_.get_values(),p.get_values())
+        p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+        p_ = PRIDE.fit([], p.get_features(), p.get_targets())
+        self.assertEqual(p_.get_features(),p.get_features())
+        self.assertEqual(p_.get_targets(),p.get_targets())
         self.assertEqual(p_.get_rules(),[])
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t = Synchronous.transitions(p)
 
-            p_ = PRIDE.fit(p.get_variables(), p.get_values(), t)
+            p_ = PRIDE.fit(t, p.get_features(), p.get_targets())
             rules = p_.get_rules()
 
-            for variable in range(len(p.get_variables())):
-                for value in range(len(p.get_values()[variable])):
+            for variable in range(len(p.get_targets())):
+                for value in range(len(p.get_targets()[variable][1])):
                     #eprint("var="+str(variable)+", val="+str(value))
                     pos, neg = PRIDE.interprete(t, variable, value)
 
@@ -130,20 +135,23 @@ class PRIDETest(unittest.TestCase):
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t = Synchronous.transitions(p)
 
-            var = random.randint(0, len(p.get_variables())-1)
-            val = random.randint(0, len(p.get_values()[var])-1)
+            var = random.randint(0, len(p.get_targets())-1)
+            val = random.randint(0, len(p.get_targets()[var][1])-1)
 
             pos, neg = PRIDE.interprete(t, var, val)
 
             # All pos are valid
             for s in pos:
+                occurs = False
                 for s1, s2 in t:
-                    if s1 == s:
-                        self.assertEqual(s2[var], val)
+                    if s1 == s and s2[var] == val :
+                        occurs = True
                         break
+                self.assertTrue(occurs)
+
             # All neg are valid
             for s in neg:
                 for s1, s2 in t:
@@ -152,40 +160,22 @@ class PRIDETest(unittest.TestCase):
                         break
             # All transitions are interpreted
             for s1, s2 in t:
-                if s2[var] == val:
-                    self.assertTrue(s1 in pos)
-                else:
-                    self.assertTrue(s1 in neg)
-
-            pos_, neg_ = PRIDE.interprete(t, var, val)
-
-            for s in pos:
-                self.assertTrue(s in pos_)
-
-            for s in pos_:
-                self.assertTrue(s in pos)
-
-            for s in neg:
-                self.assertTrue(s in neg_)
-
-            for s in neg_:
-                self.assertTrue(s in neg)
-
+                self.assertTrue(s1 in pos or s1 in neg)
 
     def test_fit_var_val(self):
-        print(">> PRIDE.fit_var_val(variable, value, positives, negatives)")
+        print(">> PRIDE.fit_var_val(variable, value, nb_variables, positives, negatives)")
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t = Synchronous.transitions(p)
 
-            var = random.randint(0, len(p.get_variables())-1)
-            val = random.randint(0, len(p.get_values()[var])-1)
+            var = random.randint(0, len(p.get_targets())-1)
+            val = random.randint(0, len(p.get_targets()[var][1])-1)
 
             pos, neg = PRIDE.interprete(t, var, val)
 
-            rules = PRIDE.fit_var_val(var, val, pos, neg)
+            rules = PRIDE.fit_var_val(var, val, len(p.get_features()), pos, neg)
 
             # Each positive is explained
             for s in pos:
@@ -195,7 +185,7 @@ class PRIDETest(unittest.TestCase):
                         cover = True
                         self.assertEqual(r.get_head_variable(), var) # correct head var
                         self.assertEqual(r.get_head_value(), val) # Correct head val
-                self.assertTrue(cover) # One rule cover the example
+                self.assertTrue(cover) # Alteast one rule covers the example
 
             # No negative is covered
             for s in neg:
@@ -223,35 +213,32 @@ class PRIDETest(unittest.TestCase):
     # Tool functions
     #------------------
 
-    def random_rule(self, variables, values, body_size):
-        var = random.randint(0,len(variables)-1)
-        val = random.choice(values[var])
+    def random_rule(self, features, targets, body_size):
+        head_var = random.randint(0,len(targets)-1)
+        head_val = random.randint(0,len(targets[head_var][1])-1)
         body = []
         conditions = []
 
         for j in range(0, random.randint(0,body_size)):
-            var = random.randint(0,len(variables)-1)
-            val = random.choice(values[var])
+            var = random.randint(0,len(features)-1)
+            val = random.randint(0,len(features[var][1])-1)
             if var not in conditions:
                 body.append( (var, val) )
                 conditions.append(var)
 
-        return  Rule(var,val,body)
+        return  Rule(head_var,head_val,len(features),body)
 
 
-    def random_program(self, nb_variables, nb_values, body_size):
-        variables = ["x"+str(i) for i in range(random.randint(1,nb_variables))]
-        values = []
+    def random_program(self, nb_features, nb_targets, nb_values, body_size):
+        features = [("x"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
+        targets = [("y"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
         rules = []
 
-        for var in range(len(variables)):
-            values.append([val for val in range(0,random.randint(2,nb_values))])
-
         for j in range(random.randint(0,100)):
-            r = self.random_rule(variables, values, body_size)
+            r = self.random_rule(features, targets, body_size)
             rules.append(r)
 
-        return LogicProgram(variables, values, rules)
+        return LogicProgram(features, targets, rules)
 
 
 if __name__ == '__main__':

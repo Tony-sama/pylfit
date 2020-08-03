@@ -15,13 +15,15 @@ import os
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
 
 from utils import eprint
 from gula import GULA
 from rule import Rule
 from logicProgram import LogicProgram
+from synchronous import Synchronous
 
-#random.seed(0)
+random.seed(0)
 
 
 class GULATest(unittest.TestCase):
@@ -31,9 +33,11 @@ class GULATest(unittest.TestCase):
 
     __nb_unit_test = 100
 
-    __nb_variables = 5
+    __nb_features = 3
 
-    __nb_values = 2
+    __nb_targets = 4
+
+    __nb_values = 3
 
     __body_size = 10
 
@@ -48,14 +52,14 @@ class GULATest(unittest.TestCase):
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t1 = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t1 = Synchronous.transitions(p)
 
             # Save to csv
-            p.transitions_to_csv(self.__tmp_file_path,t1)
+            Synchronous.transitions_to_csv(self.__tmp_file_path, t1, p.get_features(), p.get_targets())
 
             # Extract csv
-            t2 = GULA.load_input_from_csv(self.__tmp_file_path)
+            t2 = GULA.load_input_from_csv(self.__tmp_file_path, len(p.get_features()))
 
             # Check if still same
             for i in range(len(t1)):
@@ -63,41 +67,42 @@ class GULATest(unittest.TestCase):
 
 
     def test_fit(self):
-        print(">> GULA.fit(transitions)")
+        print(">> GULA.fit(data, features, targets)")
 
         # No transitions
-        p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-        p_ = GULA.fit(p.get_variables(), p.get_values(), [])
-        self.assertEqual(p_.get_variables(),p.get_variables())
-        self.assertEqual(p_.get_values(),p.get_values())
+        p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+        p_ = GULA.fit([],p.get_features(), p.get_targets())
+        self.assertEqual(p_.get_features(),p.get_features())
+        self.assertEqual(p_.get_targets(),p.get_targets())
         rules = []
-        for var in range(len(p.get_variables())):
-            for val in p.get_values()[var]:
-                rules.append(Rule(var,val))
+        for var in range(len(p.get_targets())):
+            for val in range(len(p.get_targets()[var][1])):
+                rules.append(Rule(var,val,len(p.get_features())))
         self.assertEqual(p_.get_rules(),rules)
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t = Synchronous.transitions(p)
+            random.shuffle(t)
+            #t_ = {tuple(s1): [s2_ for (s1_, s2_) in t if s1 == s1_] for (s1, s2) in t}
 
-            if random.choice([True,False]):
-                p_ = GULA.fit(p.get_variables(), p.get_values(), t)
-            else:
-                rules = []
-                for var in range(0,len(p.get_variables())):
-                    for val in range(0,len(p.get_values()[var])):
-                        rules.append(Rule(var,val))
-                init = LogicProgram(p.get_variables(), p.get_values(), rules)
-                p_ = GULA.fit(p.get_variables(), p.get_values(), t, init)
+            p_ = GULA.fit(t, p.get_features(), p.get_targets())
             rules = p_.get_rules()
 
-            for variable in range(len(p.get_variables())):
-                for value in range(len(p.get_values()[variable])):
+            for variable in range(len(p.get_targets())):
+                for value in range(len(p.get_targets()[variable][1])):
                     #eprint("var="+str(variable)+", val="+str(value))
-                    pos, neg = GULA.interprete(t, variable, value)
+                    #neg = GULA.interprete(t_, variable, value)
 
                     # Each positive is explained
+                    pos = [s1 for s1,s2 in t if s2[variable] == value]
+                    neg = [s1 for s1,s2 in t if s1 not in pos]
+                    #eprint(variable, "=", value)
+                    #eprint("t: ", t)
+                    #eprint("neg: ", neg)
+                    #eprint("pos: ", pos)
+                    #eprint([r for r in rules if r.get_head_variable() == variable and r.get_head_value() == value])
                     for s in pos:
                         cover = False
                         for r in rules:
@@ -105,9 +110,13 @@ class GULATest(unittest.TestCase):
                                and r.get_head_value() == value \
                                and r.matches(s):
                                 cover = True
+                        #eprint(variable,"=",value)
+                        #eprint(rules)
+                        #eprint(s)
                         self.assertTrue(cover) # One rule cover the example
 
                     # No negative is covered
+                    neg = [s1 for s1,s2 in t if s1 not in pos]
                     for s in neg:
                         cover = False
                         for r in rules:
@@ -115,6 +124,8 @@ class GULATest(unittest.TestCase):
                                and r.get_head_value() == value \
                                and r.matches(s):
                                 cover = True
+                                #eprint(r)
+                                #eprint(s)
                         self.assertFalse(cover) # no rule covers the example
 
                     # All rules are minimals
@@ -142,20 +153,34 @@ class GULATest(unittest.TestCase):
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t = Synchronous.transitions(p)
 
-            var = random.randint(0, len(p.get_variables())-1)
-            val = random.randint(0, len(p.get_values()[var])-1)
+            var = random.randint(0, len(p.get_targets())-1)
+            val = random.randint(0, len(p.get_targets()[var][1])-1)
 
-            pos, neg = GULA.interprete(t, var, val)
+            t = sorted(t)
+            t_ = [ (tuple(s1), [s2_ for (s1_, s2_) in t if s1 == s1_]) for (s1, s2) in t]
+            #t_ = {tuple(s1): [s2_ for (s1_, s2_) in t if s1 == s1_] for (s1, s2) in t}
+            neg = [tuple(s) for s in GULA.interprete(t_, var, val)]
+
+            pos_ = [s1 for s1,s2 in t if s2[var] == val]
+            neg_ = [tuple(s1) for s1,s2 in t if s1 not in pos_]
+
+            if set(neg) != set(neg_):
+                eprint(neg)
+                eprint(neg_)
+            self.assertEqual(set(neg),set(neg_))
 
             # All pos are valid
-            for s in pos:
+            for s in pos_:
+                valid = False
                 for s1, s2 in t:
                     if s1 == s:
-                        self.assertEqual(s2[var], val)
+                        valid = True
                         break
+                self.assertTrue(valid)
+
             # All neg are valid
             for s in neg:
                 for s1, s2 in t:
@@ -163,39 +188,40 @@ class GULATest(unittest.TestCase):
                         self.assertTrue(s2[var] != val)
                         break
             # All transitions are interpreted
-            for s1, s2 in t:
-                if s2[var] == val:
-                    self.assertTrue(s1 in pos)
-                else:
+            for s1,S2 in t_:
+                if len([s2 for s2 in S2 if s2[var] == val]) == 0:
                     self.assertTrue(s1 in neg)
 
 
     def test_fit_var_val(self):
-        print(">> GULA.fit_var_val(variables, values, variable, value, positives, negatives)")
+        print(">> GULA.fit_var_val(features, variable, value, negatives)")
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
-            p = self.random_program(self.__nb_variables, self.__nb_values, self.__body_size)
-            t = p.generate_all_transitions()
+            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            t = Synchronous.transitions(p)
 
-            var = random.randint(0, len(p.get_variables())-1)
-            val = random.randint(0, len(p.get_values()[var])-1)
+            var = random.randint(0, len(p.get_targets())-1)
+            val = random.randint(0, len(p.get_targets()[var])-1)
 
-            pos, neg = GULA.interprete(t, var, val)
+            t = sorted(t)
+            t_ = [ (tuple(s1), [s2_ for (s1_, s2_) in t if s1 == s1_]) for (s1, s2) in t]
+            #t_ = {tuple(s1): [s2_ for (s1_, s2_) in t if s1 == s1_] for (s1, s2) in t}
+            neg = GULA.interprete(t_, var, val)
 
-            if random.choice([True,False]):
-                rules = GULA.fit_var_val(p.get_variables(), p.get_values(), var, val, pos, neg)
-            else:
-                rules = GULA.fit_var_val(p.get_variables(), p.get_values(), var, val, pos, neg, LogicProgram(p.get_variables(), p.get_values(), [Rule(var, val)]))
+            rules = GULA.fit_var_val(p.get_features(), var, val, neg)
 
             # Each positive is explained
+            pos = [s1 for s1,s2 in t if s2[var] == val]
             for s in pos:
                 cover = False
                 for r in rules:
+                    self.assertEqual(r.get_head_variable(), var) # correct head var
+                    self.assertEqual(r.get_head_value(), val) # Correct head val
+
                     if r.matches(s):
                         cover = True
-                        self.assertEqual(r.get_head_variable(), var) # correct head var
-                        self.assertEqual(r.get_head_value(), val) # Correct head val
+
                 self.assertTrue(cover) # One rule cover the example
 
             # No negative is covered
@@ -224,35 +250,32 @@ class GULATest(unittest.TestCase):
     # Tool functions
     #------------------
 
-    def random_rule(self, variables, values, body_size):
-        var = random.randint(0,len(variables)-1)
-        val = random.choice(values[var])
+    def random_rule(self, features, targets, body_size):
+        head_var = random.randint(0,len(targets)-1)
+        head_val = random.randint(0,len(targets[head_var][1])-1)
         body = []
         conditions = []
 
         for j in range(0, random.randint(0,body_size)):
-            var = random.randint(0,len(variables)-1)
-            val = random.choice(values[var])
+            var = random.randint(0,len(features)-1)
+            val = random.randint(0,len(features[var][1])-1)
             if var not in conditions:
                 body.append( (var, val) )
                 conditions.append(var)
 
-        return  Rule(var,val,body)
+        return  Rule(head_var,head_val,len(features),body)
 
 
-    def random_program(self, nb_variables, nb_values, body_size):
-        variables = ["x"+str(i) for i in range(random.randint(1,nb_variables))]
-        values = []
+    def random_program(self, nb_features, nb_targets, nb_values, body_size):
+        features = [("x"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
+        targets = [("y"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
         rules = []
 
-        for var in range(len(variables)):
-            values.append([val for val in range(0,random.randint(2,nb_values))])
-
         for j in range(random.randint(0,100)):
-            r = self.random_rule(variables, values, body_size)
+            r = self.random_rule(features, targets, body_size)
             rules.append(r)
 
-        return LogicProgram(variables, values, rules)
+        return LogicProgram(features, targets, rules)
 
 
 if __name__ == '__main__':

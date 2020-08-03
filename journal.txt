@@ -19,3 +19,7 @@
     - two variables
     - first variable auto activate and reset loop: a=0 -> a=1 -> a=2 -> a=0
     - second variable auto inhibate and max lvl by a=2: if a=2 then b=2 else if b > 0 then b = b-1
+    
+ 2020/08/03
+    - updated all algorithms to handle differents features/targets variables
+    - Improved performance of GULA

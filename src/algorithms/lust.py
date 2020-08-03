@@ -38,49 +38,17 @@ class LUST:
     """
 
     @staticmethod
-    def load_input_from_csv(filepath):
-        """
-        Load transitions from a csv file
-
-        Args:
-            filepath: String
-                Path to csv file encoding transitions
-        """
-        output = []
-        with open(filepath) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            line_count = 0
-            x_size = 0
-
-            for row in csv_reader:
-                if len(row) == 0:
-                    continue
-                if line_count == 0:
-                    x_size = row.index("y0")
-                    x = row[:x_size]
-                    y = row[x_size:]
-                    #eprint("x: "+str(x))
-                    #eprint("y: "+str(y))
-                else:
-                    row = [int(i) for i in row] # integer convertion
-                    output.append([row[:x_size], row[x_size:]]) # x/y split
-                line_count += 1
-
-            #eprint(f'Processed {line_count} lines.')
-        return output
-
-    @staticmethod
-    def fit(variables, values, transitions):
+    def fit(data, features, targets):
         """
         Preprocess transitions and learn rules for all variables/values.
 
         Args:
-            variables: list of string
-                variables of the system
-            values: list of list of string
-                possible value of each variable
-            transitions: list of (list of int, list of int)
-                state transitions of a dynamic system
+            data: list of tuple (list of int, list of int)
+                state transitions of a the system
+            features: list of (String, list of String)
+                feature variables of the system and their values
+            targets: list of (String, list of String)
+                targets variables of the system and their values
 
         Returns:
             list of LogicProgram
@@ -90,40 +58,36 @@ class LUST:
         #eprint("Start LUST learning...")
 
         # Nothing to learn
-        if len(transitions) == 0:
-            return [LogicProgram(variables, values, [])]
+        if len(data) == 0:
+            return [LogicProgram(features, targets, [])]
 
         rules = []
 
         # Extract strictly determinists states and separate non-determinist ones
-        deterministic_core, deterministic_sets = LUST.interprete(variables, values, transitions)
-
+        deterministic_core, deterministic_sets = LUST.interprete(data)
         output = []
-        common = GULA.fit(variables, values, deterministic_core)
+        #common = GULA.fit(deterministic_core, features, targets)
 
         # deterministic input
         if len(deterministic_sets) == 0:
-            return [common]
-
-        for s in deterministic_sets:
-            p = GULA.fit(variables, values, s, common)
-            output.append(p)
+            output = [GULA.fit(deterministic_core, features, targets)]
+        else:
+            for s in deterministic_sets:
+                eprint(deterministic_core+s)
+                p = GULA.fit(deterministic_core+s, features, targets)
+                output.append(p)
 
         return output
 
 
     @staticmethod
-    def interprete(variables, values, transitions):
+    def interprete(transitions):
         """
         Split the time series into positive/negatives meta-states for the given variable/value
 
         Args:
-            time_series: list of list (list of int, list of int)
+            transitions: list of tuple (list of int, list of int)
                 state transitions of a dynamic system
-            variable: int
-                variable id
-            value: int
-                variable value id
         """
         # DBG
         #eprint("Interpreting transitions...")
