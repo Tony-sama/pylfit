@@ -94,7 +94,7 @@ class LogicProgram:
                 values = []
 
                 for i in range(2,len(tokens)):
-                    values.append(str(tokens[i]))
+                    values.append(int(tokens[i])) # TODO: only give size of domain in logic file
 
                 eprint(">>> Extracted feature: ",variable," domain: ",values)
 
@@ -106,7 +106,7 @@ class LogicProgram:
                 values = []
 
                 for i in range(2,len(tokens)):
-                    values.append(str(tokens[i]))
+                    values.append(int(tokens[i])) # TODO: only give size of domain in logic file
 
                 eprint(">>> Extracted target: ",variable," domain: ",values)
 
@@ -140,7 +140,7 @@ class LogicProgram:
             end = head.index(',')
 
             head_value = head[beg:end]
-            head_val_id = targets[head_var_id][1].index(head_value)
+            head_val_id = int(head_value) # targets[head_var_id][1].index(head_value)
 
             #eprint("Head extracted: ",head_var_id,"=",head_val_id)
 
@@ -163,7 +163,7 @@ class LogicProgram:
                 end = condition.index(',')
 
                 value = condition[beg:end]
-                val_id = features[var_id][1].index(value)
+                val_id = int(value) # features[var_id][1].index(value)
 
                 # TODO: delay
 

@@ -28,6 +28,9 @@ from unit_tests_lfkt import LFkTTest
 from unit_tests_lust import LUSTTest
 from unit_tests_acedia import ACEDIATest
 
+
+from unit_tests_synchronizer import SynchronizerTest
+
 #random.seed(0)
 
 if __name__ == '__main__':

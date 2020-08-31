@@ -77,8 +77,8 @@ class LogicProgramTest(unittest.TestCase):
         print(">> LogicProgram.load_from_file(self, file_path)")
 
         for i in range(self.__nb_unit_test):
-            features = [("x"+str(i), [str(val) for val in range(0,random.randint(2,self.__nb_values))]) for i in range(random.randint(1,self.__nb_features))]
-            targets = [("y"+str(i), [str(val) for val in range(0,random.randint(2,self.__nb_values))]) for i in range(random.randint(1,self.__nb_targets))]
+            features = [("x"+str(i), [val for val in range(0,random.randint(2,self.__nb_values))]) for i in range(random.randint(1,self.__nb_features))]
+            targets = [("y"+str(i), [val for val in range(0,random.randint(2,self.__nb_values))]) for i in range(random.randint(1,self.__nb_targets))]
             rules = []
 
             out = ""

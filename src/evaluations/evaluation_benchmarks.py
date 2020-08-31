@@ -11,6 +11,9 @@ import time
 import random
 import numpy as np
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 from tensorflow.python import keras
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
@@ -19,9 +22,11 @@ import sys
 sys.path.insert(0, 'src/')
 sys.path.insert(0, 'src/algorithms')
 sys.path.insert(0, 'src/objects')
+sys.path.insert(0, 'src/semantics')
 
 from utils import eprint
 from logicProgram import LogicProgram
+from synchronous import Synchronous
 
 # Constants
 #------------
@@ -31,6 +36,14 @@ run_tests = 1
 
 # Logic program form of Boolean network from biological litteratures
 benchmarks = {
+    "pbnet_toy_raf": "benchmarks/logic_programs/pyboolnet/toys/raf.lp",
+    "pbnet_toy_n3s1c1a": "benchmarks/logic_programs/pyboolnet/toys/n3s1c1a.lp",
+    "pbnet_toy_n3s1c1b": "benchmarks/logic_programs/pyboolnet/toys/n3s1c1b.lp",
+    "pbnet_toy_n5s3": "benchmarks/logic_programs/pyboolnet/toys/n5s3.lp",
+    "pbnet_toy_n6s1c2": "benchmarks/logic_programs/pyboolnet/toys/n6s1c2.lp",
+    "pbnet_toy_n7s3": "benchmarks/logic_programs/pyboolnet/toys/n7s3.lp",
+    "pbnet_toy_n12c5": "benchmarks/logic_programs/pyboolnet/toys/n12c5.lp",
+
     "repressilator": "benchmarks/logic_programs/repressilator.lp",
     "mammalian": "benchmarks/logic_programs/mammalian.lp",
     "fission": "benchmarks/logic_programs/fission.lp",
@@ -38,14 +51,16 @@ benchmarks = {
     "arabidopsis": "benchmarks/logic_programs/arabidopsis.lp"
 }
 
-def evaluate_on_benchmark(algorithm, benchmark, train_size=None):
+def evaluate_on_bn_benchmark(algorithm, benchmark, train_size=None):
     """
         Evaluate accuracy and explainability of an algorithm
-        over a given benchmark with a given number/propertion
+        over a given benchmark with a given number/proporsion
         of training samples.
 
         Args:
-            name: String
+            algorithm: Class
+                Class of the algorithm to be tested
+            benchmark: String
                 Label of the benchmark to be tested
             train_size: float in [0,1] or int
                 Size of the training set in proportion (float in [0,1])
@@ -60,7 +75,13 @@ def evaluate_on_benchmark(algorithm, benchmark, train_size=None):
 
     # 1) Generate transitions
     #-------------------------------------
-    full_transitions = P.generate_all_transitions()
+
+    # Boolean network benchmarks only have rules for value 1, if none match next value is 0
+    default = [[0] for v in P.get_variables()]
+    full_transitions = Synchronous.transitions(P,default) #P.generate_all_transitions()
+    #eprint(P.to_string())
+    #eprint(Synchronous.states(P))
+    #eprint(full_transitions)
 
     # 2) Prepare scores containers
     #---------------------------
@@ -101,6 +122,9 @@ def evaluate_on_benchmark(algorithm, benchmark, train_size=None):
         model = algorithm.fit(P.get_variables(), P.get_values(), train)
         end = time.time()
         results_time.append(round(end - start,3))
+
+        # DBG
+        #eprint(model)
 
         # 3.3) Evaluate model against originals rules
         #-----------------------------------------------
@@ -161,7 +185,7 @@ def evaluate_on_benchmark(algorithm, benchmark, train_size=None):
 
     return round(precision * 100, 2)
 
-def evaluate_on_benchmark_with_NN(algorithm, benchmark, train_size, artificial_size=None):
+def evaluate_on_bn_benchmark_with_NN(algorithm, benchmark, train_size, artificial_size=None):
     """
         Evaluate accuracy and explainability of an algorithm
         over a given benchmark with a given number/propertion

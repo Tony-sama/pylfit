@@ -18,7 +18,7 @@ from gula import GULA
 from lfkt import LFkT
 from pride import PRIDE
 from lust import LUST
-from evaluation_benchmarks import evaluate_on_benchmark, evaluate_on_benchmark_with_NN
+from evaluation_benchmarks import evaluate_on_bn_benchmark, evaluate_on_bn_benchmark_with_NN
 
 # 0: Constants
 #--------------
@@ -33,8 +33,8 @@ nb_artificial_transition = 100
 # 1: Main
 #------------
 if __name__ == '__main__':
-    # Learning algorithm, choose from: LF1T / PRIDE
-    algorithm = PRIDE
+    # Learning algorithm, choose from: LF1T / GULA / PRIDE
+    algorithm = GULA
     NN = False
 
     perfect_test = True
@@ -49,20 +49,41 @@ if __name__ == '__main__':
         if perfect_test:
             eprint("> Start benchmark evaluation: perfect test")
 
+            # DBG
+            eprint(">> pyboolnet")
+            eprint(">> raf: ???")
+            evaluate_on_bn_benchmark(algorithm, "pbnet_toy_raf")
+
+            eprint(">> pbnet_toy_n3s1c1a: ???")
+            evaluate_on_bn_benchmark(algorithm, "pbnet_toy_n3s1c1a")
+
+            eprint(">> pbnet_toy_n3s1c1b: ???")
+            evaluate_on_bn_benchmark(algorithm, "pbnet_toy_n3s1c1b")
+
+            eprint(">> pbnet_toy_n6s1c2: ???")
+            evaluate_on_bn_benchmark(algorithm, "pbnet_toy_n6s1c2")
+
+            eprint(">> pbnet_toy_n7s3: ???")
+            evaluate_on_bn_benchmark(algorithm, "pbnet_toy_n7s3")
+
+            eprint(">> pbnet_toy_n12c5: ???")
+            evaluate_on_bn_benchmark(algorithm, "pbnet_toy_n12c5")
+            #exit()
+
             eprint(">> Repressilator: 3 variables, 2 values, 7 rules, 8 transitions")
-            evaluate_on_benchmark(algorithm, "repressilator")
+            evaluate_on_bn_benchmark(algorithm, "repressilator")
 
             eprint(">> Mammalian: 10 variables, 2 values, 50 rules, 1024 transitions")
-            evaluate_on_benchmark(algorithm, "mammalian")
+            evaluate_on_bn_benchmark(algorithm, "mammalian")
 
             eprint(">> Fission: 10 variables, 2 values, 65 rules, 1024 transitions")
-            evaluate_on_benchmark(algorithm, "fission")
+            evaluate_on_bn_benchmark(algorithm, "fission")
 
             eprint(">> Budding: 12 variables, 2 values, 124 rules, 4096 transitions")
-            evaluate_on_benchmark(algorithm, "budding")
+            evaluate_on_bn_benchmark(algorithm, "budding")
 
             eprint(">> Arabidopsis: 15 variables, 2 values, 62 rules, 32768 transitions")
-            evaluate_on_benchmark(algorithm, "arabidopsis")
+            evaluate_on_bn_benchmark(algorithm, "arabidopsis")
 
         # Benchmarks tests 100% - 10%
         #----------------------------
@@ -80,19 +101,19 @@ if __name__ == '__main__':
                 train_size = i / 100.0
 
                 eprint(">> Repressilator: 3 variables, 2 values, 7 rules, 8 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "repressilator", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "repressilator", train_size))
 
                 eprint("\n>> Mammalian: 10 variables, 2 values, 50 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "mammalian", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "mammalian", train_size))
 
                 eprint("\n>> Fission: 10 variables, 2 values, 65 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "fission", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "fission", train_size))
 
                 eprint("\n>> Budding: 12 variables, 2 values, 124 rules, 4096 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "budding", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "budding", train_size))
 
                 eprint("\n>> Arabidopsis: 15 variables, 2 values, 62 rules, 32768 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "arabidopsis", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "arabidopsis", train_size))
 
                 accuracy_evolution.append(accuracy)
 
@@ -119,19 +140,19 @@ if __name__ == '__main__':
                 eprint("\n> Benchmarks test with " + str(train_size) + " training transitions")
 
                 eprint("\n>> Repressilator: 3 variables, 2 values, 7 rules, 8 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "repressilator", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "repressilator", train_size))
 
                 eprint("\n>> Mammalian: 10 variables, 2 values, 50 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "mammalian", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "mammalian", train_size))
 
                 eprint("\n>> Fission: 10 variables, 2 values, 65 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "fission", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "fission", train_size))
 
                 eprint("\n>> Budding: 12 variables, 2 values, 124 rules, 4096 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "budding", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "budding", train_size))
 
                 eprint("\n>> Arabidopsis: 15 variables, 2 values, 62 rules, 32768 transitions")
-                accuracy.append(evaluate_on_benchmark(algorithm, "arabidopsis", train_size))
+                accuracy.append(evaluate_on_bn_benchmark(algorithm, "arabidopsis", train_size))
 
                 accuracy_evolution.append(accuracy)
 
@@ -160,16 +181,16 @@ if __name__ == '__main__':
                 train_size = i / 100.0
 
                 eprint("\n>> Mammalian: 10 variables, 2 values, 50 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "mammalian", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "mammalian", train_size, nb_artificial_transition))
 
                 eprint("\n>> Fission: 10 variables, 2 values, 65 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "fission", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "fission", train_size, nb_artificial_transition))
 
                 eprint("\n>> Budding: 12 variables, 2 values, 124 rules, 4096 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "budding", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "budding", train_size, nb_artificial_transition))
 
                 eprint("\n>> Arabidopsis: 15 variables, 2 values, 62 rules, 32768 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "arabidopsis", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "arabidopsis", train_size, nb_artificial_transition))
 
                 accuracy_evolution.append(accuracy)
 
@@ -196,16 +217,16 @@ if __name__ == '__main__':
                 train_size = i
 
                 eprint("\n>> Mammalian: 10 variables, 2 values, 50 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "mammalian", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "mammalian", train_size, nb_artificial_transition))
 
                 eprint("\n>> Fission: 10 variables, 2 values, 65 rules, 1024 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "fission", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "fission", train_size, nb_artificial_transition))
 
                 eprint("\n>> Budding: 12 variables, 2 values, 124 rules, 4096 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "budding", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "budding", train_size, nb_artificial_transition))
 
                 eprint("\n>> Arabidopsis: 15 variables, 2 values, 62 rules, 32768 transitions")
-                accuracy.append(evaluate_on_benchmark_with_NN(algorithm, "arabidopsis", train_size, nb_artificial_transition))
+                accuracy.append(evaluate_on_bn_benchmark_with_NN(algorithm, "arabidopsis", train_size, nb_artificial_transition))
 
                 accuracy_evolution.append(accuracy)
 

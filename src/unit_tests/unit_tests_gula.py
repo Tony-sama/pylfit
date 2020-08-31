@@ -149,7 +149,7 @@ class GULATest(unittest.TestCase):
                                 r.add_condition(var,val) # Cancel removal
 
     def test_interprete(self):
-        print(">> GULA.interprete(transitions, variable, value)")
+        print(">> GULA.interprete(transitions, variable, value, supported_only=False)")
 
         for i in range(self.__nb_unit_test):
             # Generate transitions
@@ -162,7 +162,8 @@ class GULATest(unittest.TestCase):
             t = sorted(t)
             t_ = [ (tuple(s1), [s2_ for (s1_, s2_) in t if s1 == s1_]) for (s1, s2) in t]
             #t_ = {tuple(s1): [s2_ for (s1_, s2_) in t if s1 == s1_] for (s1, s2) in t}
-            neg = [tuple(s) for s in GULA.interprete(t_, var, val)]
+            neg, pos = GULA.interprete(t_, var, val)
+            neg = [tuple(s) for s in neg]
 
             pos_ = [s1 for s1,s2 in t if s2[var] == val]
             neg_ = [tuple(s1) for s1,s2 in t if s1 not in pos_]
@@ -207,7 +208,7 @@ class GULATest(unittest.TestCase):
             t = sorted(t)
             t_ = [ (tuple(s1), [s2_ for (s1_, s2_) in t if s1 == s1_]) for (s1, s2) in t]
             #t_ = {tuple(s1): [s2_ for (s1_, s2_) in t if s1 == s1_] for (s1, s2) in t}
-            neg = GULA.interprete(t_, var, val)
+            neg, pos = GULA.interprete(t_, var, val)
 
             rules = GULA.fit_var_val(p.get_features(), var, val, neg)
 
@@ -267,8 +268,8 @@ class GULATest(unittest.TestCase):
 
 
     def random_program(self, nb_features, nb_targets, nb_values, body_size):
-        features = [("x"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
-        targets = [("y"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
+        features = [("x"+str(i), [val for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
+        targets = [("y"+str(i), [val for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
         rules = []
 
         for j in range(random.randint(0,100)):

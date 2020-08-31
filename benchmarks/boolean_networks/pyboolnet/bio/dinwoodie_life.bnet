@@ -1,0 +1,25 @@
+
+
+targets, factors
+
+# taken from
+# Dinwoodie, Ian H. "Computational Methods for Asynchronous Basins." Discrete and continuous dynamical systems. Series B 21.10 (2016): 3391.
+
+compuse,       wssigma&!mci
+mci,           !wsq3&waso&!compuse | !wsq3&sleeplivroom&!compuse
+meanws,        wssigma&wsq3 | wsq3&!wscv
+numfir,        !wsq3 | sleeplivroom | numtrans
+numtrans,      numfir
+numwalks,      wssigma&!wscv
+sleeplatency,  waso&ttib
+sleeplivroom,  !ttib&timeasleep
+timeasleep,    ttib
+ttib,          timeasleep
+waso,          ttib&sleeplatency
+wscv,          wssigma&!meanws | wssigma&mci
+wsq3,          !numwalks&!mci | meanws
+wssigma,       wscv&meanws
+
+oohhours,      !ttib&sleeplivroom | !ttib&numwalks | !ttib&!numfir
+
+

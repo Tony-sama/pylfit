@@ -64,17 +64,17 @@ class GULA:
         return output
 
     @staticmethod
-    def fit(data, features, targets): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
+    def fit(data, features, targets, supported_only=False): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
         """
         Preprocess transitions and learn rules for all observed variables/values.
 
         Args:
             data: list of tuple (list of int, list of int)
                 state transitions of a the system
-            features: list of (String, list of String)
-                feature variables of the system and their values
-            targets: list of (String, list of String)
-                targets variables of the system and their values
+            features: list of (String, list of int)
+                feature variables of the system and their values id that can appear in rules
+            targets: list of (String, list of int)
+                targets variables of the system and their values id that can appear in rules
 
         Returns:
             LogicProgram
@@ -124,12 +124,12 @@ class GULA:
 
         # Learn rules for each observed variable/value
         for var in range(0, len(targets)):
-            for val in range(0, len(targets[var][1])):
-                negatives = GULA.interprete(processed_transitions, var, val)#, partial_heuristic)
+            for val in targets[var][1]:
+                negatives, positives = GULA.interprete(processed_transitions, var, val, supported_only)#, partial_heuristic)
                 # DBG
                 #eprint(negatives)
                 eprint("\nStart learning of var=", var+1,"/", len(targets), ", val=", val+1, "/", len(targets[var][1]))
-                rules += GULA.fit_var_val(features, var, val, negatives) #variables, values, var, val, negatives, program)#, partial_heuristic)
+                rules += GULA.fit_var_val(features, var, val, negatives, positives) #variables, values, var, val, negatives, program)#, partial_heuristic)
 
         # Instanciate output logic program
         output = LogicProgram(features, targets, rules)
@@ -138,7 +138,7 @@ class GULA:
 
 
     @staticmethod
-    def interprete(transitions, variable, value): #, partial_heuristic=False):
+    def interprete(transitions, variable, value, supported_only=False): #, partial_heuristic=False):
         """
         Split transition into positive/negatives states for the given variable/value
 
@@ -155,7 +155,10 @@ class GULA:
         #positives = [t1 for t1,t2 in transitions if t2[variable] == value]
         #negatives = [t1 for t1,t2 in transitions if t1 not in positives]
 
-        #positives = []
+        positives = None
+        if supported_only:
+            positives = []
+
         negatives = []
         for s1, S2 in transitions:
             negative = True
@@ -165,14 +168,14 @@ class GULA:
                     break
             if negative:
                 negatives.append(s1)
-            #elif partial_heuristic:
-            #    positives.append(s1)
+            elif supported_only:
+                positives.append(s1)
 
-        return negatives
+        return negatives, positives
 
 
     @staticmethod
-    def fit_var_val(features, variable, value, negatives): #variables, values, variable, value, negatives, program=None):#, partial_heuristic=False):
+    def fit_var_val(features, variable, value, negatives, positives=None): #variables, values, variable, value, negatives, program=None):#, partial_heuristic=False):
         """
         Learn minimal rules that explain positive examples while consistent with negatives examples
 
@@ -185,6 +188,9 @@ class GULA:
                 variable value id
             negatives: list of (list of int)
                 States of the system where the variable cannot take this value in the next state
+            positives: list of (list of int)
+                States of the system where the variable can take this value in the next state
+                Optional, if given rule will be enforced to matches alteast one of those states
         """
 
         # 0) Initialize program as most the general rule
@@ -231,7 +237,7 @@ class GULA:
                 # Generates all least specialisation of the rule
                 ls = []
                 for var in range(len(features)):
-                    for val in range(len(features[var][1])):
+                    for val in features[var][1]:
 
                         # Variable availability
                         if unconsistent.has_condition(var):
@@ -277,6 +283,17 @@ class GULA:
                         if subsumed:
                             unconsistent.pop_condition()
                             continue
+
+                        # Heuristic 1: check if the rule matches atleast one positive example
+                        if positives is not None:
+                            supported = False
+                            for s in positives:
+                                if unconsistent.matches(s):
+                                    supported = True
+                                    break
+                            if not supported:
+                                unconsistent.pop_condition()
+                                continue
 
                         # Discard other least specialization subsumed by this least specialization
                         #new_rules = [new_rule for new_rule in new_rules if not least_specialization.subsumes(new_rule)]

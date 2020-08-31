@@ -1,0 +1,56 @@
+
+#
+# The booleanized model of the multi-valued bladder tumorigenesis model
+# published in the supplementary pdf of 
+#
+# "A modelling approach to explain mutually exclusive and co-occurring genetic alterations in bladder tumorigenesis"
+# E. Remy et al., Cancer Research, 2015.
+#
+# The model was booleanized using the GINsim function "booleanize" which is based on
+#
+# "Mapping multivalued onto Boolean dynamics"
+# G. Didier et al., Journal of Theoretical Biology, 2011.
+#
+# GINsim is available from http://ginsim.org/
+#
+
+
+DNA_damage,         DNA_damage
+EGFR_stimulus,      EGFR_stimulus
+FGFR3_stimulus,     FGFR3_stimulus
+Growth_inhibitors,  Growth_inhibitors
+
+AKT,                PI3K
+ATM_high,           E2F1_medium&DNA_damage&ATM_medium
+ATM_medium,         ATM_medium&ATM_high | DNA_damage
+Apoptosis_high,     E2F1_medium&E2F1_high&Apoptosis_medium
+Apoptosis_medium,   E2F1_medium&E2F1_high | Apoptosis_medium&Apoptosis_high | TP53
+CDC25A,             !RBL2&E2F3_medium&!CHEK1_2_medium | !RBL2&E2F1_medium&!CHEK1_2_medium
+CHEK1_2_high,       E2F1_medium&CHEK1_2_medium&ATM_medium
+CHEK1_2_medium,     CHEK1_2_medium&CHEK1_2_high | ATM_medium
+CyclinA,            !p21CIP&!RBL2&E2F3_medium&CDC25A | !p21CIP&!RBL2&E2F1_medium&CDC25A
+CyclinD1,           !p21CIP&!p16INK4a&RAS | !p21CIP&!p16INK4a&AKT
+CyclinE1,           !p21CIP&!RBL2&E2F3_medium&CDC25A | !p21CIP&!RBL2&E2F1_medium&CDC25A
+E2F1_high,          !RBL2&!RB1&E2F3_medium&E2F3_high&E2F1_medium&CHEK1_2_medium&CHEK1_2_high&ATM_medium&ATM_high | !RBL2&!RB1&RAS&E2F1_medium&CHEK1_2_medium&CHEK1_2_high&ATM_medium&ATM_high
+E2F1_medium,        !RBL2&!RB1&RAS | !RBL2&!RB1&E2F3_medium | E2F1_medium&E2F1_high
+E2F3_high,          !RB1&RAS&E2F3_medium&CHEK1_2_medium&CHEK1_2_high
+E2F3_medium,        !RB1&RAS | E2F3_medium&E2F3_high
+EGFR,               SPRY&!GRB2&!FGFR3 | !GRB2&!FGFR3&EGFR_stimulus
+FGFR3,              !GRB2&FGFR3_stimulus&!EGFR
+GRB2,               !SPRY&!GRB2&FGFR3 | EGFR
+MDM2,               !p14ARF&TP53&!RB1&!ATM_medium | !p14ARF&!RB1&!ATM_medium&AKT
+PI3K,               RAS&!PTEN&GRB2
+PTEN,               TP53
+RAS,                GRB2 | FGFR3 | EGFR
+RB1,                !p16INK4a&!CyclinE1&!CyclinD1&!CyclinA
+RBL2,               !CyclinE1&!CyclinD1
+SPRY,               RAS
+TP53,               !MDM2&E2F1_medium&E2F1_high | !MDM2&CHEK1_2_medium&ATM_medium
+p14ARF,             E2F1_medium
+p16INK4a,           !RB1&Growth_inhibitors
+p21CIP,             TP53&!CyclinE1&!AKT | Growth_inhibitors&!CyclinE1&!AKT
+
+Growth_arrest,      p21CIP | RBL2 | RB1
+Proliferation,      CyclinE1 | CyclinA
+
+

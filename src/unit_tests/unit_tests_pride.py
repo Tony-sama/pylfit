@@ -230,8 +230,8 @@ class PRIDETest(unittest.TestCase):
 
 
     def random_program(self, nb_features, nb_targets, nb_values, body_size):
-        features = [("x"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
-        targets = [("y"+str(i), [str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
+        features = [("x"+str(i), [val for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
+        targets = [("y"+str(i), [val for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
         rules = []
 
         for j in range(random.randint(0,100)):
