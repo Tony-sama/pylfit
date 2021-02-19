@@ -29,10 +29,9 @@ Import the library in your script to use it.
 
 ```
 import pylfit
-
 ```
 
-Format your data into states transitions: list of pair (list of string, list of string)s
+Format your data into states transitions: list of tuple (list of string, list of string)
 ```
 data = [ \
 (["0","0","0"],["0","0","1"]), \
@@ -44,6 +43,7 @@ data = [ \
 (["0","1","1"],["1","0","1"]), \
 (["1","1","1"],["1","1","0"])]
 ```
+
 Use the pylfit.preprocessing api to load your data into the dataset format.
 ```
 dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
@@ -156,7 +156,7 @@ Predict from ['1','0','1'] (asynchronous): [['0', '0', '1'], ['1', '1', '1'], ['
 Predict from ['1','0','1'] (general): [['0', '0', '0'], ['0', '0', '1'], ['0', '1', '0'], ['0', '1', '1'], ['1', '0', '0'], ['1', '0', '1'], ['1', '1', '0'], ['1', '1', '1']]
 ```
 
-Using the previous code you get more or less the example file pylfit_package/tests/examles/api_gula_and_pride_example.py.
+Using the previous code you get more or less the example file tests/examles/api_gula_and_pride_example.py.
 Its expected output is as follows.
 
 ```
@@ -253,7 +253,7 @@ CDMVLP summary:
  Constraints: []
 ```
 
-Basically a DMVLP with an additional set of constraints rules preventing some combinations of feature/target variable values to occur in a transition.
+A CDMVLP is basically a DMVLP with an additional set of constraints rules preventing some combinations of feature/target variable values to occur in a transition.
 CDMVLP api is the same as DMVLP, use fit() to train the model on the dataset and summary() to have a look to the model.
 
 ```
@@ -307,12 +307,11 @@ print:
 ```
 Predict from ['0','0','0']: [['0', '0', '1'], ['1', '0', '0']]
 Predict from ['1','1','1']: [['1', '1', '0']]
-
 ```
 
 ## Running the tests
 
-From the tests/ folder run the following comands:
+From the tests/ folder run the following comands once pylfit is installed (see above):
 
 For each algorithm example:
 ```
