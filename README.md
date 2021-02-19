@@ -1,15 +1,13 @@
 # pylfit
 Python implementation of the main algorithms of the Learning From Interpretation Transitions (LFIT) framework.
-- LF1T: Learning From 1-step transitions
-- LFkT: Learning From k-step Transtions
-- LUST: Learning From Uncertain State Transtions
 - GULA: General Usage LFIT Algorithm
-- ACEDIA: Abstraction-free Continuum Environment Dynamics Inference Algorithm
+- PRIDE: Polynomial Relational Inference of Dynamic Environnement
+- Synchronizer
 
-Example of the usage of the different algorithms can be found in the examples/ folder
-use the following command from the root of the repository:
+Example of the usage of the different algorithms can be found in the pylfit_package/tests/examples/ folder
+use the following command from the tests/ directory:
 ```
-python3 examples/example_lf1t.py
+python3 examples/api_gula_and_pride_example.py
 ```
 ## Getting Started
 
@@ -22,268 +20,323 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Installing
 
-Use the example folder to create your own scripts and run it from the repository root folder.
-For example: examples/example_lf1t.py
+Use pip to install the last realease version of the pylfit library.
 ```
-python3 examples/example_lf1t.py
-```
-
-Add the following folders to the path:
-- src/
-- src/algorithms
-- src/objects
-
-```
-import sys
-sys.path.insert(0, 'src/')
-sys.path.insert(0, 'src/algorithms')
-sys.path.insert(0, 'src/objects')
+pip install pylfit
 ```
 
-Import the necessary scripts
-```
-from utils import eprint
-from logicProgram import LogicProgram
-from lf1t import LF1T
-```
-- eprint is for debugging purpose, print to sdterr
-- LogicProgram is the object class representing a multi-valued logic program
- 	- load benchmark from text file
-	- generate random instance of logic program
-	- generate corresponding transitions to feed a learning algorithm
-- LF1T is the class implementing the LF1T algorithm
-	- the learning algorithm to use for inference of the logic program from its transitions
+Import the library in your script to use it.
 
-Extract a logic program benchmark from a file:
 ```
-benchmark = LogicProgram.load_from_file("benchmarks/logic_programs/repressilator.lp")
+import pylfit
+
 ```
 
-Generate all its transitions:
+Format your data into states transitions: list of pair (list of string, list of string)s
 ```
-input = benchmark.generate_all_transitions()
+data = [ \
+(["0","0","0"],["0","0","1"]), \
+(["1","0","0"],["0","0","0"]), \
+(["0","1","0"],["1","0","1"]), \
+(["0","0","1"],["0","0","1"]), \
+(["1","1","0"],["1","0","0"]), \
+(["1","0","1"],["0","1","0"]), \
+(["0","1","1"],["1","0","1"]), \
+(["1","1","1"],["1","1","0"])]
 ```
-
-Use LF1T to learn an equivalent logic program:
+Use the pylfit.preprocessing api to load your data into the dataset format.
 ```
-model = LF1T.fit(benchmark.get_variables(), benchmark.get_values(), input)
-```
-
-Check the dynamics of original versus learned program:
-```
-expected = benchmark.generate_all_transitions()
-predicted = model.generate_all_transitions()
-precision = LogicProgram.precision(expected, predicted) * 100
-eprint("Model accuracy: ", precision, "%")
-```
-
-Perform a next state prediction:
-```
-state = [1,1,1]
-next = model.next(state)
-
-eprint("Next state of ", state, " is ", next, " according to learned model")
+dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 ```
 
-Transitions can also be extracted directly from a csv file:
+Use the summary() method to get a look at your formated data.
 ```
-input = LF1T.load_input_from_csv("benchmarks/transitions/repressilator.csv")
+dataset.summary()
+```
+summary() print:
+```
+StateTransitionsDataset summary:
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Data:
+  (['0', '0', '0'], ['0', '0', '1'])
+  (['1', '0', '0'], ['0', '0', '0'])
+  (['0', '1', '0'], ['1', '0', '1'])
+  (['0', '0', '1'], ['0', '0', '1'])
+  (['1', '1', '0'], ['1', '0', '0'])
+  (['1', '0', '1'], ['0', '1', '0'])
+  (['0', '1', '1'], ['1', '0', '1'])
+  (['1', '1', '1'], ['1', '1', '0'])
 ```
 
-Using the previous code you get more or less the example file examles/example_lf1t.py.
+Use the pylfit.models api to initialize a Dynamic Multi-valued Logic Program (DMVLP) model with the features/targets variables of the dataset.
+Use compile(algorithm="gula") or compile(algorithm="pride") to prepare the model to be trained using GULA or PRIDE algorithm.
+GULA has exponential complexity but guaranty all possible minimal rules to be learned.
+PRIDE has polynomial complexity but only learn enough minimal rules to explain the dataset.
+PRIDE is adviced in practice and GULA for small tests (< 10 variables, < 3 domain values).
+```
+model = pylfit.models.DMVLP(features=dataset.features, targets=dataset.targets)
+model.compile(algorithm="pride") # model.compile(algorithm="gula")
+model.summary()
+```
+summary() print:
+```
+DMVLP summary:
+ Algorithm: GULA (<class 'pylfit.algorithms.gula.GULA'>)
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Rules: []
+```
+
+
+Train the model on the dataset using the fit() method
+```
+model.fit(dataset=dataset)
+model.summary()
+```
+summary() print:
+```
+DMVLP summary:
+ Algorithm: GULA (<class 'pylfit.algorithms.gula.GULA'>)
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Rules:
+  p_t(0) :- q_t_1(0).
+  p_t(1) :- q_t_1(1).
+  q_t(0) :- p_t_1(0).
+  q_t(0) :- r_t_1(0).
+  q_t(1) :- p_t_1(1), r_t_1(1).
+  r_t(0) :- p_t_1(1).
+  r_t(1) :- p_t_1(0).
+```
+
+Use predict(feature_state) to make the model generate the possible targets states following a given feature states according to the model rules.
+Default semantics is synchronous but you can request asynchronous or general transitions using predict(feature_state,semantics) as follows.
+```
+print("Predict from ['0','0','0'] (default: synchronous): ", end='')
+prediction = model.predict(["0","0","0"])
+print(prediction)
+
+print("Predict from ['1','0','1'] (synchronous): ", end='')
+prediction = model.predict(["1","0","1"])
+print(prediction)
+
+print("Predict from ['1','0','1'] (asynchronous): ", end='')
+prediction = model.predict(["1","0","1"], semantics="asynchronous")
+print(prediction)
+
+print("Predict from ['1','0','1'] (general): ", end='')
+prediction = model.predict(["1","0","1"], semantics="general")
+print(prediction)
+```
+
+print:
+```
+Predict from ['0','0','0'] (default: synchronous): [['0', '0', '1']]
+Predict from ['1','0','1'] (synchronous): [['0', '1', '0']]
+Predict from ['1','0','1'] (asynchronous): [['0', '0', '1'], ['1', '1', '1'], ['1', '0', '0']]
+Predict from ['1','0','1'] (general): [['0', '0', '0'], ['0', '0', '1'], ['0', '1', '0'], ['0', '1', '1'], ['1', '0', '0'], ['1', '0', '1'], ['1', '1', '0'], ['1', '1', '1']]
+```
+
+Using the previous code you get more or less the example file pylfit_package/tests/examles/api_gula_and_pride_example.py.
 Its expected output is as follows.
 
 ```
-Example using logic program definition file:
-----------------------------------------------
-Original logic program:
-VAR p 0 1
-VAR q 0 1
-VAR r 0 1
+Convert array data as a StateTransitionsDataset using pylfit.preprocessing
+StateTransitionsDataset summary:
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Data:
+  (['0', '0', '0'], ['0', '0', '1'])
+  (['1', '0', '0'], ['0', '0', '0'])
+  (['0', '1', '0'], ['1', '0', '1'])
+  (['0', '0', '1'], ['0', '0', '1'])
+  (['1', '1', '0'], ['1', '0', '0'])
+  (['1', '0', '1'], ['0', '1', '0'])
+  (['0', '1', '1'], ['1', '0', '1'])
+  (['1', '1', '1'], ['1', '1', '0'])
 
-p(0,T) :- q(0,T-1).
-p(1,T) :- q(1,T-1).
-q(0,T) :- p(0,T-1).
-q(0,T) :- r(0,T-1).
-q(1,T) :- p(1,T-1), r(1,T-1).
-r(0,T) :- p(1,T-1).
-r(1,T) :- p(0,T-1).
+Initialize a DMVLP with the dataset variables and set GULA as learning algorithm
+DMVLP summary:
+ Algorithm: GULA (<class 'pylfit.algorithms.gula.GULA'>)
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Rules: []
 
-Generating transitions...
-LF1T input:
-[[[0, 0, 0], [0, 0, 1]], [[0, 0, 1], [0, 0, 1]], [[0, 1, 0], [1, 0, 1]], [[0, 1, 1], [1, 0, 1]], [[1, 0, 0], [0, 0, 0]], [[1, 0, 1], [0, 1, 0]], [[1, 1, 0], [1, 0, 0]], [[1, 1, 1], [1, 1, 0]]]
-LF1T output:
-VAR p 0 1
-VAR q 0 1
-VAR r 0 1
-
-p(0,T) :- q(0,T-1).
-p(1,T) :- q(1,T-1).
-q(0,T) :- p(0,T-1).
-q(0,T) :- r(0,T-1).
-q(1,T) :- p(1,T-1), r(1,T-1).
-r(0,T) :- p(1,T-1).
-r(1,T) :- p(0,T-1).
-
-Model accuracy: 100.0%
-Next state of [1, 1, 1] is [1, 1, 0] according to learned model
-----------------------------------------------
-
-Example using transition from csv file:
-----------------------------------------------
-LF1T input:
-[[[0, 0, 0], [0, 0, 1]], [[1, 0, 0], [0, 0, 0]], [[0, 1, 0], [1, 0, 1]], [[0, 0, 1], [0, 0, 1]], [[1, 1, 0], [1, 0, 0]], [[1, 0, 1], [0, 1, 0]], [[0, 1, 1], [1, 0, 1]], [[1, 1, 1], [1, 1, 0]]]
-LF1T output:
-VAR p 0 1
-VAR q 0 1
-VAR r 0 1
-
-p(0,T) :- q(0,T-1).
-p(1,T) :- q(1,T-1).
-q(0,T) :- p(0,T-1).
-q(0,T) :- r(0,T-1).
-q(1,T) :- p(1,T-1), r(1,T-1).
-r(0,T) :- p(1,T-1).
-r(1,T) :- p(0,T-1).
-
-Model accuracy: 100.0%
-Next state of [1, 1, 1] is [1, 1, 0] according to learned model
-----------------------------------------------
+Fit the DMVLP on the dataset
+Trained model:
+DMVLP summary:
+ Algorithm: GULA (<class 'pylfit.algorithms.gula.GULA'>)
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Rules:
+  p_t(0) :- q_t_1(0).
+  p_t(1) :- q_t_1(1).
+  q_t(0) :- p_t_1(0).
+  q_t(0) :- r_t_1(0).
+  q_t(1) :- p_t_1(1), r_t_1(1).
+  r_t(0) :- p_t_1(1).
+  r_t(1) :- p_t_1(0).
+Predict from ['0','0','0'] (default: synchronous): [['0', '0', '1']]
+Predict from ['1','0','1'] (synchronous): [['0', '1', '0']]
+Predict from ['1','0','1'] (asynchronous): [['0', '0', '1'], ['1', '1', '1'], ['1', '0', '0']]
+Predict from ['1','0','1'] (general): [['0', '0', '0'], ['0', '0', '1'], ['0', '1', '0'], ['0', '1', '1'], ['1', '0', '0'], ['1', '0', '1'], ['1', '1', '0'], ['1', '1', '1']]
+All states transitions of the model (synchronous):
+[(['0', '0', '0'], ['0', '0', '1']), (['0', '0', '1'], ['0', '0', '1']), (['0', '1', '0'], ['1', '0', '1']), (['0', '1', '1'], ['1', '0', '1']), (['1', '0', '0'], ['0', '0', '0']), (['1', '0', '1'], ['0', '1', '0']), (['1', '1', '0'], ['1', '0', '0']), (['1', '1', '1'], ['1', '1', '0'])]
+Saving transitions to csv...
+Saved to tmp/output.csv
 ```
 
-#### LFkT
+#### Synchronizer
 
 ```
-from lfkt import LFkT
+import pylfit
 ```
 
-LFkT algorithm learns delayed influences and thus takes as input time series of state transitions.
-LFkT input can be generated as follows:
+Dataset is same as previously for DMVLP model but to learn constraint we will use another type of model: Constrained Dynamic Multi-valued Logic Program (CDMVLP)
 
 ```
-time_serie_size = 10
-input = benchmark.generate_all_time_series(time_serie_size)
-```
-- See examples/example_lfkt.py for more details.
-
-#### LUST
-
-```
-from lust import LUST
+model = pylfit.models.CDMVLP(features=dataset.features, targets=dataset.targets)
+model.compile(algorithm=ALGORITHM)
+model.summary()
 ```
 
-LUST algorithm learned non-determistic systems in the form of a set of deterministic logic programs.
-- See examples/example_lust.py for more details.
-
-#### GULA
-
+print:
 ```
-from gula import GULA
-```
-
-GULA algorithm can be used exactly like LF1T. The difference is that it is semantic free where LF1T can only learn from sycnhronous deterministic transitions.
-- See examples/example_gula.py for more details.
-
-#### ACEDIA
-
-Import the necessary scripts
-```
-from utils import eprint
-from continuum import Continuum
-from continuumLogicProgram import ContinuumLogicProgram
-from acedia import ACEDIA
-```
-- eprint is for debugging purpose, print to sdterr
-- Continuum is the object class representing a continuum, a continuous set of real values
-- ContinuumLogicProgram is the object class representing a Continuum logic program
-	- generate random instance of logic program
-	- generate corresponding transitions to feed a learning algorithm
-- ACEDIA is the class implementing the ACEDIA algorithm
-	- the learning algorithm to use for inference of the continuum logic program from its transitions
-
-Generate a random Continuum Logic Program:
-```
-variables = ["a", "b", "c"]
-domains = [ Continuum(0.0,1.0,True,True) for v in variables ]
-rule_min_size = 0
-rule_max_size = 3
-epsilon = 0.5
-random.seed(9999)
-
-benchmark = ContinuumLogicProgram.random(variables, domains, rule_min_size, rule_max_size, epsilon, delay=1)
+CDMVLP summary:
+ Algorithm: Synchronizer (<class 'pylfit.algorithms.synchronizer.Synchronizer'>)
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Rules: []
+ Constraints: []
 ```
 
-Generate all epsilon transitions of the continuum logic program
+Basically a DMVLP with an additional set of constraints rules preventing some combinations of feature/target variable values to occur in a transition.
+CDMVLP api is the same as DMVLP, use fit() to train the model on the dataset and summary() to have a look to the model.
+
 ```
-input = benchmark.generate_all_transitions(epsilon)
+model.fit(dataset=dataset) # optional targets
+print("Trained model:")
+model.summary()
 ```
 
-Learn a continuum logic program whose dynamics capture the transitions.
+print:
+
 ```
-model = ACEDIA.fit(benchmark.get_variables(), benchmark.get_domains(), input)
+CDMVLP summary:
+ Algorithm: Synchronizer (<class 'pylfit.algorithms.synchronizer.Synchronizer'>)
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Rules:
+  p_t(0) :- q_t_1(0).
+  p_t(1) :- q_t_1(1).
+  p_t(1) :- p_t_1(0), r_t_1(0).
+  q_t(0) :- p_t_1(0).
+  q_t(0) :- r_t_1(0).
+  q_t(1) :- p_t_1(1), r_t_1(1).
+  r_t(0) :- p_t_1(1).
+  r_t(0) :- q_t_1(0), r_t_1(0).
+  r_t(1) :- p_t_1(0).
+ Constraints:
+  :- q_t_1(0), p_t(1), r_t(1).
+  :- p_t_1(0), p_t(0), r_t(0).
 ```
 
-Check the validity of the program learned:
+Prediction are obtained the same way as for DMVLP, but no semantics option.
+Use predict(feature_state) to get the list of possible target states according to the model rules and constraints
+
 ```
-expected = benchmark.generate_all_transitions(epsilon)
-predicted = [(s1,model.next(s1)) for s1,s2 in expected]
+print("Predict from ['0','0','0']: ", end='')
+prediction = model.predict(["0","0","0"])
+print(prediction)
 
-precision = ContinuumLogicProgram.precision(expected, predicted) * 100
-
-eprint("Model accuracy: ", precision, "%")
-```
-
-Predict the next continuum of value of each variable from a given state:
-```
-state = [0.75,0.33,0.58]
-next = model.next(state)
-
-eprint("Next state of ", state, " is ", next, " according to learned model")
+print("Predict from ['1','1','1']: ", end='')
+prediction = model.predict(["1","1","1"])
+print(prediction)
 ```
 
-ACEDIA input can also be directly extracted from csv file.
+print:
 ```
-input = ACEDIA.load_input_from_csv("benchmarks/transitions/repressilator_continuous.csv")
-```
+Predict from ['0','0','0']: [['0', '0', '1'], ['1', '0', '0']]
+Predict from ['1','1','1']: [['1', '1', '0']]
 
-In this case the variables and their respective domains must be known or generated to be feed to the algorithm together with the transitions.
 ```
-variables = ["p", "q", "r"]
-domains = [ Continuum(0.0,1.0,True,True) for v in variables ]
-model = ACEDIA.fit(variables, domains, input)
-```
-
-- See examples/example_acedia.py for more details.
 
 ## Running the tests
 
-From the repository folder run the following comands:
+From the tests/ folder run the following comands:
 
 For each algorithm example:
 ```
-python3 examples/example_lf1t.py
+python3 examples/api_gula_and_pride_example.py
 ```
 ```
-python3 examples/example_lfkt.py
+python3 examples/api_synchronizer_example.py
 ```
 ```
-python3 examples/example_lust.py
-```
-```
-python3 examples/example_gula.py
-```
-```
-python3 examples/example_acedia.py
+python3 examples/api_weighted_prediction_and_explanation_example.py
 ```
 
-For complete unit tests
+For complete regression tests
 ```
-python3 src/unit_tests/unit_tests_all.py
+python3 regression_tests/all_tests.py
 ```
 
-For specific unit tests
+For specific regression tests
 ```
-python3 src/unit_tests/unit_tests_<script_name>
+python3 regression_tests/.../<script_name>
+```
+For example
+```
+python3 regression_tests/algorithms/gula_benchmark_tests.py
 ```
 
 ## Built With

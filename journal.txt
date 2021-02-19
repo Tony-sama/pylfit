@@ -20,6 +20,17 @@
     - first variable auto activate and reset loop: a=0 -> a=1 -> a=2 -> a=0
     - second variable auto inhibate and max lvl by a=2: if a=2 then b=2 else if b > 0 then b = b-1
     
- 2020/08/03
+2020/08/03
     - updated all algorithms to handle differents features/targets variables
     - Improved performance of GULA
+    
+2021/02/19
+    - Reorganise folder structure and code to integrate a user friendly api
+    - integrate api preprocessing/datasets/models/postprocessing
+        - preprocessing: tabular data (list of pairs (list of string, list of string)) and csv format
+        - datasets: StateTransitions
+        - models: DMVLP/CDMVLP/WDMVLP
+        - algo: GULA/PRIDE/Synchronizer
+        - semantics: synchronous/asynchronous/general/constrained Synchronous
+    - New examples using the api in tests/examples
+        
