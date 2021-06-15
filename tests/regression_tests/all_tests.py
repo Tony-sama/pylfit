@@ -8,6 +8,7 @@
 #-----------------------
 
 import unittest
+import os
 
 # Core
 #------
@@ -68,5 +69,10 @@ from postprocessing.metrics_tests import metrics_tests
 
 if __name__ == '__main__':
     """ Main """
+
+    current_directory = os.getcwd()
+    tmp_directory = os.path.join(current_directory, r'tmp')
+    if not os.path.exists(tmp_directory):
+       os.makedirs(tmp_directory)
 
     unittest.main()
