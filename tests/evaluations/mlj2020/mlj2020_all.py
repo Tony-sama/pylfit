@@ -23,7 +23,7 @@ run_tests = 10
 use_all_cores = False
 debug = True
 
-DEBUG_runs = False
+DEBUG_runs = True
 GULA_scalability = True
 GULA_accuracy = True
 GULA_explanation = True
@@ -44,6 +44,10 @@ if debug:
 #------------
 if __name__ == '__main__':
 
+    current_directory = os.getcwd()
+    tmp_directory = os.path.join(current_directory, r'tmp')
+    if not os.path.exists(tmp_directory):
+       os.makedirs(tmp_directory)
 
     eprint("Starting all experiement of MLJ 2020 paper")
     if DEBUG_runs:
