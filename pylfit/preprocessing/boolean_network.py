@@ -1,3 +1,11 @@
+#-------------------------------------------------------------------------------
+# @author: Tony Ribeiro
+# @created: 2021/03/03
+# @updated: 2021/06/15
+#
+# @desc: pylfit boolean network utility functions
+#-------------------------------------------------------------------------------
+
 """ pylfit boolean networks loading utilities """
 
 from ..utils import eprint
@@ -63,7 +71,7 @@ def dmvlp_from_boolean_network_file(file_path, compute_complementary_rules=False
             valid_bodies = []
             for body in itertools.product(*bodies):
                 done += 1
-                eprint("\r", var_id+1, "/", len(variables), " ",done,"/",nb_combinations, end='')
+                eprint("\r", var_id+1, "/", len(features), " ",done,"/",nb_combinations, end='')
                 # delete doublon
                 body = set(body)
 
@@ -83,7 +91,7 @@ def dmvlp_from_boolean_network_file(file_path, compute_complementary_rules=False
 
             new_rules = []
             for body in valid_bodies:
-                new_rule = Rule(var_id, 0, len(variables), body)
+                new_rule = Rule(var_id, 0, len(features), body)
                 #eprint()
                 #eprint(">>>", body)
                 #eprint(">>>", new_rule)

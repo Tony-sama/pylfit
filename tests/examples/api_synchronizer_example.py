@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/03
-# @updated: 2021/02/18
+# @updated: 2021/06/15
 #
 # @desc: example of the use of CDMVLP model with the Synchronizer algorithm
 #-------------------------------------------------------------------------------
@@ -50,12 +50,14 @@ if __name__ == '__main__':
     print("Trained model:")
     model.summary()
 
-    print("Predict from ['0','0','0']: ", end='')
-    prediction = model.predict(["0","0","0"])
+    state = ['0','0','0']
+    print("Predict from",state,": ", end='')
+    prediction = model.predict([state])
     print(prediction)
 
-    print("Predict from ['1','1','1']: ", end='')
-    prediction = model.predict(["1","1","1"])
+    state = ['0','0','0']
+    print("Predict from",state,": ", end='')
+    prediction = model.predict([state])
     print(prediction)
 
     print("Check model dynamics: ")
@@ -63,10 +65,8 @@ if __name__ == '__main__':
     expected = set((tuple(s1),tuple(s2)) for s1,s2 in dataset.data)
     predicted = set()
 
-    for s1 in model.feature_states():
-        prediction = model.predict(s1)
-        for s2 in prediction:
-            predicted.add( (tuple(s1), tuple(s2)) )
+
+    predicted = [(tuple(s1), tuple(s2)) for s1,S2 in model.predict(model.feature_states()) for s2 in S2]
 
     print()
     done = 0

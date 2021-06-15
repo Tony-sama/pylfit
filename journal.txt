@@ -33,4 +33,7 @@
         - algo: GULA/PRIDE/Synchronizer
         - semantics: synchronous/asynchronous/general/constrained Synchronous
     - New examples using the api in tests/examples
-        
+
+2021/06/15
+    - New version up to date with MLJ20 manuscript
+

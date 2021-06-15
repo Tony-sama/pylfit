@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/03/25
-# @updated: 2019/05/02
+# @updated: 2021/06/15
 #
 # @desc: PyLFIT unit test script
 #
@@ -31,6 +31,7 @@ from semantics.synchronousConstrained_tests import SynchronousConstrained_tests
 #from algorithms.lf1t_tests import LF1TTest
 from algorithms.gula_tests import GULA_tests
 from algorithms.pride_tests import PRIDE_tests
+from algorithms.bruteForce_tests import BruteForce_tests
 #from algorithms.lfkt_tests import LFkTTest
 #from algorithms.lust_tests import LUSTTest
 #from algorithms.acedia_tests import ACEDIATest
@@ -40,6 +41,7 @@ from algorithms.synchronizer_tests import Synchronizer_tests
 # Benchmarks
 from algorithms.gula_benchmark_tests import GULA_benchmark_tests
 from algorithms.pride_benchmark_tests import PRIDE_benchmark_tests
+#from algorithms.bruteForce_benchmark_tests import BruteForce_benchmark_tests
 from algorithms.synchronizer_benchmark_tests import Synchronizer_benchmark_tests
 
 # Api
@@ -51,6 +53,7 @@ from datasets.stateTransitionsDataset_tests import StateTransitionsDataset_tests
 
 # Preprocessing
 from preprocessing.tabular_dataset_tests import tabular_dataset_tests
+from preprocessing.boolean_network_tests import boolean_network_tests
 
 # Models
 from models.model_tests import Model_tests
@@ -59,6 +62,7 @@ from models.cdmvlp_tests import CDMVLP_tests
 from models.wdmvlp_tests import WDMVLP_tests
 
 # postprocessing
+from postprocessing.metrics_tests import metrics_tests
 
 #random.seed(0)
 

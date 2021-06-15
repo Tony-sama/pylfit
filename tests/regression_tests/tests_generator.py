@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2021/01/25
+# @updated: 2021/06/15
 #
 # @desc: regression tests generator script.
 # Provide random factory function for pylfit regression tests.
@@ -35,8 +35,8 @@ def random_rule(nb_features, nb_targets, nb_values, max_body_size):
     return r
 
 def random_constraint(nb_features, nb_targets, nb_values, max_body_size):
-    var = -1
-    val = -1
+    head_var = -1
+    head_val = -1
     body = []
     conditions = []
     nb_conditions = random.randint(0,max_body_size)
@@ -46,7 +46,7 @@ def random_constraint(nb_features, nb_targets, nb_values, max_body_size):
         if var not in conditions:
             body.append( (var, val) )
             conditions.append(var)
-    r = Rule(var,val,nb_features+nb_targets,body)
+    r = Rule(head_var,head_val,nb_features+nb_targets,body)
 
     return r
 
@@ -63,9 +63,13 @@ def random_StateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_
     data = []
 
     for i in range(nb_transitions):
-        s1 = numpy.array([random.choice(vals) for (var, vals) in features])
-        s2 = numpy.array([random.choice(vals) for (var, vals) in targets])
+        s1 = [random.choice(vals) for (var, vals) in features]
+        s2 = [random.choice(vals) for (var, vals) in targets]
         data.append( (s1,s2) )
+        if random.choice([True,False]):
+            s3 = [random.choice(vals) for (var, vals) in targets]
+            data.append( (s1,s3) )
+            i+=1
 
     return StateTransitionsDataset(data, features, targets)
 
@@ -76,8 +80,8 @@ def random_symmetric_StateTransitionsDataset(nb_transitions, nb_variables, max_v
     data = []
 
     for i in range(nb_transitions):
-        s1 = numpy.array([random.choice(vals) for (var, vals) in features])
-        s2 = numpy.array([random.choice(vals) for (var, vals) in targets])
+        s1 = [random.choice(vals) for (var, vals) in features]
+        s2 = [random.choice(vals) for (var, vals) in targets]
         data.append( (s1,s2) )
 
     return StateTransitionsDataset(data, features, targets)

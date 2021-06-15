@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/03/20
-# @updated: 2021/01/26
+# @updated: 2021/06/15
 #
 # @desc: simple approximated version of GULA implementation.
 #    - extract patern from pair of interpretation of transitions
@@ -194,3 +194,102 @@ class PRIDE (Algorithm):
                     i += 1
 
         return output
+
+    @staticmethod
+    def find_one_optimal_rule_of(variable, value, nb_features, positives, negatives, feature_state_to_match, verbose=0):
+        """
+        Learn minimal rules that explain positive examples while consistent with negatives examples
+
+        Args:
+            variable: int
+                variable id
+            value: int
+                variable value id
+            positive: list of (list of int)
+                States of the system where the variable takes this value in the next state
+            negative: list of (list of int)
+                States of the system where the variable does not take this value in the next state
+            feature_state_to_match: list of int
+                Feature state that must matched by the learned rule
+        Returns:
+            Rule or None
+            An optimal rule that matches feature_state_to_match and atleast one element of positives if there exists one.
+            Returns None otherwize.
+        """
+        if verbose > 0:
+            eprint("Searching for a rule of var="+str(variable)+", val="+str(value)+" that matches "+str(feature_state_to_match)+" and positives feature states")
+
+        if feature_state_to_match in negatives:
+            return None
+
+        remaining = positives.copy()
+        output = []
+
+        # exausting covering loop
+        while len(remaining) > 0:
+            #eprint("Remaining positives: "+str(remaining))
+            #eprint("Negatives: "+str(negatives))
+            target = list(remaining.pop(0))
+            if verbose > 0:
+                eprint("Check "+str(target))
+            all_diff = True
+            for var in range(0,len(target)):
+                if target[var] != feature_state_to_match[var]:
+                    target[var] = -1
+                else:
+                    all_diff = False
+            if all_diff:
+                if verbose > 0:
+                    eprint("Cannot match both: no common value")
+                continue
+
+            if verbose > 0:
+                eprint("Common values: "+str(target))
+
+            R = Rule(variable, value, nb_features)
+            #eprint(R.to_string())
+
+            # 1) Consistency: against negatives examples
+            #---------------------------------------------
+            consistent = True
+            for neg in negatives:
+                if R.matches(neg): # Cover a negative example
+                    #eprint(R.to_string() + " matches " + str(neg))
+                    consistent = False
+                    for var in range(0,len(target)):
+                        if not R.has_condition(var) and neg[var] != target[var]: # free condition
+                            #eprint("adding condition "+str(var)+":"+str(var)+"="+str(target[var]))
+                            if target[var] > -1: # Valid target value (-1 encode all value for partial state)
+                                R.add_condition(var,target[var]) # add value of target positive example
+                                consistent = True
+                                break
+                    if not consistent:
+                        if verbose > 0:
+                            eprint("Cannot avoid matching negative: "+str(neg))
+                        break
+            if not consistent:
+                continue
+
+            if verbose > 0:
+                eprint("Consistent rule found: "+R.to_string())
+
+            # 2) Minimalize: only necessary conditions
+            #-------------------------------------------
+
+            reductible = True
+
+            conditions = R.body.copy()
+
+            for (var,val) in conditions:
+                R.remove_condition(var) # Try remove condition
+
+                conflict = False
+                for neg in negatives:
+                    if R.matches(neg): # Cover a negative example
+                        conflict = True
+                        R.add_condition(var,val) # Cancel removal
+                        break
+
+            return R
+
+        return None

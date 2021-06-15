@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/14
-# @updated: 2020/12/14
+# @updated: 2021/06/15
 #
 # @desc: LFIT algorithm interface class, define common methods.
 #-----------------------

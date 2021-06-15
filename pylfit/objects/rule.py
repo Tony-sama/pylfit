@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/03/20
-# @updated: 2019/05/03
+# @updated: 2021/06/15
 #
 # @desc: Class Rule python source code file
 #-----------------------
@@ -174,10 +174,17 @@ class Rule:
         #eprint(conclusion_values)
         out = ""
 
-        constraint = self.head_variable < 0
+        constraint = False
+        if self.head_variable < 0:
+            constraint = True
 
         # Not a constraint
         if not constraint:
+            if len(targets) <= self.head_variable:
+                raise ValueError("Variable id in rule head out of bound of given targets")
+            if len(targets[self.head_variable][1]) <= self.head_value:
+                raise ValueError("Value id in rule head out of bound of given targets")
+
             var_label = targets[self.head_variable][0]
             val_label = targets[self.head_variable][1][self.head_value]
             out = str(var_label) + "(" + str(val_label) + ") "
@@ -416,8 +423,9 @@ class Rule:
         """
         Remove last condition from the body of the rule
         """
-        var = self._body_variables.pop()
-        self._body_values[var] = -1
+        if len(self._body_variables) > 0:
+            var = self._body_variables.pop()
+            self._body_values[var] = -1
 #--------------
 # Properties
 #--------------

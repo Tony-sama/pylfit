@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/10/29
-# @updated: 2019/10/29
+# @updated: 2021/06/15
 #
 # @desc: simple implementation synchronous semantic over DMVLP
 #   - Update all variables at the same time
@@ -43,7 +43,7 @@ class SynchronousConstrained(Semantics):
 
         # Apply constraints
         output = []
-        for s in candidates:
+        for s, rules in candidates.items():
             valid = True
             for c in constraints:
                 if c.matches(list(feature_state)+list(s)):

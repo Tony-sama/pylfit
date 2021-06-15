@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2021/01/13
+# @updated: 2021/06/15
 #
 # @desc: Interface class of LFIT datasets
 #   - Features/target variables labels and domain

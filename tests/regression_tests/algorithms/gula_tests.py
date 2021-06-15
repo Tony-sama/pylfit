@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2021/01/25
+# @updated: 2021/06/15
 #
 # @desc: GULA regression test script
 # Tests algorithm methods on random dataset
@@ -18,6 +18,8 @@
 import unittest
 import random
 import os
+import contextlib
+import io
 
 import sys
 
@@ -45,13 +47,13 @@ class GULA_tests(unittest.TestCase):
 
     _nb_transitions = 100
 
-    _nb_features = 5
+    _nb_features = 3
 
-    _nb_targets = 5
+    _nb_targets = 3
 
-    _nb_feature_values = 4
+    _nb_feature_values = 3
 
-    _nb_target_values = 4
+    _nb_target_values = 3
 
     #------------------
     # Test functions
@@ -59,7 +61,7 @@ class GULA_tests(unittest.TestCase):
 
     def test_fit(self):
         print(">> GULA.fit(dataset, targets_to_learn, verbose):")
-        
+
         for test_id in range(self._nb_tests):
 
             # 0) exceptions
@@ -92,112 +94,140 @@ class GULA_tests(unittest.TestCase):
             # 2) Random observations
             # ------------------------
 
-            for verbose in [0,1]:
+            for impossibility_mode in [False,True]:
+                for verbose in [0,1]:
 
-                # Generate transitions
-                dataset = random_StateTransitionsDataset( \
-                nb_transitions=random.randint(1, self._nb_transitions), \
-                nb_features=random.randint(1,self._nb_features), \
-                nb_targets=random.randint(1,self._nb_targets), \
-                max_feature_values=self._nb_feature_values, \
-                max_target_values=self._nb_target_values)
+                    # Generate transitions
+                    dataset = random_StateTransitionsDataset( \
+                    nb_transitions=random.randint(1, self._nb_transitions), \
+                    nb_features=random.randint(1,self._nb_features), \
+                    nb_targets=random.randint(1,self._nb_targets), \
+                    max_feature_values=self._nb_feature_values, \
+                    max_target_values=self._nb_target_values)
 
-                # Empty target list
-                self.assertEqual(GULA.fit(dataset=dataset, targets_to_learn=dict()), [])
+                    # Empty target list
+                    self.assertEqual(GULA.fit(dataset=dataset, targets_to_learn=dict()), [])
 
-                dataset.summary()
+                    #dataset.summary()
 
-                output = GULA.fit(dataset=dataset, verbose=verbose)
+                    f = io.StringIO()
+                    with contextlib.redirect_stderr(f):
+                        output = GULA.fit(dataset=dataset, impossibility_mode=impossibility_mode, verbose=verbose)
 
-                # Encode data to check GULA output rules
-                data_encoded = []
-                for (s1,s2) in dataset.data:
-                    s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
-                    s2_encoded = [domain.index(s2[var_id]) for var_id, (var,domain) in enumerate(dataset.targets)]
-                    data_encoded.append((s1_encoded,s2_encoded))
+                    # Encode data to check GULA output rules
+                    data_encoded = []
+                    for (s1,s2) in dataset.data:
+                        s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
+                        s2_encoded = [domain.index(s2[var_id]) for var_id, (var,domain) in enumerate(dataset.targets)]
+                        data_encoded.append((s1_encoded,s2_encoded))
 
-                # 2.1.1) Correctness (explain all)
-                # -----------------
-                # all transitions are fully explained, i.e. each target value is explained by atleast one rule
-                for (s1,s2) in data_encoded:
-                    for target_id in range(len(dataset.targets)):
-                        expected_value = s2_encoded[target_id]
-                        realizes_target = False
+                    # 2.1.1) Correctness (explain all)
+                    # -----------------
+                    # all transitions are fully explained, i.e. each target value is explained by atleast one rule
+                    if impossibility_mode == False:
+                        for (s1,s2) in data_encoded:
+                            for target_id in range(len(dataset.targets)):
+                                expected_value = s2_encoded[target_id]
+                                realizes_target = False
 
-                        for r in output:
-                            if r.head_variable == target_id and r.head_value == expected_value and r.matches(s1_encoded):
-                                realises_target = True
-                                #eprint(s1_encoded, " => ", target_id,"=",expected_value, " by ", r)
-                                break
-                        self.assertTrue(realises_target)
+                                for r in output:
+                                    if r.head_variable == target_id and r.head_value == expected_value and r.matches(s1_encoded):
+                                        realises_target = True
+                                        #eprint(s1_encoded, " => ", target_id,"=",expected_value, " by ", r)
+                                        break
+                                self.assertTrue(realises_target)
 
-                #eprint("-------------------")
-                #eprint(data_encoded)
+                    #eprint("-------------------")
+                    #eprint(data_encoded)
 
-                # 2.1.2) Correctness (no spurious observation)
-                # -----------------
-                # No rules generate a unobserved target value from an observed state
-                for r in output:
+                    # 2.1.2) Correctness (no spurious observation)
+                    # -----------------
+                    # No rules generate a unobserved target value from an observed state
+                    for r in output:
+                        for (s1,s2) in data_encoded:
+                            if r.matches(s1):
+                                observed = False
+                                for (s1_,s2_) in data_encoded: # Must be in a target state after s1
+                                    if s1_ == s1 and s2_[r.head_variable] == r.head_value:
+                                        observed = True
+                                        #eprint(r, " => ", s1_, s2_)
+                                        break
+                                if impossibility_mode:
+                                    self.assertFalse(observed)
+                                else:
+                                    self.assertTrue(observed)
+
+                    # 2.2) Completness
+                    # -----------------
+                    # all possible initial state is matched by a rule of each target
+
+                    # generate all combination of domains
+                    if impossibility_mode == False:
+                        encoded_domains = [set([i for i in range(len(domain))]) for (var, domain) in dataset.features]
+                        init_states_encoded = set([i for i in list(itertools.product(*encoded_domains))])
+
+                        for s in init_states_encoded:
+                            for target_id in range(len(dataset.targets)):
+                                realises_target = False
+                                for r in output:
+                                    if r.head_variable == target_id and r.matches(s):
+                                        realises_target = True
+                                        #eprint(s, " => ", target_id,"=",expected_value, " by ", r)
+                                        break
+
+                                self.assertTrue(realises_target)
+
+                    # 2.3) minimality
+                    # -----------------
+                    # All rules conditions are necessary, i.e. removing a condition makes realizes unobserved target value from observation
+                    data_encoded = []
+                    for (s1,s2) in dataset.data:
+                        s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
+                        s2_encoded = [domain.index(s2[var_id]) for var_id, (var,domain) in enumerate(dataset.targets)]
+                        data_encoded.append((s1_encoded,s2_encoded))
+
+                    #dataset.summary()
+
+                    # Group transitions by initial state
+                    data_grouped_by_init_state = []
                     for (s1,s2) in data_encoded:
-                        if r.matches(s1):
-                            observed = False
-                            for (s1_,s2_) in data_encoded: # Must be in a target state after s1
-                                if s1_ == s1 and s2_[r.head_variable] == r.head_value:
-                                    observed = True
-                                    #eprint(r, " => ", s1_, s2_)
-                                    break
-                            self.assertTrue(observed)
-
-                # 2.2) Completness
-                # -----------------
-                # all possible initial state is matched by a rule of each target
-
-                # generate all combination of domains
-                encoded_domains = [set([i for i in range(len(domain))]) for (var, domain) in dataset.features]
-                init_states_encoded = set([i for i in list(itertools.product(*encoded_domains))])
-
-                for s in init_states_encoded:
-                    for target_id in range(len(dataset.targets)):
-                        realises_target = False
-                        for r in output:
-                            if r.head_variable == target_id and r.matches(s):
-                                realises_target = True
-                                #eprint(s, " => ", target_id,"=",expected_value, " by ", r)
+                        added = False
+                        for (s1_,S) in data_grouped_by_init_state:
+                            if s1_ == s1:
+                                if s2 not in S:
+                                    S.append(s2)
+                                added = True
                                 break
 
-                        self.assertTrue(realises_target)
+                        if not added:
+                            data_grouped_by_init_state.append((s1,[s2])) # new init state
 
-                # 2.3) minimality
-                # -----------------
-                # All rules conditions are necessary, i.e. removing a condition makes realizes unobserved target value from observation
-                for r in output:
-                    for (var_id, val_id) in r.body:
-                            r.remove_condition(var_id) # Try remove condition
+                    for r in output:
+                        neg, pos = GULA.interprete(data_grouped_by_init_state, r.head_variable, r.head_value, True)
+                        if impossibility_mode:
+                            pos_ = pos
+                            pos = neg
+                            neg = pos_
+                        for (var_id, val_id) in r.body:
+                                r.remove_condition(var_id) # Try remove condition
 
-                            conflict = False
-                            for (s1,s2) in data_encoded:
-                                if r.matches(s1):
-                                    observed = False
-                                    for (s1_,s2_) in data_encoded: # Must be in a target state after s1
-                                        if s1_ == s1 and s2_[r.head_variable] == r.head_value:
-                                            observed = True
-                                            #eprint(r, " => ", s1_, s2_)
-                                            break
-                                    if not observed:
+                                conflict = False
+                                for s in neg:
+                                    if r.matches(s):
                                         conflict = True
                                         break
 
-                            r.add_condition(var_id,val_id) # Cancel removal
+                                r.add_condition(var_id,val_id) # Cancel removal
 
-                            # # DEBUG:
-                            if not conflict:
-                                eprint("not minimal "+r)
+                                # # DEBUG:
+                                if not conflict:
+                                    eprint("not minimal "+r.to_string())
 
-                            self.assertTrue(conflict)
+                                self.assertTrue(conflict)
 
-                # TODO: check that all minimal rules are learned
-                # - generate all rules and delete non minimals
-                # - check output of gula is this set
+                    # TODO: check that all minimal rules are learned
+                    # - generate all rules and delete non minimals
+                    # - check output of gula is this set
 
     def test_fit__targets_to_learn(self):
         print(">> GULA.fit(dataset, targets_to_learn):")
@@ -244,7 +274,9 @@ class GULA_tests(unittest.TestCase):
             nb_targets=random.randint(1,self._nb_targets), \
             max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
 
-            output = GULA.fit(dataset=dataset)
+            f = io.StringIO()
+            with contextlib.redirect_stderr(f):
+                output = GULA.fit(dataset=dataset)
 
             # Output must be one empty rule for each target value
             self.assertEqual(len(output), len([val for (var,vals) in dataset.targets for val in vals]))
@@ -270,7 +302,7 @@ class GULA_tests(unittest.TestCase):
             # Empty target list
             self.assertEqual(GULA.fit(dataset=dataset, targets_to_learn=dict()), [])
 
-            dataset.summary()
+            #dataset.summary()
 
             targets_to_learn = dict()
             for a, b in dataset.targets:
@@ -278,7 +310,7 @@ class GULA_tests(unittest.TestCase):
                     b_ = random.sample(b, random.randint(0,len(b)))
                     targets_to_learn[a] = b_
 
-            eprint(targets_to_learn)
+            #eprint(targets_to_learn)
 
             output = GULA.fit(dataset=dataset, targets_to_learn=targets_to_learn)
 
@@ -356,8 +388,8 @@ class GULA_tests(unittest.TestCase):
                             #eprint(s, " => ", target_id,"=",expected_value, " by ", r)
                             break
 
-                    eprint("ttl: ", targets_to_learn)
-                    eprint("t: ", target_name)
+                    #eprint("ttl: ", targets_to_learn)
+                    #eprint("t: ", target_name)
 
                     self.assertTrue(realises_target)
 
@@ -512,7 +544,9 @@ class GULA_tests(unittest.TestCase):
                     #eprint("val: ", val_id)
                     neg, pos = GULA.interprete(data_grouped_by_init_state, var_id, val_id)
                     #eprint("neg: ", neg)
-                    output = GULA.fit_var_val(dataset.features, var_id, val_id, neg)
+                    f = io.StringIO()
+                    with contextlib.redirect_stderr(f):
+                        output = GULA.fit_var_val(dataset.features, var_id, val_id, neg)
                     #eprint()
                     #eprint("rules: ", output)
 

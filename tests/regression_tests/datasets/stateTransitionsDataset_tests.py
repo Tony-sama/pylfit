@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2020/12/23
+# @updated: 2021/06/15
 #
 # @desc: dataset class unit test script
 # done:
@@ -71,6 +71,9 @@ class StateTransitionsDataset_tests(unittest.TestCase):
 
             # Exceptions:
             #-------------
+            features = [(str(var), [str(val) for val in range(5)]) for var in range(3)]
+            targets = [(str(var), [str(val) for val in range(3)]) for var in range(4)]
+
 
             # data is not list
             data = "[ \
@@ -85,45 +88,56 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             ([0,0,0],[0,0,1],[0,0,0],[1,0,0]), \
             ([1,0,0],[0,0,0])]
 
+            #data = [([str(val) for val in s1],[str(val) for val in s2]) for s1,s2 in data]
             self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
 
             # Not same size for features
             data = [ \
-            ([0,0,0],[0,0,1]), \
-            ([0,0,0],[1,0,0]), \
-            ([1,0],[0,0,0])]
+            ([0,0,0],[0,0,1,0]), \
+            ([0,0,0],[1,0,0,0]), \
+            ([1,0],[0,0,0,1])]
 
-            data = [ (np.array(s1), np.array(s2)) for s1,s2 in data]
-
+            data = [([str(val) for val in s1], [str(val) for val in s2]) for s1,s2 in data]
             self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
 
             # Not same size for targets
             data = [ \
-            ([0,0,0],[0,0,1]), \
+            ([0,0,0],[0,0,1,0]), \
             ([0,0,0],[1,0]), \
-            ([1,0,0],[0,0,0])]
+            ([1,0,0],[0,0,0,0])]
 
-            data = [ (np.array(s1), np.array(s2)) for s1,s2 in data]
-
+            data = [([str(val) for val in s1], [str(val) for val in s2]) for s1,s2 in data]
             self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
 
-            # Not only int/string in features
+            # Not only string in features
             data = [ \
-            ([0,0,0],[0,0,1]), \
-            ([0,0.3,0],[1,0,0]), \
-            ([1,0,0],[0,0,0])]
-
-            data = [ (np.array(s1), np.array(s2)) for s1,s2 in data]
+            (["0","0","0"],["0","0","1","1"]), \
+            ([0,0.3,0],["1","0","0","1"]), \
+            (["1","0",0],["0","0","0","1"])]
 
             self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
 
             # Not only int/string in targets
             data = [ \
-            ([0,0,0],[0,0.11,1]), \
-            ([0,0,0],[1,0,0]), \
-            ([1,0,0],[0,0,0])]
+            (["0","0","0"],["0",0.11,"1","1"]), \
+            (["0","0","0"],[1,0,0,"1"]), \
+            (["1","0","0"],[0,0,0,"1"])]
 
-            data = [ (np.array(s1), np.array(s2)) for s1,s2 in data]
+            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+
+            # Value not in features domain
+            data = [ \
+            (["0","0","-1"],["0","0","1","1"]), \
+            (["0","0","0"],["1","0","0","1"]), \
+            (["1","0","0"],["0","0","0","1"])]
+
+            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+
+            # Value not in features domain
+            data = [ \
+            (["0","0","0"],["0","0","1","1"]), \
+            (["0","0","0"],["1","0","-1","1"]), \
+            (["1","0","0"],["0","0","0","1"])]
 
             self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
 
@@ -131,29 +145,37 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             data = [ \
             ([0,0,0],[0,0,1]), \
             ([0,0,0],[1,0,0])]
+            data = [([str(val) for val in s1], [str(val) for val in s2]) for s1,s2 in data]
 
-            data = [ (np.array(s1), np.array(s2)) for s1,s2 in data]
-            features = ["p_t-1","q_t-1","r_t-1"]
-            targets = ["p_t","q_t","r_t"]
+            features = [("p_t-1",["0","1"]),("q_t-1",["0","1"]),("r_t-1",["0","1"])]
+            targets = [("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])]
 
-            features = ""
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
-            features = [1,0.5,"lol"]
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            features = "" # not list
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            features = [("p_t-1",["0","1"]),("q_t-1",["0","1"],"r_t-1",["0","1"])] # not tuple var/vals
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            features = [("p_t-1","1"),("q_t-1",["0","1"]),("r_t-1",["0","1"])] # vals not list
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            features = [("p_t-1",["0","1"]),("q_t-1",["0",1]),("r_t-1",[0.2,"1"])] # vals not only string
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
 
             # targets is not list of string
             data = [ \
             ([0,0,0],[0,0,1]), \
             ([0,0,0],[1,0,0])]
+            data = [([str(val) for val in s1], [str(val) for val in s2]) for s1,s2 in data]
 
-            data = [ (np.array(s1), np.array(s2)) for s1,s2 in data]
-            features = ["p_t-1","q_t-1","r_t-1"]
-            targets = ["p_t","q_t","r_t"]
+            features = [("p_t-1",["0","1"]),("q_t-1",["0","1"]),("r_t-1",["0","1"])]
+            targets = [("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])]
 
-            targets = ""
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
-            targets = [1,0.5,"lol"]
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            targets = "" # not list
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            targets = [("p_t-1",["0","1"]),("q_t-1",["0","1"],"r_t-1",["0","1"])] # not tuple var/vals
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            targets = [("p_t-1","1"),("q_t-1",["0","1"]),("r_t-1",["0","1"])] # vals not list
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            targets = [("p_t-1",["0","1"]),("q_t-1",["0",1]),("r_t-1",[0.2,"1"])] # vals not only string
+            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
 
     def test_summary(self):
         print(">> pylfit.datasets.StateTransitionsDataset.summary()")

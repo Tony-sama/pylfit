@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/01
-# @updated: 2021/02/05
+# @updated: 2021/06/15
 #
 # @desc: class DMVLP python source code file
 #-------------------------------------------------------------------------------
@@ -13,8 +13,10 @@ from ..objects import Rule
 
 from ..datasets import StateTransitionsDataset
 
+from ..algorithms import Algorithm
 from ..algorithms import GULA
 from ..algorithms import PRIDE
+from ..algorithms import BruteForce
 
 from ..semantics import Synchronous, Asynchronous, General
 
@@ -45,7 +47,7 @@ class WDMVLP(DMVLP):
     _COMPATIBLE_DATASETS = [StateTransitionsDataset]
 
     """ Learning algorithms that can be use to fit this model """
-    _ALGORITHMS = ["gula", "pride", "lf1t"]
+    _ALGORITHMS = ["gula", "pride", "lf1t", "brute-force"]
 
     """ Optimization """
     _OPTIMIZERS = []
@@ -79,7 +81,7 @@ class WDMVLP(DMVLP):
     def __str__(self):
         return self.to_string()
 
-    def _repr__(self):
+    def __repr__(self):
         return self.to_string()
 
 #--------------
@@ -100,9 +102,11 @@ class WDMVLP(DMVLP):
             raise ValueError('algorithm parameter must be one element of DMVLP._COMPATIBLE_ALGORITHMS: '+str(WDMVLP._ALGORITHMS)+'.')
 
         if algorithm == "gula":
-            self.algorithm = GULA
+            self.algorithm = "gula"
         elif algorithm == "pride":
-            self.algorithm = PRIDE
+            self.algorithm = "pride"
+        elif algorithm == "brute-force":
+            self.algorithm = "brute-force"
         else:
             raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in DMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
@@ -130,7 +134,7 @@ class WDMVLP(DMVLP):
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
         Dataset must be of type ' + str(StateTransitionsDataset.__class__.__name__)
 
-        if self.algorithm == GULA:
+        if self.algorithm == "gula":
             if not isinstance(dataset, StateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
@@ -142,7 +146,7 @@ class WDMVLP(DMVLP):
                 eprint("Learning impossibilities...")
             unlikeliness_rules = GULA.fit(dataset=dataset, impossibility_mode=True)
 
-        elif self.algorithm == PRIDE:
+        elif self.algorithm == "pride":
             if not isinstance(dataset, StateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
@@ -153,27 +157,36 @@ class WDMVLP(DMVLP):
             if verbose > 0:
                 eprint("Learning unlikeliness...")
             unlikeliness_rules = PRIDE.fit(dataset=dataset, impossibility_mode=True)
+        elif self.algorithm == "brute-force":
+                if not isinstance(dataset, StateTransitionsDataset):
+                    raise ValueError(msg)
+                if verbose > 0:
+                    eprint("Starting fit with BruteForce")
+                    eprint("Learning possibilities...")
+                rules = BruteForce.fit(dataset=dataset) #, targets_to_learn={'y1': ['1']})
+
+                if verbose > 0:
+                    eprint("Learning impossibilities...")
+                unlikeliness_rules = BruteForce.fit(dataset=dataset, impossibility_mode=True)
         else:
             raise NotImplementedError("Algorithm usage not implemented yet")
-
 
         if verbose > 0:
             eprint("computing likeliness rules weights...")
         weighted_rules = {}
-        train_init = [GULA.encode_state(s1, dataset.features) for s1,s2 in dataset.data]
+        train_init = set(Algorithm.encode_state(s1, dataset.features) for s1,s2 in dataset.data)
 
-        for var in range(len(self.targets)): # TODO: check if useless
-            for val in range(len(self.targets[var][1])): # TODO: check if useless
+        for var in range(len(self.targets)):
+            for val in range(len(self.targets[var][1])):
                 weighted_rules[(var,val)] = []
-                for r in rules:
-                    if r.head_variable != var or r.head_value != val:
-                        continue
-                    weight = 0
-                    for s1 in train_init:
-                        if r.matches(s1):
-                            weight += 1
-                    if weight > 0:
-                        weighted_rules[(var,val)].append((weight,r))
+
+        for r in rules:
+            weight = 0
+            for s1 in train_init:
+                if r.matches(s1):
+                    weight += 1
+            #if weight > 0:
+            weighted_rules[(var,val)].append((weight,r))
 
         self.rules = [(w,r) for key,values in weighted_rules.items() for w,r in values]
 
@@ -181,65 +194,161 @@ class WDMVLP(DMVLP):
             eprint("Computing unlikeliness rules weights")
         #eprint("Weighted model: ", weighted_rules)
         weighted_rules = {}
-        for var in range(len(self.targets)): # TODO: check if useless
-            for val in range(len(self.targets[var][1])): # TODO: check if useless
+        for var in range(len(self.targets)):
+            for val in range(len(self.targets[var][1])):
                 weighted_rules[(var,val)] = []
-                for r in unlikeliness_rules:
-                    if r.head_variable != var or r.head_value != val:
-                        continue
-                    weight = 0
-                    for s1 in train_init:
-                        if r.matches(s1):
-                            weight += 1
-                    if weight > 0:
-                        weighted_rules[(var,val)].append((weight,r))
+
+        for r in unlikeliness_rules:
+            weight = 0
+            for s1 in train_init:
+                if r.matches(s1):
+                    weight += 1
+            #if weight > 0:
+            weighted_rules[(var,val)].append((weight,r))
 
         self.unlikeliness_rules = [(w,r) for key,values in weighted_rules.items() for w,r in values]
 
-    def predict(self, feature_state, raw_rules=False):
+    def extend(self, dataset, feature_states, verbose=0):
+        """
+        Complete the model with additional optimal rules of the given dataset that also match the features states of feature_states if there exists.
+
+        Args:
+            dataset: StateTransitionsDataset
+                State transitions to learn from.
+            feature_states: list of (list of string)
+                Features states that must be matched by the new rules to be found.
+        """
+        if not isinstance(feature_states, list):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(i,(list,tuple,numpy.ndarray)) for i in feature_states):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(j,str) for i in feature_states for j in i):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(len(i) == len(self.features) for i in feature_states):
+            raise TypeError("Features state must correspond to the model feature variables (bad length)")
+
+        dataset_feature_states = set(tuple(Algorithm.encode_state(s1, dataset.features)) for s1,s2 in dataset.data)
+
+        for feature_state in feature_states:
+            encoded_feature_state = Algorithm.encode_state(feature_state, dataset.features)
+
+            for var_id, (var,vals) in enumerate(dataset.targets):
+                for val_id, val in enumerate(vals):
+
+                    # Check if new rules are needed
+                    need_likeliness = True
+                    need_unlikeliness = True
+                    for (w,r) in self.rules:
+                        if r.head_variable == var_id and r.head_value == val_id:
+                            if r.matches(encoded_feature_state):
+                                need_likeliness = False
+                                break
+                    for (w,r) in self.unlikeliness_rules:
+                        if r.head_variable == var_id and r.head_value == val_id:
+                            if r.matches(encoded_feature_state):
+                                need_unlikeliness = False
+                                break
+
+                    if not need_likeliness and not need_unlikeliness:
+                        continue
+
+                    # usual data conversion
+                    encoded_data = Algorithm.encode_transitions_set(dataset.data, dataset.features, dataset.targets)
+                    positives, negatives = PRIDE.interprete(encoded_data, var_id, val_id)
+
+                    # Search for likeliness rules
+                    if need_likeliness:
+                        new_rule = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), positives, negatives, encoded_feature_state, verbose)
+                        if new_rule is not None:
+                            # compute weight
+                            weight = 0
+                            for s1 in dataset_feature_states:
+                                if new_rule.matches(s1):
+                                    weight += 1
+                            self.rules.append((weight,new_rule))
+                        else:
+                            if verbose > 0:
+                                eprint("Requested state "+str(feature_state)+\
+                                " cannot be matched by a likeliness rule of "+self.targets[var_id][0]+"("+self.targets[var_id][1][val_id]+") consistent with given dataset")
+
+                    # Search for unlikeliness rules
+                    if need_unlikeliness:
+                        new_rule = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), negatives, positives, encoded_feature_state, verbose)
+                        if new_rule is not None:
+                            # compute weight
+                            weight = 0
+                            for s1 in dataset_feature_states:
+                                if new_rule.matches(s1):
+                                    weight += 1
+                            self.unlikeliness_rules.append((weight,new_rule))
+                        else:
+                            if verbose > 0:
+                                eprint("Requested state "+str(feature_state)+\
+                                " cannot be matched by a unlikeliness rule of "+self.targets[var_id][0]+"("+self.targets[var_id][1][val_id]+") consistent with given dataset")
+
+    def predict(self, feature_states, raw_rules=False):
         """
         Predict the possible target states of the given feature state according to the model rules.
 
         Args:
-            feature_state: list of String
-                Feature state from wich target state must be predicted.
+            feature_states: list of list of String
+                Feature states from wich target values must be predicted.
             raw_rules: Boolean (optional)
                 By default rules are output under string logic format.
                 If True, the raw Rule objects will be output.
         """
+        if not isinstance(feature_states, list):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(i,(list,tuple,numpy.ndarray)) for i in feature_states):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(j,str) for i in feature_states for j in i):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(len(i) == len(self.features) for i in feature_states):
+            raise TypeError("Features state must correspond to the model feature variables (bad length)")
 
-        encoded_feature_state = GULA.encode_state(feature_state, self.features)
-        output = {}
-        for var_id, (var, vals) in enumerate(self.targets):
-            output[var] = {}
-            for val_id, val in enumerate(vals):
-                # max rule weight
-                max_rule_weight = 0
-                best_rule = None
-                for w,r in self.rules:
-                    if r.head_variable == var_id and r.head_value == val_id:
-                        if w > max_rule_weight and r.matches(encoded_feature_state):
-                            max_rule_weight = w
-                            best_rule = r
+        output = dict()
+        for feature_state in feature_states:
+            encoded_feature_state = GULA.encode_state(feature_state, self.features)
+            prediction = dict()
+            for var_id, (var, vals) in enumerate(self.targets):
+                prediction[var] = {}
+                for val_id, val in enumerate(vals):
+                    # max rule weight
+                    max_rule_weight = 0
+                    best_rule = None
+                    for w,r in self.rules:
+                        if r.head_variable == var_id and r.head_value == val_id:
+                            if w > max_rule_weight and r.matches(encoded_feature_state):
+                                max_rule_weight = w
+                                best_rule = r
+                            elif w == max_rule_weight and r.matches(encoded_feature_state):
+                                if best_rule == None or r.size() < best_rule.size():
+                                    max_rule_weight = w
+                                    best_rule = r
 
-                # max anti-rule weight
-                max_anti_rule_weight = 0
-                best_anti_rule = None
-                for w,r in self.unlikeliness_rules:
-                    if r.head_variable == var_id and r.head_value == val_id:
-                        if w > max_anti_rule_weight and r.matches(encoded_feature_state):
-                            max_anti_rule_weight = w
-                            best_anti_rule = r
+                    # max anti-rule weight
+                    max_anti_rule_weight = 0
+                    best_anti_rule = None
+                    for w,r in self.unlikeliness_rules:
+                        if r.head_variable == var_id and r.head_value == val_id:
+                            if w > max_anti_rule_weight and r.matches(encoded_feature_state):
+                                max_anti_rule_weight = w
+                                best_anti_rule = r
+                            elif w == max_anti_rule_weight and r.matches(encoded_feature_state):
+                                if best_anti_rule == None or r.size() < best_anti_rule.size():
+                                    max_anti_rule_weight = w
+                                    best_anti_rule = r
 
-                prediction = round(0.5 + 0.5*(max_rule_weight - max_anti_rule_weight) / max(1,(max_rule_weight+max_anti_rule_weight)),3)
+                    proba = round(0.5 + 0.5*(max_rule_weight - max_anti_rule_weight) / max(1,(max_rule_weight+max_anti_rule_weight)),3)
 
-                if not raw_rules:
-                    if best_rule is not None:
-                        best_rule = best_rule.logic_form(self.features, self.targets)
-                    if best_anti_rule is not None:
-                        best_anti_rule = best_anti_rule.logic_form(self.features, self.targets)
+                    if not raw_rules:
+                        if best_rule is not None:
+                            best_rule = best_rule.logic_form(self.features, self.targets)
+                        if best_anti_rule is not None:
+                            best_anti_rule = best_anti_rule.logic_form(self.features, self.targets)
 
-                output[var][val] = (prediction, (max_rule_weight, best_rule), (max_anti_rule_weight, best_anti_rule))
+                    prediction[var][val] = (proba, (max_rule_weight, best_rule), (max_anti_rule_weight, best_anti_rule))
+            output[tuple(feature_state)] = prediction
 
         return output
 
@@ -262,7 +371,7 @@ class WDMVLP(DMVLP):
         if print_fn == None:
             print_fn = print
         print_fn(str(self.__class__.__name__) + " summary:")
-        print_fn(" Algorithm: " + str(self.algorithm.__name__) + ' (' + str(self.algorithm) + ')')
+        print_fn(" Algorithm: " + str(self.algorithm))
         print_fn(" Features: ")
         for var in self.features:
             print_fn('  ' + str(var[0]) + ': ' + str(list(var[1])))
@@ -291,7 +400,7 @@ class WDMVLP(DMVLP):
                 a readable representation of the object
         """
         output = "{\n"
-        output += "Algorithm: " + str(self.algorithm.__name__)
+        output += "Algorithm: " + str(self.algorithm)
         output += "\nFeatures: " + str(self.features)
         output += "\nTargets: " + str(self.targets)
         output += "\nLikeliness rules:\n"

@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/07/13
-# @updated: 2020/07/13
+# @updated: 2021/03/05
 #
 # @desc: PyLFIT benchmarks evaluation script
 #
@@ -18,26 +18,31 @@ import signal
 import sys
 
 from pylfit.utils import eprint
-from pylfit.models import DMVLP
-from pylfit.models import WDMVLP
-from pylfit.algorithms import GULA, Synchronizer, PRIDE
+from pylfit.models import DMVLP, CDMVLP, WDMVLP
+from pylfit.algorithms import GULA, Synchronizer, PRIDE, BruteForce
 from pylfit.preprocessing import dmvlp_from_boolean_network_file
 from pylfit.semantics import Synchronous, Asynchronous, General
 from pylfit.datasets import StateTransitionsDataset
+from pylfit.postprocessing import accuracy_score, accuracy_score_from_predictions, explanation_score, explanation_score_from_predictions
+from pylfit.objects import Rule
 
 
 # Constants
 #------------
 random.seed(0)
-TIME_OUT = 1000
+#TIME_OUT = 1
+
+class TimeoutException(Exception):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
 def handler(signum, frame):
     #print("Forever is over!")
-    raise Exception("end of time")
+    raise TimeoutException()
 
 
-def evaluate_on_bn_benchmark(algorithm, benchmark, semantics, run_tests, train_size=None):
+def evaluate_scalability_on_bn_benchmark(algorithm, benchmark, benchmark_name, semantics, run_tests, train_size=None, full_transitions=None):
     """
         Evaluate accuracy and explainability of an algorithm
         over a given benchmark with a given number/proporsion
@@ -65,8 +70,9 @@ def evaluate_on_bn_benchmark(algorithm, benchmark, semantics, run_tests, train_s
     #-------------------------------------
 
     # Boolean network benchmarks only have rules for value 1, if none match next value is 0
-    eprint("Generating benchmark transitions ...")
-    full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in P.feature_states() for target_state in P.predict(feature_state, semantics) ]
+    if full_transitions is None:
+        eprint("Generating benchmark transitions ...")
+        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in benchmark.feature_states() for target_state in benchmark.predict([feature_state], semantics) ]
     #eprint(full_transitions)
 
     # 2) Prepare scores containers
@@ -96,9 +102,28 @@ def evaluate_on_bn_benchmark(algorithm, benchmark, semantics, run_tests, train_s
         if run == 0:
             eprint(">>> Start Training on " + str(len(train)) + "/" + str(len(full_transitions)) + " transitions (" + str(round(100 * len(train) / len(full_transitions), 2)) +"%)")
 
-        eprint(">>> run: " + str(run+1) + "/" + str(run_tests), end='')
+        eprint(">>>> run: " + str(run+1) + "/" + str(run_tests), end='')
 
-        dataset = StateTransitionsDataset(train, P.features, P.targets)
+        dataset = StateTransitionsDataset(train, benchmark.features, benchmark.targets)
+
+
+        # csv format of results
+        if train_size != None:
+            expected_train_size = train_size
+        else:
+            expected_train_size = 1.0
+        real_train_size = round(len(train)/(len(full_transitions)),2)
+
+        common_settings = \
+        algorithm + "," +\
+        semantics + "," +\
+        benchmark_name + "," +\
+        str(len(benchmark.features)) + "," +\
+        str(len(full_transitions)) + "," +\
+        "random_transitions" + "," +\
+        str(expected_train_size) + "," +\
+        str(real_train_size) + "," +\
+        str(len(train))
 
         # 3.2) Learn from training set
         #-------------------------
@@ -106,30 +131,46 @@ def evaluate_on_bn_benchmark(algorithm, benchmark, semantics, run_tests, train_s
         # Define a timeout
         signal.signal(signal.SIGALRM, handler)
         signal.alarm(TIME_OUT)
+        run_time = -2
         try:
             start = time.time()
 
-            model = DMVLP(features=P.features, targets=P.targets)
+            if algorithm in ["gula", "pride", "brute_force"]:
+                model = WDMVLP(features=benchmark.features, targets=benchmark.targets)
+            elif algorithm in ["synchronizer"]:
+                model = CDMVLP(features=benchmark.features, targets=benchmark.targets)
+            else:
+                eprint("Error, algorithm not accepted: "+algorithm)
+                exit()
+
             model.compile(algorithm=algorithm)
             model.fit(dataset)
 
+            signal.alarm(0)
             end = time.time()
-            results_time.append(round(end - start,3))
-        except:
+            run_time = end - start
+            results_time.append(run_time)
+        except TimeoutException:
+            signal.alarm(0)
+            eprint(" TIME OUT")
+            print(common_settings+","+"-1")
             return len(train), -1
 
-        signal.alarm(0)
+        #signal.alarm(0)
+
+
+        print(common_settings+","+str(run_time))
+        eprint(" "+str(round(run_time, 3))+"s")
 
     # 4) Average scores
     #-------------------
-    run_time = sum(results_time) / run_tests
+    avg_run_time = sum(results_time) / run_tests
 
-    eprint()
-    eprint(">>> Run time: "+str(run_time)+"s")
+    eprint(">> AVG Run time: "+str(round(avg_run_time,3))+"s")
 
-    return len(train), run_time
+    return len(train), avg_run_time
 
-def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests, train_size, mode):
+def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests, train_size, mode, benchmark_name, full_transitions=None):
     """
         Evaluate accuracy of an algorithm
         over a given benchmark with a given number/proporsion
@@ -138,8 +179,8 @@ def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests
         Args:
             algorithm: Class
                 Class of the algorithm to be tested
-            benchmark: String
-                Label of the benchmark to be tested
+            benchmark: DMVLP
+                benchmark model to be tested
             semantics: Class
                 Class of the semantics to be tested
             train_size: float in [0,1] or int
@@ -147,32 +188,42 @@ def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests
             mode: string
                 "all_from_init_states": training contains all transitions from its initials states
                 "random": training contains random transitions, 80%/20% train/test then train is reduced to train_size
+            benchmark_name: string
+                for csv output.
+        Returns:
+        train_set_size: int
+        test_set_size: int
+        accuracy: float
+            Average accuracy score.
+        csv_output: String
+            csv string format of all tests run statistiques.
     """
+    csv_output = ""
 
     # 0) Extract logic program
     #-----------------------
-    P = benchmark
-    #eprint(P.to_string())
+    #eprint(benchmark.to_string())
 
     # 1) Generate transitions
     #-------------------------------------
 
     # Boolean network benchmarks only have rules for value 1, if none match next value is 0
-    #default = [[0] for v in P.targets]
-    eprint("Generating benchmark transitions...")
-    full_transitions = [ (feature_state,["0" if x=="?" else "1" for x in target_state]) for feature_state in P.feature_states() for target_state in P.predict(feature_state, semantics) ]
-    full_transitions_grouped = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in full_transitions if s1 == s1_) for s1,s2 in full_transitions}
+    #default = [[0] for v in benchmark.targets]
+    if full_transitions is None:
+        eprint(">>> Generating benchmark transitions...")
+        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+    full_transitions_grouped = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in full_transitions if tuple(s1) == tuple(s1_)) for s1,s2 in full_transitions}
     #eprint("Transitions: ", full_transitions)
     #eprint("Grouped: ", full_transitions_grouped)
 
-    #eprint(P.to_string())
+    #eprint(benchmark.to_string())
     #eprint(semantics.states(P))
     #eprint(full_transitions)
 
     # 2) Prepare scores containers
     #---------------------------
     results_time = []
-    results_accuracy = []
+    results_score = []
 
     # 3) Average over several tests
     #-----------------------------
@@ -180,41 +231,38 @@ def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests
 
         # 3.1 Split train/test sets on initial states
         #----------------------------------------------
-        train_init = list(full_transitions_grouped.keys())
-        random.shuffle(train_init)
+        all_feature_states = list(full_transitions_grouped.keys())
+        random.shuffle(all_feature_states)
 
-        if mode == "all_from_init_states":
-            train_end = max(1, int(train_size * len(train_init)))
-        else:
-            train_end = max(1, int(0.8 * len(train_init))) # 80%/20% train/test then train_size of train
-
-        test_init = train_init[train_end:]
-        train_init = train_init[:train_end]
-
-        #eprint("train size: ", len(train_init))
-        #eprint("end: ", train_end)
-        #eprint("train_init: ", train_init)
-        #eprint("test_init: ", test_init)
-
-        # dbg
-        #eprint(train_init[0])
-
-        # extracts transitions of both set
-        train = []
-        for s1 in train_init:
-            train.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
-        random.shuffle(train)
-
-        if mode == "random":
-            #eprint("before: ", round(len(train)/len(full_transitions),2))
-            train_end = max(1, int(train_size * len(train)))
-            train = train[:train_end]
-            eprint("After random picks: ", round(len(train)/len(full_transitions),2))
-
+         # Test set: all transition from last 20% feature states
+        test_begin = max(1, int(0.8 * len(all_feature_states)))
+        test_feature_states = all_feature_states[test_begin:]
 
         test = []
-        for s1 in test_init:
+        for s1 in test_feature_states:
             test.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
+        random.shuffle(test)
+
+        # Train set
+        # All transition from first train_size % feature states (over 80% include some test set part)
+        if mode == "all_from_init_states":
+            train_end = max(1, int(train_size * len(all_feature_states)))
+            train_feature_states = all_feature_states[:train_end]
+            train = []
+            for s1 in train_feature_states:
+                train.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
+            random.shuffle(train)
+        # Random train_size % of transitions from the feature states not in test set
+        elif mode == "random_transitions":
+            train_feature_states = all_feature_states[:test_begin]
+            train = []
+            for s1 in train_feature_states:
+                train.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
+            random.shuffle(train)
+            train_end = int(max(1, train_size * len(train)))
+            train = train[:train_end]
+        else:
+            raise ValueError("Wrong mode requested")
 
         #eprint("train: ", train)
         #eprint("test: ", test)
@@ -224,111 +272,382 @@ def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests
         if run == 0:
             eprint(">>> Start Training on " + str(len(train)) + "/" + str(len(full_transitions)) + " transitions (" + str(round(100 * len(train) / len(full_transitions), 2)) +"%)")
 
-        eprint(">>> run: " + str(run+1) + "/" + str(run_tests), end='')
+        eprint(">>>> run: " + str(run+1) + "/" + str(run_tests), end='')
 
-        dataset = StateTransitionsDataset([ (np.array(s1), np.array(s2)) for (s1,s2) in train], P.features, P.targets)
+        train_dataset = StateTransitionsDataset([ (np.array(s1), np.array(s2)) for (s1,s2) in train], benchmark.features, benchmark.targets)
+        test_dataset = StateTransitionsDataset([(np.array(s1), np.array(s2)) for s1,s2 in test], benchmark.features, benchmark.targets)
 
         # 3.2) Learn from training set
         #------------------------------------------
 
-        # possibilities
-        start = time.time()
-        model = WDMVLP(features=P.features, targets=P.targets)
-        model.compile(algorithm=algorithm)
-        model.fit(dataset)
-        #model = algorithm.fit(train, P.features, P.targets, supported_only=True)
-        end = time.time()
+        if algorithm == "gula" or algorithm == "pride":
+            # possibilities
+            start = time.time()
+            model = WDMVLP(features=benchmark.features, targets=benchmark.targets)
+            model.compile(algorithm=algorithm)
+            model.fit(dataset=train_dataset)
+            #model = algorithm.fit(train, benchmark.features, benchmark.targets, supported_only=True)
+            end = time.time()
 
-        results_time.append(round(end - start,3))
+            results_time.append(round(end - start,3))
 
         # 3.4) Evaluate on accuracy of domain prediction on test set
         #------------------------------------------------------------
-        # DBG
-        if len(test) == 0:
-            test = train
 
-        test_grouped = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in test if s1 == s1_) for s1,s2 in test}
-        test_set = {}
-        #eprint("test grouped: ", test_grouped)
+        # csv format of results
+        expected_train_size = train_size
+        expected_test_size = 0.2
+        real_train_size = round(len(train)/(len(full_transitions)),2)
+        real_test_size = round(len(test)/(len(full_transitions)),2)
 
-        eprint("Computing test set")
+        if mode == "random_transitions":
+            expected_train_size = round(train_size*0.8,2)
 
-        # expected output: kinda one-hot encoding of values occurences
-        count = 0
-        for s1, successors in test_grouped.items():
-            count += 1
-            eprint("\r",count,"/",len(test_grouped.items()), end='')
-            occurs = {}
-            for var in range(len(P.targets)):
-                for val in range(len(P.targets[var][1])):
-                    occurs[(var,val)] = 0.0
-                    for s2 in successors:
-                        if s2[var] == P.targets[var][1][val]:
-                            occurs[(var,val)] = 1.0
-            test_set[s1] = occurs
+        common_settings = \
+        semantics + "," +\
+        benchmark_name + "," +\
+        str(len(benchmark.features)) + "," +\
+        str(len(full_transitions)) + "," +\
+        mode + "," +\
+        str(expected_train_size) + "," +\
+        str(expected_test_size) + "," +\
+        str(real_train_size) + "," +\
+        str(real_test_size) + "," +\
+        str(len(train)) + "," +\
+        str(len(test))
 
-        #eprint("test set: ", test_set)
+        if algorithm == "gula" or algorithm == "pride":
+            accuracy = accuracy_score(model=model, dataset=test_dataset)
+            print(algorithm + "," + common_settings + "," + str(accuracy))
+            eprint(" accuracy: " + str(round(accuracy * 100,2)) + "%")
+            results_score.append(accuracy)
 
-        eprint("\nComputing forcast set")
+        if algorithm == "baseline":
+            csv_output_settings = csv_output
+            predictions = {tuple(s1): {variable: {value: random.uniform(0.0, 1.0) for value in values} for (variable, values) in test_dataset.targets} for s1 in test_feature_states}
+            #eprint(prediction)
+            accuracy = accuracy_score_from_predictions(predictions=predictions, dataset=test_dataset)
+            print("baseline_random," + common_settings + "," + str(accuracy))
+            eprint()
+            eprint(">>>>> accuracy: " + str(round(accuracy * 100,2)) + "% (baseline_random)")
 
-        # predictions
-        prediction_set = {}
-        count = 0
-        for s1, successors in test_grouped.items():
-            count += 1
-            eprint("\r",count,"/",len(test_grouped.items()), end='')
-            occurs = {}
-            prediction = model.predict(s1)
-            for var_id, (var,vals) in enumerate(P.targets):
-                for val_id, val in enumerate(P.targets[var_id][1]):
-                    occurs[(var_id,val_id)] = prediction[var][val][0]
+        #if algorithm == "always_0.0":
+            predictions = {tuple(s1): {variable: {value: 0.0 for value in values} for (variable, values) in test_dataset.targets} for s1 in test_feature_states}
+            #eprint(predictions)
+            accuracy = accuracy_score_from_predictions(predictions=predictions, dataset=test_dataset)
+            print("baseline_always_0.0," + common_settings + "," + str(accuracy))
+            eprint(">>>>> accuracy: " + str(round(accuracy * 100,2)) + "% (baseline_always_0.0)")
 
-            prediction_set[s1] = occurs
+        #if algorithm == "always_0.5":
+            predictions = {tuple(s1): {variable: {value: 0.5 for value in values} for (variable, values) in test_dataset.targets} for s1 in test_feature_states}
+            #eprint(predictions)
+            accuracy = accuracy_score_from_predictions(predictions=predictions, dataset=test_dataset)
+            print("baseline_always_0.5," + common_settings + "," + str(accuracy))
+            eprint(">>>>> accuracy: " + str(round(accuracy * 100,2)) + "% (baseline_always_0.5)")
 
-        #eprint("Prediction set: ", prediction_set)
-        #exit()
+        #if algorithm == "always_1.0":
+            predictions = {tuple(s1): {variable: {value: 1.0 for value in values} for (variable, values) in test_dataset.targets} for s1 in test_feature_states}
+            #eprint(predictions)
+            accuracy = accuracy_score_from_predictions(predictions=predictions, dataset=test_dataset)
+            print("baseline_always_1.0," + common_settings + "," + str(accuracy))
+            eprint(">>>>> accuracy: " + str(round(accuracy * 100,2)) + "% (baseline_always_1.0)")
 
-        eprint("\nComputing accuracy score")
-
-        # compute average accuracy
-        global_error = 0
-        for s1, actual in test_set.items():
-            state_error = 0
-            for var in range(len(P.targets)):
-                for val in range(len(P.targets[var][1])):
-                    forecast = prediction_set[s1]
-                    state_error += abs(actual[(var,val)] - forecast[(var,val)])
-
-            global_error += state_error / len(actual.items())
-
-        global_error = global_error / len(test_set.items())
-
-        #eprint(global_error)
-
-
-        accuracy = 1.0 - global_error
-
-        eprint("AVG accuracy: " + str(round(accuracy * 100,2)) + "%")
-
-        results_accuracy.append(accuracy)
 
     # 4) Average scores
     #-------------------
-    accuracy = sum(results_accuracy) / run_tests
-    run_time = sum(results_time) / run_tests
+    if algorithm in ["gula","pride"]:
+        accuracy = sum(results_score) / run_tests
+        run_time = sum(results_time) / run_tests
 
-    eprint()
-    eprint(">>> Prediction precision")
-    eprint(">>>> AVG accuracy: " + str(round(accuracy * 100,2)) + "%")
-    eprint(">>>> AVG run time: " + str(round(run_time,3)) + "s")
+        eprint(">>> AVG accuracy: " + str(round(accuracy * 100,2)) + "%")
+        #eprint(">>> AVG run time: " + str(round(run_time,3)) + "s")
 
-    return len(train), len(test), accuracy
+def evaluate_explanation_on_bn_benchmark(algorithm, benchmark, expected_model, run_tests, train_size, mode, benchmark_name, semantics_name, full_transitions=None):
+    """
+        Evaluate accuracy of an algorithm
+        over a given benchmark with a given number/proporsion
+        of training samples.
+
+        Args:
+            algorithm: Class
+                Class of the algorithm to be tested
+            benchmark: DMVLP
+                benchmark model to be tested
+            expected_model: WDMVLP
+                optimal WDMVLP that model the transitions of the benchmark.
+            train_size: float in [0,1] or int
+                Size of the training set in proportion (float in [0,1])
+            mode: string
+                "all_from_init_states": training contains all transitions from its initials states
+                "random": training contains random transitions, 80%/20% train/test then train is reduced to train_size
+            benchmark_name: string
+                for csv output.
+            benchmark_name: string
+                for csv output.
+        Returns:
+        train_set_size: int
+        test_set_size: int
+        accuracy: float
+            Average accuracy score.
+        csv_output: String
+            csv string format of all tests run statistiques.
+    """
+    csv_output = ""
+
+    # 0) Extract logic program
+    #-----------------------
+    #eprint(benchmark.to_string())
+
+    # 1) Generate transitions
+    #-------------------------------------
+
+    # Boolean network benchmarks only have rules for value 1, if none match next value is 0
+    #default = [[0] for v in benchmark.targets]
+    if full_transitions is None:
+        eprint(">>> Generating benchmark transitions...")
+        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+    full_transitions_grouped = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in full_transitions if tuple(s1) == tuple(s1_)) for s1,s2 in full_transitions}
+    #eprint("Transitions: ", full_transitions)
+    #eprint("Grouped: ", full_transitions_grouped)
+
+    #eprint(benchmark.to_string())
+    #eprint(semantics.states(P))
+    #eprint(full_transitions)
+
+    # 2) Prepare scores containers
+    #---------------------------
+    results_time = []
+    results_score = []
+
+    # 3) Average over several tests
+    #-----------------------------
+    for run in range(run_tests):
+
+        # 3.1 Split train/test sets on initial states
+        #----------------------------------------------
+        all_feature_states = list(full_transitions_grouped.keys())
+        random.shuffle(all_feature_states)
+
+         # Test set: all transition from last 20% feature states
+        test_begin = max(1, int(0.8 * len(all_feature_states)))
+        test_feature_states = all_feature_states[test_begin:]
+
+        test = []
+        for s1 in test_feature_states:
+            test.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
+        random.shuffle(test)
+
+        # Train set
+        # All transition from first train_size % feature states (over 80% include some test set part)
+        if mode == "all_from_init_states":
+            train_end = max(1, int(train_size * len(all_feature_states)))
+            train_feature_states = all_feature_states[:train_end]
+            train = []
+            for s1 in train_feature_states:
+                train.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
+            random.shuffle(train)
+        # Random train_size % of transitions from the feature states not in test set
+        elif mode == "random_transitions":
+            train_feature_states = all_feature_states[:test_begin]
+            train = []
+            for s1 in train_feature_states:
+                train.extend([(list(s1),list(s2)) for s2 in full_transitions_grouped[s1]])
+            random.shuffle(train)
+            train_end = int(max(1, train_size * len(train)))
+            train = train[:train_end]
+        else:
+            raise ValueError("Wrong mode requested")
+
+        #eprint("train: ", train)
+        #eprint("test: ", test)
+        #exit()
+
+        # DBG
+        if run == 0:
+            eprint(">>> Start Training on " + str(len(train)) + "/" + str(len(full_transitions)) + " transitions (" + str(round(100 * len(train) / len(full_transitions), 2)) +"%)")
+
+        eprint(">>>> run: " + str(run+1) + "/" + str(run_tests), end='')
+
+        train_dataset = StateTransitionsDataset([ (np.array(s1), np.array(s2)) for (s1,s2) in train], benchmark.features, benchmark.targets)
+
+        # 3.2) Learn from training set
+        #------------------------------------------
+
+        if algorithm == "gula" or algorithm == "pride":
+            # possibilities
+            start = time.time()
+            model = WDMVLP(features=benchmark.features, targets=benchmark.targets)
+            model.compile(algorithm=algorithm)
+            model.fit(dataset=train_dataset)
+            #model = algorithm.fit(train, benchmark.features, benchmark.targets, supported_only=True)
+            end = time.time()
+
+            results_time.append(round(end - start,3))
+
+        # 3.4) Evaluate on accuracy of domain prediction on test set
+        #------------------------------------------------------------
+        test_dataset = StateTransitionsDataset([(np.array(s1), np.array(s2)) for s1,s2 in test], benchmark.features, benchmark.targets)
+
+        # csv format of results
+        expected_train_size = train_size
+        expected_test_size = 0.2
+        real_train_size = round(len(train)/(len(full_transitions)),2)
+        real_test_size = round(len(test)/(len(full_transitions)),2)
+
+        if mode == "random_transitions":
+            expected_train_size = round(train_size*0.8,2)
+
+        common_settings = \
+        semantics_name + "," +\
+        benchmark_name + "," +\
+        str(len(benchmark.features)) + "," +\
+        str(len(full_transitions)) + "," +\
+        mode + "," +\
+        str(expected_train_size) + "," +\
+        str(expected_test_size) + "," +\
+        str(real_train_size) + "," +\
+        str(real_test_size) + "," +\
+        str(len(train)) + "," +\
+        str(len(test))
+
+        if algorithm == "gula" or algorithm == "pride":
+            score = explanation_score(model=model, expected_model=expected_model, dataset=test_dataset)
+            print(algorithm + "," + common_settings + "," + str(score))
+            results_score.append(score)
+            eprint(" explanation score: " + str(round(score * 100,2)) + "%")
+
+        if algorithm == "baseline":
+            eprint()
+
+            # Perfect prediction random rule
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)),\
+            (100 - int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)) )\
+            for val_id, value in enumerate(values) for proba in [int(val_id in set(test_dataset.targets[var_id][1].index(s2[var_id]) for s1_, s2 in test_dataset.data if tuple(s1_)==s1))]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_perfect_predictions_random_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_perfect_predictions_random_rules)")
+
+            # Perfect prediction empty_program":
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), None),\
+            (100 - int(proba*100), None) )\
+            for val_id, value in enumerate(values) for proba in [int(val_id in set(test_dataset.targets[var_id][1].index(s2[var_id]) for s1_, s2 in test_dataset.data if tuple(s1_)==s1))]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_perfect_predictions_no_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_perfect_predictions_no_rules)")
+
+            # Perfect prediction most general rule
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), Rule(var_id, val_id, len(test_dataset.features))),\
+            (100 - int(proba*100), Rule(var_id, val_id, len(test_dataset.features))) )\
+            for val_id, value in enumerate(values) for proba in [int(val_id in set(test_dataset.targets[var_id][1].index(s2[var_id]) for s1_, s2 in test_dataset.data if tuple(s1_)==s1))]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_perfect_predictions_most_general_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_perfect_predictions_most_general_rules)")
+
+            # Perfect prediction most specific rule:
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), most_specific_matching_rule),\
+            (100 - int(proba*100), most_specific_matching_rule) )\
+            for val_id, value in enumerate(values)\
+            for proba in [int(val_id in set(test_dataset.targets[var_id][1].index(s2[var_id]) for s1_, s2 in test_dataset.data if tuple(s1_)==s1))] \
+            for most_specific_matching_rule in [Rule(var_id,val_id,len(test_dataset.features),[(cond_var,cond_val) for cond_var,cond_val in enumerate(GULA.encode_state(s1,test_dataset.features))])]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_perfect_predictions_most_specific_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_perfect_predictions_most_specific_rules)")
+
+            # Random prediction
+
+            # random prediction and rules
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)),\
+            (100 - int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)) )\
+            for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_random_predictions_random_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_random_rules)")
+
+            # empty_program":
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), None),\
+            (100 - int(proba*100), None) )\
+            for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_random_predictions_no_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_no_rules)")
+
+            # random prediction and most general rule
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), Rule(var_id, val_id, len(test_dataset.features))),\
+            (100 - int(proba*100), Rule(var_id, val_id, len(test_dataset.features))) )\
+            for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_random_predictions_most_general_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_most_general_rules)")
+
+            # random prediction and most specific rule:
+            predictions = {tuple(s1): {variable: {value: (proba, \
+            (int(proba*100), most_specific_matching_rule),\
+            (100 - int(proba*100), most_specific_matching_rule) )\
+            for val_id, value in enumerate(values)\
+            for proba in [round(random.uniform(0.0,1.0),2)] \
+            for most_specific_matching_rule in [Rule(var_id,val_id,len(test_dataset.features),[(cond_var,cond_val) for cond_var,cond_val in enumerate(GULA.encode_state(s1,test_dataset.features))])]}\
+            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            for s1 in test_feature_states}
+
+            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            print("baseline_random_predictions_most_specific_rules," + common_settings + "," + str(score))
+            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_most_specific_rules)")
+
+    # 4) Average scores
+    #-------------------
+    if algorithm in ["gula", "pride"]:
+        score = sum(results_score) / run_tests
+        #run_time = sum(results_time) / run_tests
+        eprint(">>> AVG explanation score: " + str(round(score * 100,2)) + "%")
+
+def random_rule(head_var_id, head_val_id, features, targets, size=None):
+    body = []
+    conditions = []
+    nb_conditions = random.randint(0,(len(features)))
+    if size is not None:
+        nb_conditions = size
+    while len(body) < nb_conditions:
+        var = random.randint(0,len(features)-1)
+        val = random.randint(0,len(features[var][1])-1)
+        if var not in conditions:
+            body.append( (var, val) )
+            conditions.append(var)
+    return Rule(head_var_id, head_val_id, len(features), body)
 
 if __name__ == '__main__':
     # 0: Constants
     #--------------
     SCALABILITY_EXPERIEMENT = 0
     ACCURACY_EXPERIEMENT = 1
+    EXPLANATION_EXPERIEMENT = 2
 
     # Number of tests for averaging scores
     run_tests = 1
@@ -345,14 +664,21 @@ if __name__ == '__main__':
     # Learning algorithm, choose from: LF1T / GULA / PRIDE
     algorithm = "gula"
     semantics_classes = ["synchronous", "asynchronous", "general"]
-    train_sizes = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    train_sizes = [0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     # 1: Parameters
     #---------------
+    lfit_methods = ["gula", "pride", "brute_force", "synchronizer"]
+    baseline_methods = ["baseline"]
+    experiements = ["scalability", "accuracy", "explanation"]
+    observations = ["all_from_init_states", "random_transitions"]
 
-    if len(sys.argv) < 6 or (sys.argv[1] != "GULA" and sys.argv[1] != "Synchronizer") and sys.argv[1] != "PRIDE":
-        eprint("Please give the experiement to perform as parameter: GULA or Synchronizer and min_var, max_var, max_var_general, run_tests")
+    if len(sys.argv) < 9 or (sys.argv[1] not in lfit_methods+baseline_methods) or (sys.argv[6] not in experiements) or (sys.argv[7] not in observations):
+        eprint("Please give the experiement to perform as parameter: gula/pride/synchronizer/baseline and min_var, max_var, max_var_general, run_tests, scalability/accuracy/explanation, all_from_init_states/random_transitions, time_out")
         exit()
+
+    if sys.argv[1] in lfit_methods or sys.argv[1] in baseline_methods:
+        algorithm = sys.argv[1]
 
     min_var = int(sys.argv[2])
     max_var = int(sys.argv[3])
@@ -361,25 +687,23 @@ if __name__ == '__main__':
     experiement = SCALABILITY_EXPERIEMENT
     mode = "all_from_init_states"
 
-    if len(sys.argv) > 6 and sys.argv[6] == "accuracy":
+    if sys.argv[6] == "scalability":
+        experiement = SCALABILITY_EXPERIEMENT
+
+    if sys.argv[6] == "accuracy":
         experiement = ACCURACY_EXPERIEMENT
 
-    if len(sys.argv) > 7 and sys.argv[7] == "random":
-        mode = "random"
+    if sys.argv[6] == "explanation":
+        experiement = EXPLANATION_EXPERIEMENT
 
-    if sys.argv[1] == "GULA":
-        algorithm = "gula"
+    if sys.argv[7] == "all_from_init_states":
+        mode = "all_from_init_states"
 
-    if sys.argv[1] == "PRIDE":
-        algorithm = "pride"
+    if sys.argv[7] == "random_transitions":
+        mode = "random_transitions"
 
-    # SYNCHRONIZER: asynchronous and general for non-determinism on BN
-    #------------------------------------------------------------------
-    if sys.argv[1] == "Synchronizer":
-        algorithm = "synchronizer"
-        #semantics_classes = [Asynchronous, General]
-        #min_var = 0
-        #max_var = 10
+    TIME_OUT = int(sys.argv[8])
+
 
     # 2: benchmarks extraction
     #--------------------------
@@ -414,61 +738,126 @@ if __name__ == '__main__':
     # 3: Scalability experiements
     #-----------------------------
     if experiement == SCALABILITY_EXPERIEMENT:
-        train_sizes = [0.25,0.5,0.75]
-        eprint("> Start benchmark scalability evaluation: Boolean Networks, all transitions")
-        print("\nAVG over "+str(run_tests)+" runs of run time when learning from transitions of Boolean Network benchmarks from " ,min_var, " until ",max_var, " variables:")
-        print("Benchmark & size & synchronous & asynchronous & general\\\\")
+        train_sizes = [0.01,0.05,0.1,0.25,0.5,0.75,1.0]
+        eprint("Start benchmark scalability evaluation: Boolean Networks, partial transitions with "+algorithm)
+        eprint("\nAVG over "+str(run_tests)+" runs of run time when learning from transitions of Boolean Network benchmarks from " ,min_var, " until ",max_var, " variables:")
+        #eprint("Benchmark & size & synchronous & asynchronous & general\\\\")
+
+        final_csv_output = "method,semantics,benchmark_name,benchmark_size,transitions,mode,expected_train_percent,real_train_percent,train_size,run_time"
+        print(final_csv_output)
 
         for size, name, program in dmvlp_benchmarks:
-            eprint(">> ", name, ": ", len(program.features), " variables, ", len(program.rules), " rules, ", pow(2,len(program.features)), " init states.")
-            latex = str(name).replace("_","\_") + " & $" + str(size) + "$"
+            eprint()
+            eprint("> ", name, ": ", len(program.features), " variables, ", len(program.rules), " rules, ", pow(2,len(program.features)), " init states.")
+            #latex = str(name).replace("_","\_") + " & $" + str(size) + "$"
             for semantics in semantics_classes:
-                if semantics == General and size > max_var_general:
-                    latex += " & M.O."
+                if semantics == "general" and size > max_var_general:
+                    #latex += " & M.O."
                     continue
+                eprint(">> Semantics: "+semantics)
 
-                latex += "&"
+                #latex += "&"
+                #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+                default = [(var, [0]) for var,vals in program.targets]
+                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default) ]
+
                 for train_size in train_sizes:
-                    #if semantics != General and train_size < 0.75:
-                    #    latex += " T.O. /"
-                    #    continue
-                    nb_transitions, run_time = evaluate_on_bn_benchmark(algorithm, program, semantics, run_tests, train_size)
-                    if run_time == -1:
-                        latex += " T.O. /"
+                    if train_size >= 1.0:
+                        nb_transitions, run_time = evaluate_scalability_on_bn_benchmark(algorithm, program, name, semantics, run_tests, None, full_transitions)
+                        #if run_time == -1:
+                        #    latex += " T.O. /"
+                        #else:
+                        #    latex += " $" + str(round(run_time,3)) + "$s / $"
+                        #latex += str(nb_transitions) + "$"
                     else:
-                        latex += " $" + str(round(run_time,3)) + "$s /"
+                        nb_transitions, run_time = evaluate_scalability_on_bn_benchmark(algorithm, program, name, semantics, run_tests, train_size, full_transitions)
+                        #if run_time == -1:
+                        #    latex += " T.O. /"
+                        #else:
+                        #    latex += " $" + str(round(run_time,3)) + "$s /"
 
-                nb_transitions, run_time = evaluate_on_bn_benchmark(algorithm, program, semantics, run_tests, None)
-                if run_time == -1:
-                    latex += " T.O. /"
-                else:
-                    latex += " $" + str(round(run_time,3)) + "$s / $"
-                latex += str(nb_transitions) + "$"
 
-            print(latex + "\\\\")
+
+            #print(latex + "\\\\")
 
     # 4: Accuracy experiements
     #--------------------------
     if experiement == ACCURACY_EXPERIEMENT:
-        eprint("> Start benchmark accuracy evaluation: Boolean Networks")
-        print("\n# AVG over "+str(run_tests)+" runs of accuracy when learning from transitions of Boolean Network benchmarks transitions from " ,min_var, " until " ,max_var, " variables:")
+        eprint("Start benchmark accuracy evaluation: Boolean Networks")
+        eprint("AVG over "+str(run_tests)+" runs of accuracy when learning from transitions of Boolean Network benchmarks transitions from " ,min_var, " until " ,max_var, " variables:")
 
         # 4.1: All transitions from train init states or Random transitions from train init states (80%/20% train/test then random XX% from train)
         #-----------------------------------------------
         if mode == "all_from_init_states":
-            print("# 10% to 100% of all transitions as training, test on rest (for 100%, training = test)")
+            eprint("10% to 100% of all transitions as training, test on rest (for 100%, training = test)")
         else:
-            print("# random 10% to 100% of the training transitions, with 80%/20% of total transitions as train/test set")
-        print()
-        print("benchmark, variables", end='')
-        for i in train_sizes:
-            print(", ", i, end='')
-        print()
+            eprint("random 10% to 100% of the training transitions, with 80%/20% of total transitions as train/test set")
+        eprint()
+
+        final_csv_output = "method,semantics,benchmark_name,benchmark_size,transitions,mode,expected_train_percent,expected_test_percent,real_train_percent,real_test_percent,train_size,test_size,accuracy_score"
+        print(final_csv_output)
+
         for size, name, program in dmvlp_benchmarks:
-            print(name, ",", size, end='')
-            for train_size in train_sizes:
-                eprint(">> ", name, ": ", len(program.features), " variables, ", len(program.rules), " rules, ", train_size*100, "% training.")
-                train_set_size, test_set_size, accuracy = evaluate_accuracy_on_bn_benchmark(algorithm, program, "synchronous", run_tests, train_size, mode)
-                eprint("Learned from: ",train_set_size, "/", test_set_size, " train/test")
-                print(", ", round(accuracy,3), end='')
-            print()
+            #eprint("> ", name, ",", size, end='')
+            eprint()
+            eprint("> ", name, ": ", len(program.features), " variables, ", len(program.rules), " rules, ")
+            for semantics in semantics_classes:
+                if semantics == "general" and size > max_var_general:
+                    #latex += " & M.O."
+                    continue
+                eprint(">> Semantics: "+semantics)
+
+                #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+                default = [(var, [0]) for var,vals in program.targets]
+                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default) ]
+
+                for train_size in train_sizes:
+                    real_train_size = train_size
+                    if mode == "random_transitions":
+                        real_train_size = 0.8*train_size
+                    eprint()
+                    eprint(">> ", round(real_train_size*100,2), "% training.")
+                    evaluate_accuracy_on_bn_benchmark(algorithm, program, semantics, run_tests, train_size, mode, name, full_transitions)
+        #print(final_csv_output)
+
+    # 5: Explanation accuracy experiements
+    #--------------------------------------
+    if experiement == EXPLANATION_EXPERIEMENT:
+        eprint("Start benchmark explanation evaluation: Boolean Networks")
+        eprint("AVG over "+str(run_tests)+" runs of explanation when learning from transitions of Boolean Network benchmarks transitions from " ,min_var, " until " ,max_var, " variables:")
+
+        # 4.1: All transitions from train init states or Random transitions from train init states (80%/20% train/test then random XX% from train)
+        #-----------------------------------------------
+        if mode == "all_from_init_states":
+            eprint("10% to 100% of all transitions as training, test on rest (for 100%, training = test)")
+        else:
+            eprint("random 10% to 100% of the training transitions, with 80%/20% of total transitions as train/test set")
+
+        final_csv_output = "method,semantics,benchmark_name,benchmark_size,transitions,mode,expected_train_percent,expected_test_percent,real_train_percent,real_test_percent,train_size,test_size,explanation_score"
+        print(final_csv_output)
+
+        for size, name, program in dmvlp_benchmarks:
+            eprint()
+            eprint("> ", name, ": ", len(program.features), " variables, ", len(program.rules), " rules, ")
+            for semantics in semantics_classes:
+                if semantics == "general" and size > max_var_general:
+                    #latex += " & M.O."
+                    continue
+                eprint(">> Semantics: "+semantics)
+                #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+                default = [(var, [0]) for var,vals in program.targets]
+                full_transitions = [ (feature_state, target_state) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default) ]
+
+                # compute expected WDMVLP
+                expected_model = WDMVLP(features=program.features, targets=program.targets)
+                expected_model.compile(algorithm="gula")
+                dataset = StateTransitionsDataset(full_transitions, program.features, program.targets)
+                expected_model.fit(dataset=dataset)
+
+                for train_size in train_sizes:
+                    real_train_size = train_size
+                    if mode == "random_transitions":
+                        real_train_size = 0.8*train_size
+                    eprint()
+                    eprint(">> ", round(real_train_size*100,2), "% training.")
+                    evaluate_explanation_on_bn_benchmark(algorithm, program, expected_model, run_tests, train_size, mode, name, semantics, full_transitions)

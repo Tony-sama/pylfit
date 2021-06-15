@@ -1,9 +1,12 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/07/13
-# @updated: 2020/07/13
+# @updated: 2021/06/15
 #
 # @desc: GULA/Synchronizer benchmarks evaluation script for MLJ 2020
+# - Scalability
+# - Accuracy
+# - Expalanation
 #
 #-----------------------
 
@@ -15,15 +18,27 @@ from pylfit.utils import eprint
 # 0: Constants
 #--------------
 
+time_out = 1000
 run_tests = 10
-use_15_cores = False
+use_all_cores = False
+debug = True
+
+DEBUG_runs = False
+GULA_scalability = True
+GULA_accuracy = True
+GULA_explanation = True
+Synchronizer_scalability = True
 
 start_command = ""
+redirect_error = "2> /dev/null"
 end_command = ""
 
-if use_15_cores:
+if use_all_cores:
     start_command = "nohup "
     end_command = " &"
+
+if debug:
+    redirect_error = ""
 
 # 1: Main
 #------------
@@ -31,34 +46,55 @@ if __name__ == '__main__':
 
 
     eprint("Starting all experiement of MLJ 2020 paper")
+    if DEBUG_runs:
+        eprint("Debug runs")
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_gula.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py brute_force 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_brute_force.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py synchronizer 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_synchronizer.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 5 5 "+str(run_tests)+" accuracy random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_accuracy_gula.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 5 5 "+str(run_tests)+" explanation random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_explanation_gula.csv"+redirect_error+end_command)
 
-    print("1) GULA scalability experiements")
-    print()
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 0 13 13 "+str(run_tests)+" > tmp/output_run_time_gula_0_to_13.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 15 15 15 "+str(run_tests)+" > tmp/output_run_time_gula_15.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 18 18 15 "+str(run_tests)+" > tmp/output_run_time_gula_18.txt 2> /dev/null"+end_command)
-    print()
-    print("2) GULA accuracy experiements")
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py baseline 0 5 5 "+str(run_tests)+" accuracy random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_accuracy_baseline.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py baseline 0 5 5 "+str(run_tests)+" explanation random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_explanation_baseline.csv"+redirect_error+end_command)
 
-    print()
-    print("2.1) Boolean network Benchmarks: X% train 100-X% test, all from train init state")
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 0 9 9 "+str(run_tests)+" accuracy > tmp/output_accuracy_0_to_9.txt 2> /dev/null"+end_command) #23 15")
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 10 10 10 "+str(run_tests)+" accuracy > tmp/output_accuracy_10.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 12 12 12 "+str(run_tests)+" accuracy > tmp/output_accuracy_12.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 13 13 13 "+str(run_tests)+" accuracy > tmp/output_accuracy_13.txt 2> /dev/null"+end_command)
 
-    print()
-    print("2.2) Boolean network Benchmarks: 80% train 20% test, random X% from train init state")
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 0 9 9 "+str(run_tests)+" accuracy random > tmp/output_accuracy_random_0_to_9.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 10 10 10 "+str(run_tests)+" accuracy random > tmp/output_accuracy_random_10.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 12 12 12 "+str(run_tests)+" accuracy random > tmp/output_accuracy_random_12.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py GULA 13 13 13 "+str(run_tests)+" accuracy random > tmp/output_accuracy_random_13.txt 2> /dev/null"+end_command)
-    print()
+    if GULA_scalability:
+        print("1) GULA scalability experiements")
+        print()
+        print("1.1) Boolean network Benchmarks: X% train")
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 13 13 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_gula_0_to_13.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py brute_force 0 13 13 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_brute_force_0_to_13.csv"+redirect_error+end_command)
 
-    print()
-    print("3) Synchronizer experiements")
-    print()
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py Synchronizer 0 7 7 "+str(run_tests)+" > tmp/output_run_time_synchronizer_0_to_7.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py Synchronizer 9 10 10 "+str(run_tests)+" > tmp/output_run_time_synchronizer_9_to_10.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py Synchronizer 12 12 12 "+str(run_tests)+" > tmp/output_run_time_synchronizer_12.txt 2> /dev/null"+end_command)
-    os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py Synchronizer 13 13 13 "+str(run_tests)+" > tmp/output_run_time_synchronizer_13.txt 2> /dev/null"+end_command)
+        #os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 14 16 16 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_gula_14_to_16.csv"+redirect_error+end_command)
+        #os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 17 18 16 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_gula_17_to_18.csv"+redirect_error+end_command)
+
+        print("1.2) Random programs: evolving number of features")
+        # TODO
+
+        print("1.3) Random programs: evolving features domains")
+        # TODO
+
+    if GULA_accuracy:
+        print()
+        print("2) GULA accuracy experiements")
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 9 9 "+str(run_tests)+" accuracy random_transitions "+str(time_out)+" > tmp/bn_benchmarks_accuracy_gula_0_to_9.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py baseline 0 9 9 "+str(run_tests)+" accuracy random_transitions "+str(time_out)+" > tmp/bn_benchmarks_accuracy_baseline_0_to_9.csv"+redirect_error+end_command)
+        #os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 13 13 "+str(run_tests)+" accuracy random_transitions "+str(time_out)+" > tmp/bn_benchmarks_accuracy_gula_0_to_13.csv"+redirect_error+end_command)
+        #os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py baseline 0 13 13 "+str(run_tests)+" accuracy random_transitions "+str(time_out)+" > tmp/bn_benchmarks_accuracy_baseline_0_to_13.csv"+redirect_error+end_command)
+
+    if GULA_explanation:
+        print()
+        print("2) GULA explanation experiements")
+
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 9 9 "+str(run_tests)+" explanation random_transitions "+str(time_out)+" > tmp/bn_benchmarks_explanation_gula_0_to_9.csv"+redirect_error+end_command)
+
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py baseline 0 9 9 "+str(run_tests)+" explanation random_transitions "+str(time_out)+" > tmp/bn_benchmarks_explanation_baseline_0_to_9.csv"+redirect_error+end_command)
+
+    if Synchronizer_scalability:
+        print()
+        print("3) Synchronizer experiements")
+        print()
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py synchronizer 0 7 7 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_synchronizer_0_to_7.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py synchronizer 8 10 10 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_synchronizer_8_to_10.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py synchronizer 11 12 12 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_synchronizer_11_to_12.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py synchronizer 13 13 13 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_synchronizer_13.csv"+redirect_error+end_command)

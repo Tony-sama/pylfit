@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/13
-# @updated: 2021/01/13
+# @updated: 2021/06/15
 #
 # @desc: Dataset container class for state transitions data
 #   - Features/target variables labels and domain
@@ -75,6 +75,8 @@ class StateTransitionsDataset(Dataset):
                 if str(val) not in targets[var_id][1]:
                     raise ValueError("Transition " + str((s1,s2)) + ": value not in targets for variable " + str(var_id))
 
+    def copy(self):
+        return StateTransitionsDataset(self.data, self.features, self.targets)
 #--------------
 # Methods
 #--------------
@@ -145,6 +147,9 @@ class StateTransitionsDataset(Dataset):
 # Operators
 #--------------
 
+    def __eq__(self, dataset):
+        return (self.features == dataset.features) and (self.targets == dataset.targets) and (self.data == dataset.data)
+
 #--------------
 # Statics methods
 #--------------
@@ -160,7 +165,7 @@ class StateTransitionsDataset(Dataset):
     @data.setter
     def data(self, value):
 
-        msg = "Constructing a "+self.__class__.__name__+" with wrong argument format: data must be a list of tuple (numpy.ndarray of string, numpy.ndarray of string)"
+        msg = "Constructing a "+self.__class__.__name__+" with wrong argument format: data must be a list of tuple (list of string, list of string)"
 
         if not isinstance(value, list): # data must be a list
             raise TypeError(msg)
@@ -169,9 +174,9 @@ class StateTransitionsDataset(Dataset):
                 raise TypeError(msg)
             feature_state = transition[0]
             target_state = transition[1]
-            if not isinstance(feature_state, numpy.ndarray) or not isinstance(target_state, numpy.ndarray): # States must be ndarray
-                raise ValueError(msg)
-            if not all(isinstance(val, (str,int)) for val in feature_state) or not all(isinstance(val, (str,int)) for val in target_state): # Values must be string or int
+            #if not isinstance(feature_state, numpy.ndarray) or not isinstance(target_state, numpy.ndarray): # States must be ndarray
+            #    raise ValueError(msg)
+            if not all(isinstance(val, (str)) for val in feature_state) or not all(isinstance(val, (str)) for val in target_state): # Values must be string or int
                 raise ValueError(msg)
 
         self._data = [(numpy.array([str(i) for i in s1]), numpy.array([str(i) for i in s2])) for s1, s2 in value]
@@ -183,10 +188,11 @@ class StateTransitionsDataset(Dataset):
     @features.setter
     def features(self, value):
         if not isinstance(value, list) \
+        or not all(isinstance(i, tuple) for i in value) or not all(len(i) == 2 for i in value) \
         or not all(isinstance(vals, list) for (var,vals) in value) \
         or not all(isinstance(val, str) for (var,vals) in value for val in vals):
             raise TypeError("Features must be a list of pair of (string, list of string)")
-        self._features = value
+        self._features = value.copy()
 
     @property
     def targets(self):
@@ -195,7 +201,8 @@ class StateTransitionsDataset(Dataset):
     @targets.setter
     def targets(self, value):
         if not isinstance(value, list) \
+        or not all(isinstance(i, tuple) for i in value) or not all(len(i) == 2 for i in value) \
         or not all(isinstance(vals, list) for (var,vals) in value) \
         or not all(isinstance(val, str) for (var,vals) in value for val in vals):
             raise TypeError("Targets must be a list of pair of (string, list of string)")
-        self._targets = value
+        self._targets = value.copy()

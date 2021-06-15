@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2020/12/23
+# @updated: 2021/06/15
 #
 # @desc: dataset class unit test script
 # done:
@@ -51,6 +51,62 @@ class Dataset_tests(unittest.TestCase):
             # Constructor data/features/targets
             self.assertRaises(NotImplementedError, Dataset, [], [], [])
 
+            class Subclass_1(Dataset):
+                x = ""
+
+            self.assertRaises(NotImplementedError, Subclass_1, [], [], [])
+
+            class Subclass_2(Dataset):
+                def __init__(self, data, features, targets):
+                    x = ""
+
+            instance = Subclass_2([],[],[])
+            self.assertRaises(NotImplementedError, instance.__str__)
+            self.assertRaises(NotImplementedError, instance.__repr__)
+            self.assertRaises(NotImplementedError, instance.to_string)
+
+            exception = False
+            try:
+                x = instance.data
+            except NotImplementedError:
+                exception = True
+            self.assertTrue(exception)
+
+            exception = False
+            try:
+                instance.data = []
+            except NotImplementedError:
+                exception = True
+            self.assertTrue(exception)
+
+
+            exception = False
+            try:
+                x = instance.features
+            except NotImplementedError:
+                exception = True
+            self.assertTrue(exception)
+
+            exception = False
+            try:
+                instance.features = []
+            except NotImplementedError:
+                exception = True
+            self.assertTrue(exception)
+
+            exception = False
+            try:
+                x = instance.targets
+            except NotImplementedError:
+                exception = True
+            self.assertTrue(exception)
+
+            exception = False
+            try:
+                instance.targets = []
+            except NotImplementedError:
+                exception = True
+            self.assertTrue(exception)
 
 '''
 @desc: main

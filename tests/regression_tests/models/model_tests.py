@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2020/12/23
+# @updated: 2021/06/15
 #
 # @desc: dataset class unit test script
 # done:
@@ -73,6 +73,16 @@ class Model_tests(unittest.TestCase):
                 _OPTIMIZERS = []
 
             self.assertRaises(ValueError, ModelSubClass)
+
+            class ModelSubClass(Model):
+                _COMPATIBLE_DATASETS = []
+                _ALGORITHMS = []
+                _OPTIMIZERS = []
+
+            self.assertRaises(ValueError, ModelSubClass)
+
+            self.assertRaises(NotImplementedError, model.__str__)
+            self.assertRaises(NotImplementedError, model.__repr__)
 
 '''
 @desc: main

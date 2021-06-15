@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/14
-# @updated: 2021/01/14
+# @updated: 2021/06/15
 #
 # @desc: class Model python source code file
 #-------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ class Model:
     def __str__(self):
         return self.to_string()
 
-    def _repr__(self):
+    def __repr__(self):
         return self.to_string()
 
 #--------------

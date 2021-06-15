@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2021/01/26
+# @updated: 2021/06/15
 #
 # @desc: simple GULA implementation, the General Usage LFIT Algorithm.
 #   - INPUT: a set of pairs of discrete multi-valued states
@@ -164,7 +164,7 @@ class GULA (Algorithm):
 
         Args:
             transitions: list of tuple (tuple of int, list of tuple of int)
-                state transitions grouped by intiial state
+                state transitions grouped by initial state
             variable: int
                 variable id
             value: int

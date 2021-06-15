@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/03/25
-# @updated: 2021/02/05
+# @updated: 2021/06/15
 #
 # @desc: PyLFIT unit test script
 #
@@ -37,7 +37,7 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_rule, random_features, random_targets
+from tests_generator import random_rule, random_features, random_targets, random_constraint
 
 from pylfit.utils import eprint
 from pylfit.objects.rule import Rule
@@ -138,6 +138,38 @@ class Rule_tests(unittest.TestCase):
             r2 = Rule.from_string(head + " :- " + body, features, targets)
 
             self.assertEqual(r,r2)
+
+            # Constraint
+            head_var = -1
+            head_val = -1
+            body = []
+            conditions = []
+            nb_conditions = random.randint(0,min(len(features)+len(targets),self._max_body_size))
+            while len(body) < nb_conditions:
+                var = random.randint(0,len(features)+len(targets)-1)
+                if var < len(features):
+                    val = random.randint(0,len(features[var][1])-1)
+                else:
+                    val = random.randint(0,len(targets[var-len(features)][1])-1)
+                if var not in conditions:
+                    body.append( (var, val) )
+                    conditions.append(var)
+            r = Rule(head_var,head_val,len(features)+len(targets),body)
+
+            # generating string
+            body = ""
+            for var, val in r.body:
+                if var < len(features):
+                    body += features[var][0] + "(" + features[var][1][val] + "),"
+                else:
+                    body += targets[var-len(features)][0] + "(" + targets[var-len(features)][1][val] + "),"
+
+
+            body = body[:-1]
+
+            r2 = Rule.from_string(":- " + body, features+targets, [])
+
+            self.assertEqual(r,r2)
     #--------------
     # Observers
     #--------------
@@ -193,6 +225,38 @@ class Rule_tests(unittest.TestCase):
             string += "."
 
             self.assertEqual(r.logic_form(features, targets),string)
+
+            # cosntraints
+            c = random_constraint(len(features), len(targets), max_val_id+1, min(len(features)+len(targets), self._max_body_size))
+            #eprint(c.logic_form(features,targets))
+            string = ":- "
+            for var, val in c.body:
+                if var >= len(features):
+                    string += targets[var-len(features)][0] + "(" + targets[var-len(features)][1][val] + "), "
+                else:
+                    string += features[var][0] + "(" + features[var][1][val] + "), "
+            if len(c.body) > 0:
+                string = string[:-2]
+            string += "."
+            self.assertEqual(c.logic_form(features,targets), string)
+
+            # exceptions
+            self.assertRaises(ValueError, r.logic_form, features, [])
+            self.assertRaises(ValueError, r.logic_form, features, [(i,[]) for i,j in targets])
+
+            r1 = r.copy()
+            r1.add_condition(-1,0)
+            self.assertRaises(ValueError, r1.logic_form, features, targets)
+
+            self.assertRaises(ValueError, r.logic_form, features, [])
+
+            if r.size() > 0:
+                self.assertRaises(ValueError, r.logic_form, [], targets)
+
+            if c.size() > 0:
+                self.assertRaises(ValueError, c.logic_form, [], [])
+
+
 
     def test_get_condition(self):
         print(">> Rule.get_condition(self, variable)")
@@ -354,6 +418,10 @@ class Rule_tests(unittest.TestCase):
 
             self.assertFalse(r == r_)
 
+            r1 = Rule(r.head_variable, r.head_value, len(r._body_values)+10, [(len(r._body_values)+2,0) for i,j in r.body])
+            self.assertFalse(r1 == r)
+            self.assertFalse(r == r1)
+
     def test_subsumes(self):
         print(">> Rule.__eq__(self, other)")
 
@@ -479,6 +547,36 @@ class Rule_tests(unittest.TestCase):
             self.assertTrue(r.has_condition(var))
             r.remove_condition(var)
             self.assertFalse(r.has_condition(var))
+
+    def test_pop_condition(self):
+        print(">> Rule.pop_condition(self)")
+
+        # Empty rule
+        for i in range(self._nb_tests):
+            var = random.randint(0,self._nb_targets-1)
+            val = random.randint(0,self._nb_values)
+            r = Rule(var,val,self._nb_features)
+
+            var = random.randint(0,self._nb_features-1)
+
+            r1 = r.copy()
+            r1.pop_condition()
+            self.assertEqual(r,r1)
+
+        for i in range(self._nb_tests):
+            r = random_rule(self._nb_features, self._nb_targets, self._nb_values, min(self._max_body_size,self._nb_features-1))
+
+            if len(r.body) == 0:
+                i -= 1
+                continue
+
+            old_size = r.size()
+            r1 = r.copy()
+            r.pop_condition()
+
+            self.assertTrue(r.size() == old_size-1)
+            for var, val in r.body:
+                self.assertTrue(r1.get_condition(var) == val)
 
     #------------------
     # Tool functions

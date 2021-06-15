@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/03
-# @updated: 2021/02/05
+# @updated: 2021/06/15
 #
 # @desc: class CDMVLP python source code file
 #-------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ class CDMVLP(DMVLP):
 # Methods
 #--------------
 
-    def compile(self, algorithm="gula"):
+    def compile(self, algorithm="synchronizer"):
         """
         Set the algorithm to be used to fit the model.
         Supported algorithms:
@@ -87,12 +87,14 @@ class CDMVLP(DMVLP):
         """
 
         if algorithm not in CDMVLP._ALGORITHMS:
-            raise ValueError('algorithm parameter must be one element of DMVLP._COMPATIBLE_ALGORITHMS: '+str(CDMVLP._ALGORITHMS)+'.')
+            raise ValueError('algorithm parameter must be one element of CDMVLP._COMPATIBLE_ALGORITHMS: '+str(CDMVLP._ALGORITHMS)+'.')
 
         if algorithm == "synchronizer":
-            self.algorithm = Synchronizer
+            self.algorithm = "synchronizer"
+        elif algorithm == "synchronizer-pride":
+            self.algorithm = "synchronizer-pride"
         else:
-            raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in DMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
+            raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in CDMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
     def fit(self, dataset, verbose=0):
         """
@@ -108,57 +110,80 @@ class CDMVLP(DMVLP):
         """
 
         if not any(isinstance(dataset, i) for i in self._COMPATIBLE_DATASETS):
-            msg = 'Dataset type (' + str(dataset.__class__.__name__)+ ') not suported by DMVLP model.'
+            msg = 'Dataset type (' + str(dataset.__class__.__name__)+ ') not suported by CDMVLP model.'
             raise ValueError(msg)
 
         # TODO: add time serie management
         #eprint("algorithm set to " + str(self.algorithm))
 
+        if self.algorithm not in CDMVLP._ALGORITHMS:
+            raise ValueError('algorithm property must be one element of CDMVLP._COMPATIBLE_ALGORITHMS: '+str(CDMVLP._ALGORITHMS)+'.')
+
         msg = 'Dataset type (' + str(dataset.__class__.__name__) + ') not supported \
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
         Dataset must be of type ' + str(StateTransitionsDataset.__class__.__name__)
 
-        if self.algorithm == Synchronizer:
+        if self.algorithm == "synchronizer":
             if not isinstance(dataset, StateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
-                eprint("Starting fit with Synchronizer")
+                eprint("Starting fit with Synchronizer using GULA")
             self.rules, self.constraints = Synchronizer.fit(dataset=dataset, verbose=verbose)
+        elif self.algorithm == "synchronizer-pride":
+            if not isinstance(dataset, StateTransitionsDataset):
+                raise ValueError(msg)
+            if verbose > 0:
+                eprint("Starting fit with Synchronizer using PRIDE")
+            self.rules, self.constraints = Synchronizer.fit(dataset=dataset, complete=False, verbose=verbose)
         else:
-            raise NotImplementedError("Algorithm usage not implemented yet")
+            raise NotImplementedError('<DEV> self.algorithm="'+str(self.algorithm)+'" is in CDMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
-    def predict(self, feature_state):
+    def predict(self, feature_states, semantics="synchronous-constrained"):
         """
-        Predict the possible target states of the given feature state according to the model rules and constraints.
+        Predict the possible target states of the given feature states according to the model rules and constraints.
 
         Args:
-            feature_state: list of String
-                Feature state from wich target state must be predicted.
+            feature_states: list of list of String
+                Feature states from wich target state must be predicted.
             semantics: String (optional)
                 The dynamic semantics used to generate the target states.
+        Returns:
+            A list of pair (feature state, targets states): list of (list of String, list of list of String)
         """
+        if not isinstance(feature_states, list):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(i,(list,tuple,numpy.ndarray)) for i in feature_states):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(j,str) for i in feature_states for j in i):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(len(i) == len(self.features) for i in feature_states):
+            raise TypeError("Features state must correspond to the model feature variables (bad length)")
 
-        # Encode feature state with domain value id
-        feature_state_encoded = []
-        for var_id, val in enumerate(feature_state):
-            val_id = self.features[var_id][1].index(str(val))
-            feature_state_encoded.append(val_id)
-
-        #eprint(feature_state_encoded)
-
-        target_states = SynchronousConstrained.next(feature_state_encoded, self.targets, self.rules, self.constraints)
-
-        # Decode target states
         output = []
-        for s in target_states:
-            target_state = []
-            for var_id, val_id in enumerate(s):
-                #eprint(var_id, val_id)
-                if val_id == -1:
-                    target_state.append("?")
-                else:
-                    target_state.append(self.targets[var_id][1][val_id])
-            output.append(target_state)
+        for feature_state in feature_states:
+
+            # Encode feature state with domain value id
+            feature_state_encoded = []
+            for var_id, val in enumerate(feature_state):
+                val_id = self.features[var_id][1].index(str(val))
+                feature_state_encoded.append(val_id)
+
+            #eprint(feature_state_encoded)
+
+            target_states = SynchronousConstrained.next(feature_state_encoded, self.targets, self.rules, self.constraints)
+
+            # Decode target states
+            local_output = []
+            for s in target_states:
+                target_state = []
+                for var_id, val_id in enumerate(s):
+                    #eprint(var_id, val_id)
+                    if val_id == -1:
+                        target_state.append("?")
+                    else:
+                        target_state.append(self.targets[var_id][1][val_id])
+                local_output.append(target_state)
+            output.append((list(feature_state), local_output))
 
         return output
 
@@ -179,7 +204,7 @@ class CDMVLP(DMVLP):
             print_fn = print
 
         if len(self.constraints) == 0:
-            print_fn(' Constraints: []')
+            print_fn(" Constraints: []")
         else:
             print_fn(" Constraints:")
             for r in self.constraints:

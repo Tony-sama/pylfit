@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/02
-# @updated: 2021/02/02
+# @updated: 2021/06/15
 #
 # @desc: PRIDE regression test script
 # Tests algorithm methods on random dataset
@@ -493,8 +493,8 @@ class PRIDE_benchmark_tests(unittest.TestCase):
         predicted = set()
 
         for s1 in model.feature_states():
-            prediction = model.predict(s1)
-            for s2 in prediction:
+            prediction = model.predict([s1])
+            for s2 in prediction[tuple(s1)]:
                 predicted.add( (tuple(s1), tuple(s2)) )
 
         eprint()

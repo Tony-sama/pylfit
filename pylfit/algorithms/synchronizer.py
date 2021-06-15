@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/11/05
-# @updated: 2021/02/01
+# @updated: 2021/06/15
 #
 # @desc: simple Synchronizer implementation, for Learning from states transitions from ANY semantic.
 #   - INPUT: a set of pairs of discrete multi-valued states
@@ -39,7 +39,7 @@ class Synchronizer (Algorithm):
     """
 
     # Enable heuristic: only partial state will be generated for impossible state generation for constraints learning
-    HEURISTIC_PARTIAL_IMPOSSIBLE_STATE = False
+    HEURISTIC_PARTIAL_IMPOSSIBLE_STATE = True
 
     @staticmethod
     def fit(dataset, complete=True, verbose=0): #variables, values, transitions, conclusion_values=None, complete=True):
@@ -99,7 +99,7 @@ class Synchronizer (Algorithm):
         else:
             # Extract occurences of each transition
             next_states = dict()
-            for (i,j) in data:
+            for (i,j) in encoded_data:
                 s_i = tuple(i)
                 s_j = tuple(j)
                 # new init state
@@ -114,7 +114,7 @@ class Synchronizer (Algorithm):
             impossible = set()
             for i in next_states:
                 # Extract all possible value of each variable in next state
-                domains = [set() for var in dataset.features]
+                domains = [set() for var in dataset.targets]
 
                 for s in next_states[i][1]:
                     for var in range(0,len(s)):
@@ -287,7 +287,7 @@ class Synchronizer (Algorithm):
                 completed_current = current+[-1 for i in range(0, len(domains)-len(current))]
                 output.append(completed_current)
             else: # complete current state
-                Synchronizer.__partial_combinations(states, domains, current, output)
+                Synchronizer._partial_combinations(states, domains, current, output)
 
             current.pop()
 

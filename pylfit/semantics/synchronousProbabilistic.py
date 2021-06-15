@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/01/03
-# @updated: 2020/01/03
+# @updated: 2021/06/15
 #
 # @desc: simple implementation of synchronous probabilistic semantic over LogicProgram
 #   - Update all variables at the same time

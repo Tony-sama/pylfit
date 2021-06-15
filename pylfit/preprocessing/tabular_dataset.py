@@ -1,3 +1,11 @@
+#-------------------------------------------------------------------------------
+# @author: Tony Ribeiro
+# @created: 2021/03/03
+# @updated: 2021/06/15
+#
+# @desc: pylfit tabular dataset utility functions
+#-------------------------------------------------------------------------------
+
 """ pylfit tabular dataset loading utilities """
 
 from ..utils import eprint
@@ -39,20 +47,27 @@ def transitions_dataset_from_csv(path, feature_names, target_names):
 
     return dataset
 
-def transitions_dataset_from_array(data, feature_names=None, target_names=None):
-    """ Create a StateTransitionsDataset from given data and variables names.
+def transitions_dataset_from_array(data, feature_domains=None, target_domains=None, feature_names=None, target_names=None):
+    """ Create a StateTransitionsDataset from given data according to variables domains if given or variable names if given.
+
+    Feature/target variables names are automatically generated if not given:
+        x_0, x_1, ... for features.
+        y_0, y_1, ... for targets.
+    Feature/target variables domains are extracted from data if not given as argument.
 
     Args:
         data: list of tuple (list of String, list of String).
             Multiset of state transitions.
+        feature_domains: list of (String, list of String)
+            Name and domain of each feature variable (optional)
+        target_domains: list of (String, list of String)
+            Name and domain of each target variable (optional)
         feature_names: list of String
             Names of the feature variables (optional).
-            Extracted from data when not given.
-            Domain values will be ordered alphabetically in this case.
+            Should not be given if feature_domains is given.
         target_names: list of String
             Names of the target variables (optional).
-            Extracted from data when not given.
-            Domain values will be ordered alphabetically in this case.
+            Should not be given if target_domains is given.
     Returns:
         StateTransitionsDataset.
             A pylfit dataset api encoding of the state transitions, ready to be used with pylfit model api.
@@ -70,8 +85,48 @@ def transitions_dataset_from_array(data, feature_names=None, target_names=None):
     if not all(isinstance(i, (str,int)) for s1,s2 in data for i in s2 ):
         raise ValueError("Argument data target states values must be int or string")
 
+    # Check feature_domains type
+    if feature_domains is not None:
+        if not isinstance(feature_domains, list):
+            raise TypeError("Argument feature_domains must be a list")
+        if not all(isinstance(i, tuple) for i in feature_domains):
+            raise TypeError("Argument feature_domains must be a list of tuple")
+        if not all(len(i) == 2 for i in feature_domains):
+            raise TypeError("Argument feature_domains must be a list of tuple of size 2")
+        if not all(isinstance(var, str) for var,vals in feature_domains):
+            raise TypeError("Argument feature_domains must be a list of tuple (String, list of String)")
+        if not all(isinstance(vals, list) for var,vals in feature_domains):
+            raise TypeError("Argument feature_domains must be a list of tuple (String, list of String)")
+        if not all(isinstance(val, str) for var,vals in feature_domains for val in vals):
+            raise TypeError("Argument feature_domains must be a list of tuple (String, list of String)")
+        if not len([var for var, vals in feature_domains]) == len(set([var for var, vals in feature_domains])):
+            raise ValueError("Argument feature_domains, each variable name must be unique")
+        if not all(len(vals) == len(set(vals)) for var, vals in feature_domains):
+            raise ValueError("Argument feature_domains, each value name in a domain must be unique")
+
+    # Check target_domains type
+    if target_domains is not None:
+        if not isinstance(target_domains, list):
+            raise TypeError("Argument target_domains must be a list")
+        if not all(isinstance(i, tuple) for i in target_domains):
+            raise TypeError("Argument target_domains must be a list of tuple")
+        if not all(len(i) == 2 for i in target_domains):
+            raise TypeError("Argument target_domains must be a list of tuple of size 2")
+        if not all(isinstance(var, str) for var,vals in target_domains):
+            raise TypeError("Argument target_domains must be a list of tuple (String, list of String)")
+        if not all(isinstance(vals, list) for var,vals in target_domains):
+            raise TypeError("Argument target_domains must be a list of tuple (String, list of String)")
+        if not all(isinstance(val, str) for var,vals in target_domains for val in vals):
+            raise TypeError("Argument target_domains must be a list of tuple (String, list of String)")
+        if not len([var for var, vals in target_domains]) == len(set([var for var, vals in target_domains])):
+            raise ValueError("Argument target_domains, each variable name must be unique")
+        if not all(len(vals) == len(set(vals)) for var, vals in target_domains):
+            raise ValueError("Argument target_domains, each value name in a domain must be unique")
+
     # Check feature_names type
     if feature_names is not None:
+        if feature_domains is not None:
+            raise ValueError("Argument feature_names should not be given when feature_domains is specified")
         if not isinstance(feature_names, (list)):
             raise TypeError("Argument feature_names must be a list.")
         if not all(isinstance(i, str) for i in feature_names):
@@ -79,23 +134,28 @@ def transitions_dataset_from_array(data, feature_names=None, target_names=None):
 
     # Check target_names type
     if target_names is not None:
+        if target_domains is not None:
+            raise ValueError("Argument target_names should not be given when target_domains is specified")
         if not isinstance(target_names, (list)):
             raise TypeError("Argument target_names must be a list.")
         if not all(isinstance(i, str) for i in target_names):
             raise ValueError("Argument target_names must only contains String.")
 
-    # Initialize feature/target variables domain
-    feature_domains = None
-    target_domains = None
-
-    if feature_names is not None:
-        feature_domains = [(str(i), []) for i in feature_names]
-    if target_names is not None:
-        target_domains = [(str(i), []) for i in target_names]
-
     # Empty dataset
     if len(data) == 0:
+        if feature_domains is None:
+            raise ValueError("Features domain must not be None if data is empty")
+        if target_domains is None:
+            raise ValueError("Features and targets domain must not be None if data is empty")
+
         return StateTransitionsDataset(data=[], features=feature_domains, targets=target_domains)
+
+    # Initialize feature/target variables domain
+    if feature_names is not None and feature_domains is None:
+        feature_domains = [(str(i), []) for i in feature_names]
+
+    if target_names is not None and target_domains is None:
+        target_domains = [(str(i), []) for i in target_names]
 
     if feature_domains is None:
         feature_domains = [("x"+str(i), []) for i in range(len(data[0][0]))]
@@ -112,9 +172,9 @@ def transitions_dataset_from_array(data, feature_names=None, target_names=None):
         raise ValueError("data target states must be of same size.")
 
     if not nb_features == len(feature_domains):
-        raise ValueError("Size of argument feature_names must be same as argument data feature states size.")
+        raise ValueError("Size of argument feature_domains and feature_names must be same as argument data feature states size.")
     if not nb_targets == len(target_domains):
-        raise ValueError("Size of argument target_names must be same as argument data target states size.")
+        raise ValueError("Size of argument target_domains and target_names must be same as argument data target states size.")
 
     # Convert data format to StateTransitionsDataset format
     data_encoded = [(numpy.array([str(i) for i in x]), numpy.array([str(i) for i in y])) for x, y in data]

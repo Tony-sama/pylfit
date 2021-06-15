@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/01
-# @updated: 2021/02/05
+# @updated: 2021/06/15
 #
 # @desc: class DMVLP python source code file
 #-------------------------------------------------------------------------------
@@ -13,8 +13,7 @@ from ..objects import Rule
 
 from ..datasets import StateTransitionsDataset
 
-from ..algorithms import GULA
-from ..algorithms import PRIDE
+from ..algorithms import Algorithm, GULA, PRIDE
 
 from ..semantics import Synchronous, Asynchronous, General
 
@@ -70,6 +69,10 @@ class DMVLP(Model):
         self.targets = targets
         self.rules = rules
 
+    def copy(self):
+        output = DMVLP(self.features, self.targets, self.rules)
+        output.algorithm = self.algorithm
+        return output
 #--------------
 # Operators
 #--------------
@@ -77,7 +80,7 @@ class DMVLP(Model):
     def __str__(self):
         return self.to_string()
 
-    def _repr__(self):
+    def __repr__(self):
         return self.to_string()
 
 #--------------
@@ -88,8 +91,8 @@ class DMVLP(Model):
         """
         Set the algorithm to be used to fit the model.
         Supported algorithms:
-            - "gula", General Usage LFIT Algorithm (TODO)
-            - "pride", (TODO)
+            - "gula", General Usage LFIT Algorithm
+            - "pride", Polynomial heuristic version of GULA
             - "lf1t", (TODO)
 
         """
@@ -98,9 +101,9 @@ class DMVLP(Model):
             raise ValueError('algorithm parameter must be one element of DMVLP._COMPATIBLE_ALGORITHMS: '+str(DMVLP._ALGORITHMS)+'.')
 
         if algorithm == "gula":
-            self.algorithm = GULA
+            self.algorithm = "gula"
         elif algorithm == "pride":
-            self.algorithm = PRIDE
+            self.algorithm = "pride"
         else:
             raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in DMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
@@ -121,6 +124,9 @@ class DMVLP(Model):
             msg = 'Dataset type (' + str(dataset.__class__.__name__)+ ') not suported by DMVLP model.'
             raise ValueError(msg)
 
+        if self.algorithm not in DMVLP._ALGORITHMS:
+            raise ValueError('algorithm property must be one element of DMVLP._COMPATIBLE_ALGORITHMS: '+str(DMVLP._ALGORITHMS)+'.')
+
         # TODO: add time serie management
         #eprint("algorithm set to " + str(self.algorithm))
 
@@ -128,13 +134,13 @@ class DMVLP(Model):
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
         Dataset must be of type ' + str(StateTransitionsDataset.__class__.__name__)
 
-        if self.algorithm == GULA:
+        if self.algorithm == "gula":
             if not isinstance(dataset, StateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with GULA")
             self.rules = GULA.fit(dataset=dataset,verbose=verbose) #, targets_to_learn={'y1': ['1']})
-        elif self.algorithm == PRIDE:
+        elif self.algorithm == "pride":
             if not isinstance(dataset, StateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
@@ -146,50 +152,118 @@ class DMVLP(Model):
         # TODO
         #raise NotImplementedError('Not implemented yet')
 
-    def predict(self, feature_state, semantics="synchronous"):
+    def extend(self, dataset, feature_states, verbose=0):
+        """
+        Complete the model with additional optimal rules of the given dataset that also match the features states of feature_states if there exists.
+
+        Args:
+            dataset: StateTransitionsDataset
+                State transitions to learn from.
+            feature_states: list of (list of string)
+                Features states that must be matched by the new rules to be found.
+        """
+        if not isinstance(feature_states, list):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(i,(list,tuple,numpy.ndarray)) for i in feature_states):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(j,str) for i in feature_states for j in i):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(len(i) == len(self.features) for i in feature_states):
+            raise TypeError("Features state must correspond to the model feature variables (bad length)")
+
+        dataset_feature_states = set(tuple(Algorithm.encode_state(s1, dataset.features)) for s1,s2 in dataset.data)
+
+        for feature_state in feature_states:
+            encoded_feature_state = Algorithm.encode_state(feature_state, dataset.features)
+
+            for var_id, (var,vals) in enumerate(dataset.targets):
+                for val_id, val in enumerate(vals):
+
+                    # Check if new rules are needed
+                    for r in self.rules:
+                        if r.head_variable == var_id and r.head_value == val_id:
+                            if r.matches(encoded_feature_state):
+                                continue
+
+                    # usual data conversion
+                    encoded_data = Algorithm.encode_transitions_set(dataset.data, dataset.features, dataset.targets)
+                    positives, negatives = PRIDE.interprete(encoded_data, var_id, val_id)
+
+                    # Search for likeliness rules
+                    new_rule = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), positives, negatives, encoded_feature_state, verbose)
+                    if new_rule is not None:
+                        self.rules.append(new_rule)
+                    else:
+                        if verbose > 0:
+                            eprint("Requested state "+str(feature_state)+\
+                            " cannot be matched by a likeliness rule of "+self.targets[var_id][0]+"("+self.targets[var_id][1][val_id]+") consistent with given dataset")
+
+
+    def predict(self, feature_states, semantics="synchronous", default=None):
         """
         Predict the possible target states of the given feature state according to the model rules.
 
         Args:
-            feature_state: list of String
-                Feature state from wich target state must be predicted.
+            feature_states: list of list of String
+                Feature states from wich target states must be predicted.
             semantics: String (optional)
                 The dynamic semantics used to generate the target states.
+            default: list(String, list of String)
+                Default value for each variable when no rule match.
+                Will be '?' if not given.
         """
+        if not isinstance(feature_states, list):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(i,(list,tuple,numpy.ndarray)) for i in feature_states):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(isinstance(j,str) for i in feature_states for j in i):
+            raise TypeError("Argument feature_states must be a list of list of strings")
+        if not all(len(i) == len(self.features) for i in feature_states):
+            raise TypeError("Features state must correspond to the model feature variables (bad length)")
 
-        # Encode feature state with domain value id
-        feature_state_encoded = []
-        for var_id, val in enumerate(feature_state):
-            val_id = self.features[var_id][1].index(str(val))
-            feature_state_encoded.append(val_id)
+        output = dict()
+        for feature_state in feature_states:
+            # Encode feature state with domain value id
+            feature_state_encoded = []
+            for var_id, val in enumerate(feature_state):
+                try:
+                    val_id = self.features[var_id][1].index(str(val))
+                except ValueError:
+                    raise ValueError("Bad value in "+str(feature_state)+": "+str(val)+" not in domain of "+str(self.features[var_id][0]))
+                feature_state_encoded.append(val_id)
 
-        #eprint(feature_state_encoded)
+            #eprint(feature_state_encoded)
 
-        target_states = []
-        if semantics == "synchronous":
-            target_states = Synchronous.next(feature_state_encoded, self.targets, self.rules)
-        if semantics == "asynchronous":
-            if len(self.features) != len(self.targets):
-                raise ValueError("Asynchronous semantics can only be used if features and targets variables are the same (for now).")
-            target_states = Asynchronous.next(feature_state_encoded, self.targets, self.rules)
-        if semantics == "general":
-            if len(self.features) != len(self.targets):
-                raise ValueError("General semantics can only be used if features and targets variables are the same (for now).")
-            target_states = General.next(feature_state_encoded, self.targets, self.rules)
+            target_states = []
+            if semantics == "synchronous":
+                target_states = Synchronous.next(feature_state_encoded, self.targets, self.rules, default)
+            elif semantics == "asynchronous":
+                if len(self.features) != len(self.targets):
+                    raise ValueError("Asynchronous semantics can only be used if features and targets variables are the same (for now).")
+                target_states = Asynchronous.next(feature_state_encoded, self.targets, self.rules, default)
+            elif semantics == "general":
+                if len(self.features) != len(self.targets):
+                    raise ValueError("General semantics can only be used if features and targets variables are the same (for now).")
+                target_states = General.next(feature_state_encoded, self.targets, self.rules, default)
+            else:
+                raise ValueError("Parameter semantics of DMVLP.predict must be one element of ['synchronous', 'asynchronous', 'general']")
 
 
-        # Decode target states
-        output = []
-        for s in target_states:
-            target_state = []
-            for var_id, val_id in enumerate(s):
-                #eprint(var_id, val_id)
-                if val_id == -1:
-                    target_state.append("?")
-                else:
-                    target_state.append(self.targets[var_id][1][val_id])
-            output.append(target_state)
+            # Decode target states
+            local_output = dict()
 
+            for s, rules in target_states.items():
+                target_state = []
+                for var_id, val_id in enumerate(s):
+                    #eprint(var_id, val_id)
+                    if val_id == -1:
+                        target_state.append("?")
+                    else:
+                        target_state.append(self.targets[var_id][1][val_id])
+
+                local_output[tuple(target_state)] = rules
+
+            output[tuple(feature_state)] = local_output
         return output
 
     def summary(self, line_length=None, print_fn=None):
@@ -211,7 +285,7 @@ class DMVLP(Model):
         if print_fn == None:
             print_fn = print
         print_fn(str(self.__class__.__name__) + " summary:")
-        print_fn(" Algorithm: " + str(self.algorithm.__name__) + ' (' + str(self.algorithm) + ')')
+        print_fn(" Algorithm: " + str(self.algorithm))
         print_fn(" Features: ")
         for var in self.features:
             print_fn('  ' + str(var[0]) + ': ' + str(list(var[1])))
@@ -234,7 +308,7 @@ class DMVLP(Model):
                 a readable representation of the object
         """
         output = "{\n"
-        output += "Algorithm: " + str(self.algorithm.__name__)
+        output += "Algorithm: " + str(self.algorithm)
         output += "\nFeatures: " + str(self.features)
         output += "\nTargets: " + str(self.targets)
         output += "\nRules:\n"

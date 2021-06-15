@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/03
-# @updated: 2021/02/03
+# @updated: 2021/06/15
 #
 # @desc: Synchronizer regression test script
 # Tests algorithm methods on benchmark dataset
@@ -72,7 +72,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         self._check_rules_and_predictions(dataset, expected_string_rules, expected_string_constraints)
 
     def test_disjonctive_boolean_network(self):
-        print(">> Synchronizer benchmark <repressilator>:")
+        print(">> Synchronizer benchmark <disjonctive_boolean_network>:")
 
         dataset_filepath = "datasets/disjonctive_boolean_network.csv"
         features_col_header = ["a","b","c"]
@@ -110,7 +110,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         self._check_rules_and_predictions(dataset, expected_string_rules, expected_string_constraints)
 
     def test_toy_all_or_nothing_change(self):
-        print(">> Synchronizer benchmark <repressilator>:")
+        print(">> Synchronizer benchmark <toy_all_or_nothing_change>:")
 
         dataset_filepath = "datasets/toy_all_or_nothing_change.csv"
         features_col_header = ["x0","x1"]
@@ -140,7 +140,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         self._check_rules_and_predictions(dataset, expected_string_rules, expected_string_constraints)
 
     def test_toy_asynchronous_example(self):
-        print(">> Synchronizer benchmark <repressilator>:")
+        print(">> Synchronizer benchmark <toy_asynchronous_example>:")
 
         dataset_filepath = "datasets/toy_asynchronous_example.csv"
         features_col_header = ["x0","x1","x2"]
@@ -230,12 +230,9 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         #model.summary()
 
         expected = set((tuple(s1),tuple(s2)) for s1,s2 in dataset.data)
-        predicted = set()
 
-        for s1 in model.feature_states():
-            prediction = model.predict(s1)
-            for s2 in prediction:
-                predicted.add( (tuple(s1), tuple(s2)) )
+        predicted = model.predict(model.feature_states())
+        predicted = set((tuple(s1),tuple(s2)) for (s1, S2) in predicted for s2 in S2)
 
         eprint()
         done = 0

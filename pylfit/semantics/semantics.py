@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/07/14
-# @updated: 2021/02/17
+# @updated: 2021/06/15
 #
 # @desc: simple implementation of asynchronous semantic over LogicProgram
 #   - Update atmost one variables at a time

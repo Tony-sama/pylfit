@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/07/14
-# @updated: 2021/02/17
+# @updated: 2021/06/15
 #
 # @desc: simple implementation of general semantic over DMVLP
 #   - Update any number of variables at a time
@@ -21,7 +21,7 @@ class General(Semantics):
     Assume feature=targets
     """
 
-    def next(feature_state, targets, rules):
+    def next(feature_state, targets, rules, default=None):
         """
         Compute the next state according to the rules and the synchronous semantics.
 
@@ -40,19 +40,35 @@ class General(Semantics):
 
         output = []
         domains = [set() for var in targets]
+        matching_rules = []
 
         # extract conclusion of all matching rules
         for r in rules:
             if(r.matches(feature_state)):
                 domains[r.head_variable].add(r.head_value)
+                matching_rules.append(r)
+
+        # Check variables without next value
+        for i,domain in enumerate(domains):
+            if len(domain) == 0:
+                if default == None:
+                    domains[i] = set([-1])
+                else:
+                    domains[i] = set(default[i][1])
 
         # Add current value as possibility
         for var in range(0,len(targets)):
             if var < len(feature_state):
                 domains[var].add(feature_state[var])
-            if len(domains[var]) == 0:
-                domains[var] = set([-1])
 
-        output = [list(i) for i in list(itertools.product(*domains))]
+        target_states = [list(i) for i in list(itertools.product(*domains))]
+
+        output = dict()
+        for s in target_states:
+            realised_by = []
+            for r in matching_rules:
+                if r.head_value == s[r.head_variable]:
+                    realised_by.append(r)
+            output[tuple(s)] = realised_by
 
         return output
