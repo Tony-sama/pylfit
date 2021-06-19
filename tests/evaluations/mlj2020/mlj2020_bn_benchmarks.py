@@ -72,7 +72,7 @@ def evaluate_scalability_on_bn_benchmark(algorithm, benchmark, benchmark_name, s
     # Boolean network benchmarks only have rules for value 1, if none match next value is 0
     if full_transitions is None:
         eprint("Generating benchmark transitions ...")
-        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in benchmark.feature_states() for target_state in benchmark.predict([feature_state], semantics) ]
+        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in benchmark.feature_states() for target_state in benchmark.predict([feature_state], semantics)[tuple(feature_state)] ]
     #eprint(full_transitions)
 
     # 2) Prepare scores containers
@@ -211,7 +211,7 @@ def evaluate_accuracy_on_bn_benchmark(algorithm, benchmark, semantics, run_tests
     #default = [[0] for v in benchmark.targets]
     if full_transitions is None:
         eprint(">>> Generating benchmark transitions...")
-        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics)[tuple(feature_state)] ]
     full_transitions_grouped = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in full_transitions if tuple(s1) == tuple(s1_)) for s1,s2 in full_transitions}
     #eprint("Transitions: ", full_transitions)
     #eprint("Grouped: ", full_transitions_grouped)
@@ -405,7 +405,7 @@ def evaluate_explanation_on_bn_benchmark(algorithm, benchmark, expected_model, r
     #default = [[0] for v in benchmark.targets]
     if full_transitions is None:
         eprint(">>> Generating benchmark transitions...")
-        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
+        full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics)[tuple(feature_state)] ]
     full_transitions_grouped = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in full_transitions if tuple(s1) == tuple(s1_)) for s1,s2 in full_transitions}
     #eprint("Transitions: ", full_transitions)
     #eprint("Grouped: ", full_transitions_grouped)
@@ -759,7 +759,8 @@ if __name__ == '__main__':
                 #latex += "&"
                 #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
                 default = [(var, [0]) for var,vals in program.targets]
-                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default) ]
+                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default)[tuple(feature_state)] ]
+
 
                 for train_size in train_sizes:
                     if train_size >= 1.0:
@@ -809,7 +810,7 @@ if __name__ == '__main__':
 
                 #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
                 default = [(var, [0]) for var,vals in program.targets]
-                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default) ]
+                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default)[tuple(feature_state)] ]
 
                 for train_size in train_sizes:
                     real_train_size = train_size
@@ -846,7 +847,7 @@ if __name__ == '__main__':
                 eprint(">> Semantics: "+semantics)
                 #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
                 default = [(var, [0]) for var,vals in program.targets]
-                full_transitions = [ (feature_state, target_state) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default) ]
+                full_transitions = [ (feature_state, target_state) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default)[tuple(feature_state)] ]
 
                 # compute expected WDMVLP
                 expected_model = WDMVLP(features=program.features, targets=program.targets)
