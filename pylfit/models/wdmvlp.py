@@ -140,7 +140,7 @@ class WDMVLP(DMVLP):
             if verbose > 0:
                 eprint("Starting fit with GULA")
                 eprint("Learning possibilities...")
-            rules = GULA.fit(dataset=dataset) #, targets_to_learn={'y1': ['1']})
+            rules = GULA.fit(dataset=dataset, verbose=verbose) #, targets_to_learn={'y1': ['1']})
 
             if verbose > 0:
                 eprint("Learning impossibilities...")
@@ -152,7 +152,7 @@ class WDMVLP(DMVLP):
             if verbose > 0:
                 eprint("Starting fit with PRIDE")
                 eprint("Learning likeliness...")
-            rules = PRIDE.fit(dataset=dataset) #, targets_to_learn={'y1': ['1']})
+            rules = PRIDE.fit(dataset=dataset, verbose=verbose) #, targets_to_learn={'y1': ['1']})
 
             if verbose > 0:
                 eprint("Learning unlikeliness...")
@@ -163,11 +163,11 @@ class WDMVLP(DMVLP):
                 if verbose > 0:
                     eprint("Starting fit with BruteForce")
                     eprint("Learning possibilities...")
-                rules = BruteForce.fit(dataset=dataset) #, targets_to_learn={'y1': ['1']})
+                rules = BruteForce.fit(dataset=dataset, verbose=verbose) #, targets_to_learn={'y1': ['1']})
 
                 if verbose > 0:
                     eprint("Learning impossibilities...")
-                unlikeliness_rules = BruteForce.fit(dataset=dataset, impossibility_mode=True)
+                unlikeliness_rules = BruteForce.fit(dataset=dataset, impossibility_mode=True, verbose=verbose)
         else:
             raise NotImplementedError("Algorithm usage not implemented yet")
 

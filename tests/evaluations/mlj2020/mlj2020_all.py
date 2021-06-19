@@ -53,7 +53,7 @@ if __name__ == '__main__':
     if DEBUG_runs:
         eprint("Debug runs")
         os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_gula.csv"+redirect_error+end_command)
-        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py brute_force 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_brute_force.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py brute-force 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_brute_force.csv"+redirect_error+end_command)
         os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py synchronizer 0 10 10 "+str(run_tests)+" scalability random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_scalability_synchronizer.csv"+redirect_error+end_command)
         os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 5 5 "+str(run_tests)+" accuracy random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_accuracy_gula.csv"+redirect_error+end_command)
         os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 5 5 "+str(run_tests)+" explanation random_transitions "+str(1)+" > tmp/debug_bn_benchmarks_explanation_gula.csv"+redirect_error+end_command)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         print()
         print("1.1) Boolean network Benchmarks: X% train")
         os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 0 13 13 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_gula_0_to_13.csv"+redirect_error+end_command)
-        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py brute_force 0 13 13 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_brute_force_0_to_13.csv"+redirect_error+end_command)
+        os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py brute-force 0 13 13 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_brute_force_0_to_13.csv"+redirect_error+end_command)
 
         #os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 14 16 16 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_gula_14_to_16.csv"+redirect_error+end_command)
         #os.system(start_command+"python3 -u evaluations/mlj2020/mlj2020_bn_benchmarks.py gula 17 18 16 "+str(run_tests)+" scalability random_transitions "+str(time_out)+" > tmp/bn_benchmarks_scalability_gula_17_to_18.csv"+redirect_error+end_command)

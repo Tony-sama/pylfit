@@ -135,7 +135,7 @@ def evaluate_scalability_on_bn_benchmark(algorithm, benchmark, benchmark_name, s
         try:
             start = time.time()
 
-            if algorithm in ["gula", "pride", "brute_force"]:
+            if algorithm in ["gula", "pride", "brute-force"]:
                 model = WDMVLP(features=benchmark.features, targets=benchmark.targets)
             elif algorithm in ["synchronizer"]:
                 model = CDMVLP(features=benchmark.features, targets=benchmark.targets)
@@ -668,13 +668,13 @@ if __name__ == '__main__':
 
     # 1: Parameters
     #---------------
-    lfit_methods = ["gula", "pride", "brute_force", "synchronizer"]
+    lfit_methods = ["gula", "pride", "brute-force", "synchronizer"]
     baseline_methods = ["baseline"]
     experiements = ["scalability", "accuracy", "explanation"]
     observations = ["all_from_init_states", "random_transitions"]
 
     if len(sys.argv) < 9 or (sys.argv[1] not in lfit_methods+baseline_methods) or (sys.argv[6] not in experiements) or (sys.argv[7] not in observations):
-        eprint("Please give the experiement to perform as parameter: gula/pride/synchronizer/baseline and min_var, max_var, max_var_general, run_tests, scalability/accuracy/explanation, all_from_init_states/random_transitions, time_out")
+        eprint("Please give the experiement to perform as parameter: gula/pride/brute-force/synchronizer/baseline and min_var, max_var, max_var_general, run_tests, scalability/accuracy/explanation, all_from_init_states/random_transitions, time_out")
         exit()
 
     if sys.argv[1] in lfit_methods or sys.argv[1] in baseline_methods:
