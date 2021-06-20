@@ -572,54 +572,54 @@ def evaluate_explanation_on_bn_benchmark(algorithm, benchmark, expected_model, r
             # Random prediction
 
             # random prediction and rules
-            predictions = {tuple(s1): {variable: {value: (proba, \
-            (int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)),\
-            (100 - int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)) )\
-            for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
-            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
-            for s1 in test_feature_states}
+            #predictions = {tuple(s1): {variable: {value: (proba, \
+            #(int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)),\
+            #(100 - int(proba*100), random_rule(var_id,val_id,test_dataset.features,test_dataset.targets)) )\
+            #for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
+            #for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            #for s1 in test_feature_states}
 
-            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
-            print("baseline_random_predictions_random_rules," + common_settings + "," + str(score))
-            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_random_rules)")
+            #score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            #print("baseline_random_predictions_random_rules," + common_settings + "," + str(score))
+            #eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_random_rules)")
 
             # empty_program":
-            predictions = {tuple(s1): {variable: {value: (proba, \
-            (int(proba*100), None),\
-            (100 - int(proba*100), None) )\
-            for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
-            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
-            for s1 in test_feature_states}
+            #predictions = {tuple(s1): {variable: {value: (proba, \
+            #(int(proba*100), None),\
+            #(100 - int(proba*100), None) )\
+            #for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
+            #for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            #for s1 in test_feature_states}
 
-            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
-            print("baseline_random_predictions_no_rules," + common_settings + "," + str(score))
-            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_no_rules)")
+            #score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            #print("baseline_random_predictions_no_rules," + common_settings + "," + str(score))
+            #eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_no_rules)")
 
             # random prediction and most general rule
-            predictions = {tuple(s1): {variable: {value: (proba, \
-            (int(proba*100), Rule(var_id, val_id, len(test_dataset.features))),\
-            (100 - int(proba*100), Rule(var_id, val_id, len(test_dataset.features))) )\
-            for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
-            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
-            for s1 in test_feature_states}
+            #predictions = {tuple(s1): {variable: {value: (proba, \
+            #(int(proba*100), Rule(var_id, val_id, len(test_dataset.features))),\
+            #(100 - int(proba*100), Rule(var_id, val_id, len(test_dataset.features))) )\
+            #for val_id, value in enumerate(values) for proba in [round(random.uniform(0.0,1.0),2)]}\
+            #for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            #for s1 in test_feature_states}
 
-            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
-            print("baseline_random_predictions_most_general_rules," + common_settings + "," + str(score))
-            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_most_general_rules)")
+            #score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            #print("baseline_random_predictions_most_general_rules," + common_settings + "," + str(score))
+            #eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_most_general_rules)")
 
             # random prediction and most specific rule:
-            predictions = {tuple(s1): {variable: {value: (proba, \
-            (int(proba*100), most_specific_matching_rule),\
-            (100 - int(proba*100), most_specific_matching_rule) )\
-            for val_id, value in enumerate(values)\
-            for proba in [round(random.uniform(0.0,1.0),2)] \
-            for most_specific_matching_rule in [Rule(var_id,val_id,len(test_dataset.features),[(cond_var,cond_val) for cond_var,cond_val in enumerate(GULA.encode_state(s1,test_dataset.features))])]}\
-            for var_id, (variable, values) in enumerate(test_dataset.targets)}\
-            for s1 in test_feature_states}
+            #predictions = {tuple(s1): {variable: {value: (proba, \
+            #(int(proba*100), most_specific_matching_rule),\
+            #(100 - int(proba*100), most_specific_matching_rule) )\
+            #for val_id, value in enumerate(values)\
+            #for proba in [round(random.uniform(0.0,1.0),2)] \
+            #for most_specific_matching_rule in [Rule(var_id,val_id,len(test_dataset.features),[(cond_var,cond_val) for cond_var,cond_val in enumerate(GULA.encode_state(s1,test_dataset.features))])]}\
+            #for var_id, (variable, values) in enumerate(test_dataset.targets)}\
+            #for s1 in test_feature_states}
 
-            score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
-            print("baseline_random_predictions_most_specific_rules," + common_settings + "," + str(score))
-            eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_most_specific_rules)")
+            #score = explanation_score_from_predictions(predictions=predictions, expected_model=expected_model, dataset=test_dataset)
+            #print("baseline_random_predictions_most_specific_rules," + common_settings + "," + str(score))
+            #eprint(">>>>> explanation score: " + str(round(score * 100,2)) + "% (baseline_random_predictions_most_specific_rules)")
 
     # 4) Average scores
     #-------------------
@@ -847,7 +847,7 @@ if __name__ == '__main__':
                 eprint(">> Semantics: "+semantics)
                 #full_transitions = [ (np.array(feature_state), np.array(["0" if x=="?" else "1" for x in target_state])) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics) ]
                 default = [(var, [0]) for var,vals in program.targets]
-                full_transitions = [ (feature_state, target_state) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default)[tuple(feature_state)] ]
+                full_transitions = [ (np.array(feature_state), np.array(target_state)) for feature_state in program.feature_states() for target_state in program.predict([feature_state], semantics, default)[tuple(feature_state)] ]
 
                 # compute expected WDMVLP
                 expected_model = WDMVLP(features=program.features, targets=program.targets)
