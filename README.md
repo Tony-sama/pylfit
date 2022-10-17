@@ -4,8 +4,8 @@ Python implementation of the main algorithms of the Learning From Interpretation
 - PRIDE: Polynomial Relational Inference of Dynamic Environnement
 - Synchronizer
 
-Example of the usage of the different algorithms can be found in the pylfit_package/tests/examples/ folder
-use the following command from the tests/ directory:
+Example of the usage of the different algorithms can be found in the pylfit/tests/examples/ folder of https://github.com/Tony-sama/pylfit.
+Use the following command from the tests/ directory:
 ```
 python3 examples/api_gula_and_pride_example.py
 ```
@@ -46,7 +46,7 @@ data = [ \
 
 Use the pylfit.preprocessing api to load your data into the dataset format.
 ```
-dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 ```
 
 Use the summary() method to get a look at your formated data.
@@ -131,36 +131,37 @@ DMVLP summary:
 Use predict(feature_state) to make the model generate the possible targets states following a given feature states according to the model rules.
 Default semantics is synchronous but you can request asynchronous or general transitions using predict(feature_state,semantics) as follows.
 ```
-print("Predict from ['0','0','0'] (default: synchronous): ", end='')
-prediction = model.predict(["0","0","0"])
-print(prediction)
+# Predict from ['0','0','0'] (default: synchronous)
+state = ("0","0","0")
+prediction = model.predict([state])
+print("Synchronous:", [s for s in prediction[tuple(state)]])
 
-print("Predict from ['1','0','1'] (synchronous): ", end='')
-prediction = model.predict(["1","0","1"])
-print(prediction)
+# Predict from ['1','0','1'] (synchronous)
+state = ("1","0","1")
+prediction = model.predict([state], semantics="synchronous", default=None)
+print("Synchronous:", [s for s in prediction[state]])
 
-print("Predict from ['1','0','1'] (asynchronous): ", end='')
-prediction = model.predict(["1","0","1"], semantics="asynchronous")
-print(prediction)
+# Predict from ['1','0','1'] (asynchronous)
+prediction = model.predict([state], semantics="asynchronous")
+print("Asynchronous:", [s for s in prediction[state]])
 
-print("Predict from ['1','0','1'] (general): ", end='')
-prediction = model.predict(["1","0","1"], semantics="general")
-print(prediction)
+# Predict from ['1','0','1'] (general)
+prediction = model.predict([state], semantics="general")
+print("General:", [s for s in prediction[state]])
 ```
 
 print:
 ```
-Predict from ['0','0','0'] (default: synchronous): [['0', '0', '1']]
-Predict from ['1','0','1'] (synchronous): [['0', '1', '0']]
-Predict from ['1','0','1'] (asynchronous): [['0', '0', '1'], ['1', '1', '1'], ['1', '0', '0']]
-Predict from ['1','0','1'] (general): [['0', '0', '0'], ['0', '0', '1'], ['0', '1', '0'], ['0', '1', '1'], ['1', '0', '0'], ['1', '0', '1'], ['1', '1', '0'], ['1', '1', '1']]
+Synchronous: [('0', '0', '1')]
+Synchronous: [('0', '1', '0')]
+Asynchronous: [('0', '0', '1'), ('1', '1', '1'), ('1', '0', '0')]
+General: [('0', '0', '0'), ('0', '0', '1'), ('0', '1', '0'), ('0', '1', '1'), ('1', '0', '0'), ('1', '0', '1'), ('1', '1', '0'), ('1', '1', '1')]
 ```
 
 Using the previous code you get more or less the example file tests/examles/api_gula_and_pride_example.py.
 Its expected output is as follows.
 
 ```
-Convert array data as a StateTransitionsDataset using pylfit.preprocessing
 StateTransitionsDataset summary:
  Features:
   p_t_1: ['0', '1']
@@ -180,9 +181,8 @@ StateTransitionsDataset summary:
   (['0', '1', '1'], ['1', '0', '1'])
   (['1', '1', '1'], ['1', '1', '0'])
 
-Initialize a DMVLP with the dataset variables and set GULA as learning algorithm
 DMVLP summary:
- Algorithm: GULA (<class 'pylfit.algorithms.gula.GULA'>)
+ Algorithm: gula
  Features:
   p_t_1: ['0', '1']
   q_t_1: ['0', '1']
@@ -193,10 +193,8 @@ DMVLP summary:
   r_t: ['0', '1']
  Rules: []
 
-Fit the DMVLP on the dataset
-Trained model:
 DMVLP summary:
- Algorithm: GULA (<class 'pylfit.algorithms.gula.GULA'>)
+ Algorithm: gula
  Features:
   p_t_1: ['0', '1']
   q_t_1: ['0', '1']
@@ -213,12 +211,11 @@ DMVLP summary:
   q_t(1) :- p_t_1(1), r_t_1(1).
   r_t(0) :- p_t_1(1).
   r_t(1) :- p_t_1(0).
-Predict from ['0','0','0'] (default: synchronous): [['0', '0', '1']]
-Predict from ['1','0','1'] (synchronous): [['0', '1', '0']]
-Predict from ['1','0','1'] (asynchronous): [['0', '0', '1'], ['1', '1', '1'], ['1', '0', '0']]
-Predict from ['1','0','1'] (general): [['0', '0', '0'], ['0', '0', '1'], ['0', '1', '0'], ['0', '1', '1'], ['1', '0', '0'], ['1', '0', '1'], ['1', '1', '0'], ['1', '1', '1']]
-All states transitions of the model (synchronous):
-[(['0', '0', '0'], ['0', '0', '1']), (['0', '0', '1'], ['0', '0', '1']), (['0', '1', '0'], ['1', '0', '1']), (['0', '1', '1'], ['1', '0', '1']), (['1', '0', '0'], ['0', '0', '0']), (['1', '0', '1'], ['0', '1', '0']), (['1', '1', '0'], ['1', '0', '0']), (['1', '1', '1'], ['1', '1', '0'])]
+Synchronous: [('0', '0', '1')]
+Synchronous: [('0', '1', '0')]
+Asynchronous: [('0', '0', '1'), ('1', '1', '1'), ('1', '0', '0')]
+General: [('0', '0', '0'), ('0', '0', '1'), ('0', '1', '0'), ('0', '1', '1'), ('1', '0', '0'), ('1', '0', '1'), ('1', '1', '0'), ('1', '1', '1')]
+All transitions: [(('0', '0', '0'), ('0', '0', '1')), (('0', '0', '1'), ('0', '0', '1')), (('0', '1', '0'), ('1', '0', '1')), (('0', '1', '1'), ('1', '0', '1')), (('1', '0', '0'), ('0', '0', '0')), (('1', '0', '1'), ('0', '1', '0')), (('1', '1', '0'), ('1', '0', '0')), (('1', '1', '1'), ('1', '1', '0'))]
 Saving transitions to csv...
 Saved to tmp/output.csv
 ```
@@ -229,18 +226,62 @@ Saved to tmp/output.csv
 import pylfit
 ```
 
-Dataset is same as previously for DMVLP model but to learn constraint we will use another type of model: Constrained Dynamic Multi-valued Logic Program (CDMVLP)
+Format your data into states transitions: list of tuple (list of string, list of string)
+```
+data = [ \
+(["0","0","0"],["0","0","1"]), \
+(["1","0","0"],["0","0","0"]), \
+(["0","1","0"],["1","0","1"]), \
+(["0","0","1"],["0","0","1"]), \
+(["1","1","0"],["1","0","0"]), \
+(["1","0","1"],["0","1","0"]), \
+(["0","1","1"],["1","0","1"]), \
+(["1","1","1"],["1","1","0"])]
+```
+
+Use the pylfit.preprocessing api to load your data into the dataset format.
+```
+dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+```
+
+Use the summary() method to get a look at your formated data.
+```
+dataset.summary()
+```
+summary() print:
+```
+StateTransitionsDataset summary:
+ Features:
+  p_t_1: ['0', '1']
+  q_t_1: ['0', '1']
+  r_t_1: ['0', '1']
+ Targets:
+  p_t: ['0', '1']
+  q_t: ['0', '1']
+  r_t: ['0', '1']
+ Data:
+  (['0', '0', '0'], ['0', '0', '1'])
+  (['1', '0', '0'], ['0', '0', '0'])
+  (['0', '1', '0'], ['1', '0', '1'])
+  (['0', '0', '1'], ['0', '0', '1'])
+  (['1', '1', '0'], ['1', '0', '0'])
+  (['1', '0', '1'], ['0', '1', '0'])
+  (['0', '1', '1'], ['1', '0', '1'])
+  (['1', '1', '1'], ['1', '1', '0'])
+```
+
+If this is all the possible transitions of the system we need to learn constraint to prevent the transition ([0,0,0],[1,0,1]) in the synchronous semantics. For that we will use another type of model: Constrained Dynamic Multi-valued Logic Program (CDMVLP)
 
 ```
 model = pylfit.models.CDMVLP(features=dataset.features, targets=dataset.targets)
-model.compile(algorithm=ALGORITHM)
+model.compile(algorithm="synchronizer")
 model.summary()
 ```
 
 print:
 ```
 CDMVLP summary:
- Algorithm: Synchronizer (<class 'pylfit.algorithms.synchronizer.Synchronizer'>)
+ Algorithm: synchronizer
  Features:
   p_t_1: ['0', '1']
   q_t_1: ['0', '1']
@@ -258,7 +299,6 @@ CDMVLP api is the same as DMVLP, use fit() to train the model on the dataset and
 
 ```
 model.fit(dataset=dataset) # optional targets
-print("Trained model:")
 model.summary()
 ```
 
@@ -266,7 +306,7 @@ print:
 
 ```
 CDMVLP summary:
- Algorithm: Synchronizer (<class 'pylfit.algorithms.synchronizer.Synchronizer'>)
+ Algorithm: synchronizer
  Features:
   p_t_1: ['0', '1']
   q_t_1: ['0', '1']
@@ -294,19 +334,21 @@ Prediction are obtained the same way as for DMVLP, but no semantics option.
 Use predict(feature_state) to get the list of possible target states according to the model rules and constraints
 
 ```
-print("Predict from ['0','0','0']: ", end='')
-prediction = model.predict(["0","0","0"])
-print(prediction)
+state = ['0','0','0']
+print("Predict from",state,": ", end='')
+prediction = model.predict([state])
+print([s for s in prediction[tuple(state)]])
 
-print("Predict from ['1','1','1']: ", end='')
-prediction = model.predict(["1","1","1"])
-print(prediction)
+state = ['1','1','1']
+print("Predict from",state,": ", end='')
+prediction = model.predict([state])
+print([s for s in prediction[tuple(state)]])
 ```
 
 print:
 ```
-Predict from ['0','0','0']: [['0', '0', '1'], ['1', '0', '0']]
-Predict from ['1','1','1']: [['1', '1', '0']]
+Predict from ['0', '0', '0'] : [('0', '0', '1'), ('1', '0', '0')]
+Predict from ['1', '1', '1'] : [('1', '1', '0')]
 ```
 
 ## Running the tests
@@ -345,7 +387,7 @@ python3 regression_tests/algorithms/gula_benchmark_tests.py
 
 ## Contributing
 
-Please send a mail to tonyribeiro.contact@gmail.com if you want to add your own contribution to LFIT framework to the repository.
+Please send a mail to tonyribeiro.contact@gmail.com if you want to add your own contribution to the LFIT framework to the repository.
 
 ## Versioning
 
@@ -398,7 +440,17 @@ Main related scientifics publications:
 - GULA:
 	- ILP 2018: Learning Dynamics with Synchronous, Asynchronous and General Semantics
 		- https://hal.archives-ouvertes.fr/hal-01826564
+    - MLJ 2021: Learning any memory-less discrete semantics for dynamical systems represented by logic programs
+        - https://hal.archives-ouvertes.fr/hal-02925942/
 
 - ACEDIA:
 	- ILP 2017: Inductive Learning from State Transitions over Continuous Domains
 		- https://hal.archives-ouvertes.fr/hal-01655644
+
+- Synchronizer:
+    - MLJ 2021: Learning any memory-less discrete semantics for dynamical systems represented by logic programs
+        - https://hal.archives-ouvertes.fr/hal-02925942/
+
+- PRIDE:
+    - IJCLR 2021: Polynomial Algorithm For Learning From Interpretation Transition
+        - https://hal.archives-ouvertes.fr/hal-03347026

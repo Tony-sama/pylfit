@@ -120,8 +120,6 @@ class Rule:
 
         return Rule(head_variable_id, head_value_id, len(features), body_encoded)
 
-        # TODO
-
 #--------------
 # Observers
 #--------------
@@ -364,12 +362,14 @@ class Rule:
 
         return False
 
-
     def __str__(self):
         return self.to_string()
 
     def __repr__(self):
         return self.to_string()
+
+    def __hash__(self):
+        return hash(str(self))
 
 #--------------
 # Methods

@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/26
-# @updated: 2019/05/03
+# @updated: 2022/08/31
 #
 # @desc: Class ContinuumRule python source code file
 #-------------------------------------------------------------------------------
@@ -20,13 +20,13 @@ class ContinuumRule:
     """
 
     """ Conclusion variable id: int """
-    __head_variable = 0
+    #_head_variable = 0
 
     """ Conclusion value: Continuum """
-    __head_value = Continuum()
+    #_head_value = Continuum()
 
     """ Conditions values: list of (int,Continuum) """
-    __body = []
+    #_body = []
 
 #--------------
 # Constructors
@@ -44,9 +44,9 @@ class ContinuumRule:
             body: list of tuple (int,Continuum)
                 list of conditions as pairs of variable id, continuum of values
         """
-        self.__head_variable = head_variable
-        self.__head_value = head_value.copy()
-        self.__body = []
+        self._head_variable = head_variable
+        self._head_value = head_value.copy()
+        self._body = []
 
         if body is not None:
             for var, val in body:
@@ -60,56 +60,59 @@ class ContinuumRule:
             Rule
                 A copy of the rule
         """
-        return ContinuumRule(self.__head_variable, self.__head_value, self.__body)
+        return ContinuumRule(self._head_variable, self._head_value, self._body)
 
     @staticmethod
-    def random(head_variable, head_value, variables, domains, min_body_size, max_body_size):
+    def from_string(string_format, features, targets):
         """
-        Generates a valid continuum rule of given size randomly.
+        Construct a ContinuumRule from a string format using features/targets to convert to variable ids.
 
-        Args:
-            head_variable: int
-                id of the head variable
-            head_value: Continuum
-                range of values of the head variable
-            variables: list of String
-                labels of the variable of a dynamic system
-            domains: list of pairs of (int, Continuum)
-                domains of values of each variable
-            min_body_size: int
-                minimal number of conditions to appear in the generated rule
-            max_body_size: int
-                maximal number of conditions to appear in the generated rule
-
-        Returns: ContinuumRule
-            A random valid continuum rule
+        Returns:
+            Rule
+                The rule represented by the string w.r.t features/targets
         """
+        #eprint(string_format)
+        tokens = string_format.split(":-")
 
-        if min_body_size > max_body_size:
-            raise ValueError("min_body_size must be inferior or equal to max_body_size")
+        head_string = tokens[0].split('(')
 
-        if min_body_size > len(variables):
-            raise ValueError("min_body_size can't exceed the number of variables")
+        head_variable = head_string[0].strip()
+        head_variable_id = [var for (var,vals) in targets].index(head_variable)
 
-        if max_body_size > len(variables):
-            raise ValueError("max_body_size can't exceed the number of variables")
+        head_value = head_string[1].split(')')[0].strip()
+        head_min_value_included = head_value[0] == '['
+        head_min_value = head_value.split(',')[0].strip()[1:]
+        head_max_value = head_value.split(',')[1].strip()[:-1]
+        head_max_value_included = head_value[-1] == ']'
+        head_value = Continuum(head_min_value, head_max_value, head_min_value_included, head_max_value_included)
 
-        size = random.randint(min_body_size, max_body_size)
+        body_string = tokens[1].split(", ")
 
-        locked = []
+        # Empty rule
+        if len(body_string) >= 1 and "(" not in body_string[0]:
+            return ContinuumRule(head_variable_id, head_value)
 
-        r = ContinuumRule(head_variable, head_value)
+        body = []
 
-        while r.size() < size:
-            var = random.randint(0, len(variables)-1)
-            val = Continuum.random(domains[var].get_min_value(), domains[var].get_max_value())
+        for token in body_string:
+            token = token.split("(")
+            variable = token[0].strip()
+            value = token[1].split(")")[0].strip()
+            body.append((variable, value))
 
-            if var not in locked:
-                r.set_condition(var,val)
-                locked.append(var)
+        body_encoded = []
+        for variable,value in body:
+            variable_id = [var for (var,vals) in features].index(variable)
 
-        return r
+            min_value_included = value[0] == '['
+            min_value = value.split(',')[0].strip()[1:]
+            max_value = value.split(',')[1].strip()[:-1]
+            max_value_included = value[-1] == ']'
+            value = Continuum(min_value, max_value, min_value_included, max_value_included)
 
+            body_encoded.append( (variable_id, value) )
+
+        return ContinuumRule(head_variable_id, head_value, body_encoded)
 
 
 #--------------
@@ -124,7 +127,7 @@ class ContinuumRule:
             int
                 the number of conditions in the rule body
         """
-        return len(self.__body)
+        return len(self._body)
 
     def get_condition(self, variable):
         """
@@ -139,7 +142,7 @@ class ContinuumRule:
                 The value of the condition over the variable if it exists
                 None if no condition exists on the given variable
         """
-        for (var, val) in self.__body:
+        for (var, val) in self._body:
             if (var == variable):
                 return val
         return None
@@ -180,16 +183,16 @@ class ContinuumRule:
         """
         if isinstance(rule, ContinuumRule):
             # Different head
-            if (self.get_head_variable() != rule.get_head_variable()) or (self.get_head_value() != rule.get_head_value()):
+            if (self.head_variable != rule.head_variable) or (self.head_value != rule.head_value):
                 return False
 
             # Different size
-            if len(self.get_body()) != len(rule.get_body()):
+            if len(self.body) != len(rule.body):
                 return False
 
             # Check conditions
-            for c in self.get_body():
-                if c not in rule.get_body():
+            for c in self.body:
+                if c not in rule.body:
                     return False
 
             # Same head, same number of conditions and all conditions appear in the other rule
@@ -215,37 +218,35 @@ class ContinuumRule:
             String
                 a readable representation of the object
         """
-        out = str(self.__head_variable) + "=" + self.__head_value.to_string()
+        out = str(self._head_variable) + "=" + self._head_value.to_string()
 
         out += " :- "
-        for var, val in self.__body:
+        for var, val in self._body:
             out += str(var) + "=" + val.to_string() + ", "
-        if len(self.__body) > 0:
+        if len(self._body) > 0:
             out = out[:-2]
         out += "."
         return out
 
-    def logic_form(self, variables):
+    def logic_form(self, features, targets):
         """
         Convert the rule to a logic programming string format,
         using given variables labels
 
         Args:
-            variables: list of string
-                labels of the variables
+            TODO
 
         Returns:
             String
                 a readable logic programmong representation of the rule
         """
-        var_label = variables[self.__head_variable % len(variables)]
-        out = str(var_label) + "(" + self.__head_value.to_string() + ",T) :- "
+        var_label = targets[self._head_variable % len(targets)][0]
+        out = str(var_label) + "(" + self._head_value.to_string() + ") :- "
 
-        for var, val in self.__body:
-            var_label = variables[var % len(variables)]
-            delay = int(var / len(variables)) + 1
-            out += str(var_label) + "(" + val.to_string() + ",T-" + str(delay) + "), "
-        if len(self.__body) > 0:
+        for var, val in self._body:
+            var_label = features[var % len(features)][0]
+            out += str(var_label) + "(" + val.to_string() + "), "
+        if len(self._body) > 0:
             out = out[:-2]
         out += "."
         return out
@@ -263,7 +264,7 @@ class ContinuumRule:
                 True if all conditions holds in the given state
                 False otherwize
         """
-        for (var,val) in self.__body:
+        for (var,val) in self._body:
             # delayed condition
             if(var >= len(state)):
                 return False
@@ -288,15 +289,15 @@ class ContinuumRule:
         """
 
         # Different variable
-        if self.get_head_variable() != rule.get_head_variable():
+        if self.head_variable != rule.head_variable:
             return False
 
         # Conclusion more specific
-        if not rule.get_head_value().includes(self.get_head_value()):
+        if not rule.head_value.includes(self.head_value):
             return False
 
         # Conditions more general
-        for var, val in self.__body:
+        for var, val in self._body:
             if rule.get_condition(var) is None:
                 return False
 
@@ -315,9 +316,9 @@ class ContinuumRule:
                 id of a variable
         """
         index = 0
-        for (var, val) in self.__body:
+        for (var, val) in self._body:
             if (var == variable):
-                self.__body.pop(index)
+                self._body.pop(index)
                 return
             index += 1
 
@@ -325,59 +326,37 @@ class ContinuumRule:
 # Accessors
 #--------------
 
-    def get_head_variable(self):
-        """
-        Accessor to __head_variable
+    #_head_variable = 0
 
-        Returns:
-            int
-                the conclusion variable id
-        """
-        return self.__head_variable
+    """ Conclusion value: Continuum """
+    #_head_value = Continuum()
 
-    def get_head_value(self):
-        """
-        Accessor to __head_value
+    """ Conditions values: list of (int,Continuum) """
+    #_body = []
 
-        Returns:
-            Continuum
-                the value range of the conclusion
-        """
-        return self.__head_value
+    @property
+    def head_variable(self):
+        return self._head_variable
 
-    def get_body(self):
-        """
-        Accessor to __body
+    @head_variable.setter
+    def head_variable(self, value):
+        self._head_variable = value
 
-        Returns:
-            list of pair (int, Continuum)
-                list of conditions of the rule
-        """
-        return self.__body
+    @property
+    def head_value(self):
+        return self._head_value
+
+    @head_value.setter
+    def head_value(self, value):
+        self._head_value = value.copy()
+
+    @property
+    def body(self):
+        return self._body
 
 #--------------
 # Mutatators
 #--------------
-
-    def set_head_variable(self, variable):
-        """
-        Head variable mutator method
-
-        Args:
-            variable: int
-                id of the new head variable
-        """
-        self.__head_variable = variable
-
-    def set_head_value(self, value):
-        """
-        Head value mutator method
-
-        Args:
-            value: Continuum
-                continuum of the new head value
-        """
-        self.__head_value = value.copy()
 
     def set_condition(self, variable, value):
         """
@@ -389,16 +368,16 @@ class ContinuumRule:
             value: Continuum
                 new value of the condition over the given variable
         """
-        for i, (var,val) in enumerate(self.__body):
+        for i, (var,val) in enumerate(self._body):
             # new condition variable
             if var > variable:
-                self.__body.insert(i, (variable, value))
+                self._body.insert(i, (variable, value))
                 return
 
             # condition found
             if var == variable:
-                self.__body[i] = (variable, value)
+                self._body[i] = (variable, value)
                 return
 
         # new condition on variable id bigger than biggest knowned
-        self.__body.append( (variable, value) )
+        self._body.append( (variable, value) )

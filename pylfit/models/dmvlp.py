@@ -11,7 +11,7 @@ from ..models import Model
 from ..utils import eprint
 from ..objects import Rule
 
-from ..datasets import StateTransitionsDataset
+from ..datasets import DiscreteStateTransitionsDataset
 
 from ..algorithms import Algorithm, GULA, PRIDE
 
@@ -39,7 +39,7 @@ class DMVLP(Model):
 
 
     """ Dataset types compatible with dmvlp """
-    _COMPATIBLE_DATASETS = [StateTransitionsDataset]
+    _COMPATIBLE_DATASETS = [DiscreteStateTransitionsDataset]
 
     """ Learning algorithms that can be use to fit this model """
     _ALGORITHMS = ["gula", "pride", "lf1t"]
@@ -107,7 +107,7 @@ class DMVLP(Model):
         else:
             raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in DMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
-    def fit(self, dataset, verbose=0):
+    def fit(self, dataset, targets_to_learn=None, verbose=0, heuristics=None, threads=1):
         """
         Use the algorithm set by compile() to fit the rules to the dataset.
             - Learn a model from scratch using the chosen algorithm.
@@ -120,9 +120,29 @@ class DMVLP(Model):
 
         """
 
+        # Check parameters
         if not any(isinstance(dataset, i) for i in self._COMPATIBLE_DATASETS):
-            msg = 'Dataset type (' + str(dataset.__class__.__name__)+ ') not suported by DMVLP model.'
+            msg = 'Dataset type (' + str(dataset.__class__.__name__)+ ') not suported by DMVLP model, must be one of '+ \
+            str([i for i in self._COMPATIBLE_DATASETS])
             raise ValueError(msg)
+
+        if targets_to_learn is None:
+            targets_to_learn = dict()
+            for a, b in dataset.targets:
+                targets_to_learn[a] = b
+        elif not isinstance(targets_to_learn, dict) \
+            or not all(isinstance(key, str) and isinstance(value, list) for key, value in targets_to_learn.items()) \
+            or not all(isinstance(v, str) for key, value in targets_to_learn.items() for v in value):
+            raise ValueError('targets_to_learn must be a dict of format {String: list of String}')
+        else:
+            for key, values in targets_to_learn.items():
+                targets_names = [var for var, vals in dataset.targets]
+                if key not in targets_names:
+                    raise ValueError('targets_to_learn keys must be dataset target variables')
+                var_id = targets_names.index(key)
+                for val in values:
+                    if val not in dataset.targets[var_id][1]:
+                        raise ValueError('targets_to_learn values must be in target variable domain')
 
         if self.algorithm not in DMVLP._ALGORITHMS:
             raise ValueError('algorithm property must be one element of DMVLP._COMPATIBLE_ALGORITHMS: '+str(DMVLP._ALGORITHMS)+'.')
@@ -132,20 +152,20 @@ class DMVLP(Model):
 
         msg = 'Dataset type (' + str(dataset.__class__.__name__) + ') not supported \
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
-        Dataset must be of type ' + str(StateTransitionsDataset.__class__.__name__)
+        Dataset must be of type ' + str(DiscreteStateTransitionsDataset.__class__.__name__)
 
         if self.algorithm == "gula":
-            if not isinstance(dataset, StateTransitionsDataset):
+            if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with GULA")
-            self.rules = GULA.fit(dataset=dataset,verbose=verbose) #, targets_to_learn={'y1': ['1']})
+            self.rules = GULA.fit(dataset=dataset, targets_to_learn=targets_to_learn, verbose=verbose, threads=threads) #, targets_to_learn={'y1': ['1']})
         elif self.algorithm == "pride":
-            if not isinstance(dataset, StateTransitionsDataset):
+            if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with PRIDE")
-            self.rules = PRIDE.fit(dataset=dataset,verbose=verbose)
+            self.rules = PRIDE.fit(dataset=dataset, targets_to_learn=targets_to_learn, verbose=verbose, heuristics=heuristics, threads=threads)
         else:
             raise NotImplementedError("Algorithm usage not implemented yet")
 
@@ -157,7 +177,7 @@ class DMVLP(Model):
         Complete the model with additional optimal rules of the given dataset that also match the features states of feature_states if there exists.
 
         Args:
-            dataset: StateTransitionsDataset
+            dataset: DiscreteStateTransitionsDataset
                 State transitions to learn from.
             feature_states: list of (list of string)
                 Features states that must be matched by the new rules to be found.
@@ -410,6 +430,10 @@ class DMVLP(Model):
 
     @rules.setter
     def rules(self, value):
+        if not isinstance(value, list):
+            raise TypeError("rules must be a list")
+        if not all(isinstance(i, Rule) for i in value):
+            raise TypeError("rules must be of type pylfit.objects.Rule")
         self._rules = value.copy()
 
     @property

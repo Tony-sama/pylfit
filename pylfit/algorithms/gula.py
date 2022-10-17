@@ -9,6 +9,8 @@
 #   - THEORY:
 #       - ILP 2018: Learning Dynamics with Synchronous, Asynchronous and General Semantics
 #           https://hal.archives-ouvertes.fr/hal-01826564
+#       - MLJ 2021: Learning any memory-less discrete semantics for dynamical systems represented by logic programs
+#           https://hal.archives-ouvertes.fr/hal-02925942/
 #   - COMPLEXITY:
 #       - Variables: exponential
 #       - Values: exponential
@@ -19,10 +21,12 @@
 from ..utils import eprint
 from ..objects.rule import Rule
 from ..algorithms.algorithm import Algorithm
-from ..datasets import StateTransitionsDataset
+from ..datasets import DiscreteStateTransitionsDataset
 
 import csv
 import numpy as np
+import multiprocessing
+import itertools
 
 class GULA (Algorithm):
     """
@@ -36,12 +40,12 @@ class GULA (Algorithm):
     """
 
     @staticmethod
-    def fit(dataset, targets_to_learn=None, impossibility_mode=False, supported_only=False, verbose=0): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
+    def fit(dataset, targets_to_learn=None, impossibility_mode=False, supported_only=False, verbose=0, threads=1): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
         """
         Preprocess transitions and learn rules for all given features/targets variables/values.
 
         Args:
-            dataset: pylfit.datasets.StateTransitionsDataset
+            dataset: pylfit.datasets.DiscreteStateTransitionsDataset
                 state transitions of a the system
             targets: dict of {String: list of String}
                 target variables values of the dataset for wich we want to learn rules.
@@ -57,8 +61,8 @@ class GULA (Algorithm):
         #eprint("Start GULA learning...")
 
         # Parameters checking
-        if not isinstance(dataset, StateTransitionsDataset):
-            raise ValueError('Dataset type not supported, GULA expect ' + str(StateTransitionsDataset.__name__))
+        if not isinstance(dataset, DiscreteStateTransitionsDataset):
+            raise ValueError('Dataset type not supported, GULA expect ' + str(DiscreteStateTransitionsDataset.__name__))
 
         if targets_to_learn is None:
             targets_to_learn = dict()
@@ -134,6 +138,7 @@ class GULA (Algorithm):
         #for var in range(0, len(target_domains)):
         #    for val in range(0, len(target_domains[var][1])):
         #eprint(targets_to_learn)
+        thread_parameters = []
         for var_id, (var_name, var_domain) in enumerate(dataset.targets):
             #eprint(var_id, (var_name, var_domain))
             for val_id, val_name in enumerate(var_domain):
@@ -143,17 +148,37 @@ class GULA (Algorithm):
                 if val_name not in targets_to_learn[var_name]:
                     continue
 
-                if impossibility_mode:
-                    negatives, positives = GULA.interprete(processed_transitions, var_id, val_id, True)#, partial_heuristic)
-                    rules += GULA.fit_var_val(feature_domains, var_id, val_id, positives, negatives) #variables, values, var, val, negatives, program)#, partial_heuristic)
+                if(threads == 1):
+                    rules += GULA.fit_thread([processed_transitions, feature_domains, target_domains, var_id, val_id, impossibility_mode, supported_only, verbose])
                 else:
-                    negatives, positives = GULA.interprete(processed_transitions, var_id, val_id, supported_only)#, partial_heuristic)
-                    rules += GULA.fit_var_val(feature_domains, var_id, val_id, negatives, positives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
-                # DBG
-                #eprint(negatives)
-                if verbose > 0:
-                    eprint("\nStart learning of var=", var_id+1,"/", len(target_domains), ", val=", val_id+1, "/", len(target_domains[var_id][1]))
+                    thread_parameters.append([processed_transitions, feature_domains, target_domains, var_id, val_id, impossibility_mode, supported_only, verbose])
 
+        #pool = ThreadPool(4)
+        if(threads > 1):
+            if(verbose):
+                eprint("Start learning over "+str(threads)+" threads")
+            with multiprocessing.Pool(processes=threads) as pool:
+                rules = pool.map(GULA.fit_thread, thread_parameters)
+            rules = list(itertools.chain.from_iterable(rules))
+
+        return rules
+
+    @staticmethod
+    def fit_thread(args):
+        processed_transitions, feature_domains, target_domains, var_id, val_id, impossibility_mode, supported_only, verbose = args
+        if verbose > 0:
+            eprint("\nStart learning of var=", var_id+1,"/", len(target_domains), ", val=", val_id+1, "/", len(target_domains[var_id][1]))
+
+        if impossibility_mode:
+            negatives, positives = GULA.interprete(processed_transitions, var_id, val_id, True)#, partial_heuristic)
+            rules = GULA.fit_var_val(feature_domains, var_id, val_id, positives, negatives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
+        else:
+            negatives, positives = GULA.interprete(processed_transitions, var_id, val_id, supported_only)#, partial_heuristic)
+            rules = GULA.fit_var_val(feature_domains, var_id, val_id, negatives, positives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
+
+
+        if verbose > 0:
+            eprint("\nFinished learning of var=", var_id+1,"/", len(target_domains), ", val=", val_id+1, "/", len(target_domains[var_id][1]))
         return rules
 
 
@@ -294,17 +319,6 @@ class GULA (Algorithm):
                             unconsistent.pop_condition()
                             continue
 
-                        # Discard if subsumed by another least specialization
-                        subsumed = False
-                        for new_rule in new_rules:
-                            if new_rule.subsumes(unconsistent):
-                                subsumed = True
-                                break
-
-                        if subsumed:
-                            unconsistent.pop_condition()
-                            continue
-
                         # Heuristic 1: check if the rule matches atleast one positive example
                         if positives is not None:
                             supported = False
@@ -316,14 +330,6 @@ class GULA (Algorithm):
                                 unconsistent.pop_condition()
                                 continue
 
-                        # Discard other least specialization subsumed by this least specialization
-                        #new_rules = [new_rule for new_rule in new_rules if not least_specialization.subsumes(new_rule)]
-                        index=0
-                        while index < len(new_rules):
-                            if unconsistent.subsumes(new_rules[index]):
-                                del new_rules[index]
-                                continue
-                            index+=1
                         least_specialization = unconsistent.copy()
                         new_rules.append(least_specialization)
                         unconsistent.pop_condition()

@@ -23,14 +23,14 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_StateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms import Synchronizer
 from pylfit.objects import Rule
 
-from pylfit.datasets import StateTransitionsDataset
-from pylfit.preprocessing import transitions_dataset_from_csv
+from pylfit.datasets import DiscreteStateTransitionsDataset
+from pylfit.preprocessing import discrete_state_transitions_dataset_from_csv
 
 from pylfit.models import CDMVLP
 
@@ -54,7 +54,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         features_col_header = ["p_t_1","q_t_1","r_t_1"]
         targets_col_header = ["p_t","q_t","r_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -78,7 +78,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         features_col_header = ["a","b","c"]
         targets_col_header = ["a_t","b_t","c_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -116,7 +116,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         features_col_header = ["x0","x1"]
         targets_col_header = ["y0","y1"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -146,7 +146,7 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         features_col_header = ["x0","x1","x2"]
         targets_col_header = ["y0","y1","y2"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -232,20 +232,21 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
         expected = set((tuple(s1),tuple(s2)) for s1,s2 in dataset.data)
 
         predicted = model.predict(model.feature_states())
-        predicted = set((tuple(s1),tuple(s2)) for (s1, S2) in predicted for s2 in S2)
+        predicted = set((tuple(s1),tuple(s2)) for (s1, S2) in predicted.items() for s2, rules in S2.items())
 
-        eprint()
         done = 0
         for s1,s2 in expected:
             done += 1
-            eprint("\rChecking transitions ",done,"/",len(expected),end='')
+            eprint("\r.>>> Checking transitions ",done,"/",len(expected),end='')
             self.assertTrue((s1,s2) in predicted)
+        eprint()
 
         done = 0
         for s1,s2 in predicted:
             done += 1
-            eprint("\rChecking transitions ",done,"/",len(predicted),end='')
+            eprint("\r.>>> Checking transitions ",done,"/",len(predicted),end='')
             self.assertTrue((s1,s2) in expected)
+        eprint()
 
 
 if __name__ == '__main__':

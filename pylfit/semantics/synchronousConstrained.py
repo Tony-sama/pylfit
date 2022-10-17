@@ -42,7 +42,7 @@ class SynchronousConstrained(Semantics):
         candidates = Synchronous.next(feature_state, targets, rules)
 
         # Apply constraints
-        output = []
+        output = dict()
         for s, rules in candidates.items():
             valid = True
             for c in constraints:
@@ -52,7 +52,7 @@ class SynchronousConstrained(Semantics):
                     break
             if valid:
                 # Decode state with domain values
-                output.append(s)
+                output[s] = rules
 
         # DBG
         #eprint("constrainted: ", output)

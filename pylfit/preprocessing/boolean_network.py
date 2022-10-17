@@ -36,11 +36,11 @@ def dmvlp_from_boolean_network_file(file_path, compute_complementary_rules=False
         raise ValueError("Unsuported file format", file_type[1])
 
     if file_type[1] == ".bnet":
-        eprint("Converting '.bnet' file:", file_path)
+        #eprint("Converting '.bnet' file:", file_path)
         features, targets, rules = dmvlp_from_bnet_file(file_path)
 
     if file_type[1]== ".net":
-        eprint("Converting '.net' file:", file_path)
+        #eprint("Converting '.net' file:", file_path)
         features, targets, rules = dmvlp_from_net_file(file_path)
 
     if compute_complementary_rules:

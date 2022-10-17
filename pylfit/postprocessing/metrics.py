@@ -15,7 +15,7 @@ def accuracy_score(model, dataset):
     Args:
         model: WDMVLP
             The model whose prediction will be scored.
-        dataset: StateTransitionsDataset
+        dataset: DiscreteStateTransitionsDataset
             The state transitions to be predicted
     Returns:
         The prediction accuracy of the model over the possibility of occurence of each target variable value for each feature states of the dataset.
@@ -35,7 +35,7 @@ def accuracy_score_from_predictions(predictions, dataset):
         prediction: dict {tuple of string: {string: {string: float}}}
             Predictions of probability of each target variable value occurence for each feature_state of the dataset,
             i.e. dict {feature_state: {target_variable: {domain_value: probability}}}, with 0.0 <= probability <= 1.0.
-        dataset: StateTransitionsDataset
+        dataset: DiscreteStateTransitionsDataset
             The state transitions to be predicted
     Returns:
         The average prediction accuracy over the possibility of occurence of each target variable value for each feature states of the dataset.
@@ -128,7 +128,7 @@ def explanation_score(model, expected_model, dataset):
             The model whose prediction explanation over feature_states will be scored.
         expected_model: WDMVLP
             The model with the expected rules to be used to explain prediction from feature_states.
-        dataset: StateTransitionsDataset
+        dataset: DiscreteStateTransitionsDataset
             The transitions to explain.
     """
     if len(dataset.data) == 0:
@@ -219,7 +219,7 @@ def explanation_score_from_predictions(predictions, expected_model, dataset):
             i.e. dict {feature_state: {target_variable: {domain_value: (probability, (likeliness_weight, likliness_rule), unlikeliness_weight, unlikeliness_rule))}}}, with 0.0 <= probability <= 1.0.
         expected_model: WDMVLP
             The model with the expected rules to be used to explain prediction from feature_states.
-        dataset: StateTransitionsDataset
+        dataset: DiscreteStateTransitionsDataset
             The transitions to explain.
     """
     if len(dataset.data) == 0:

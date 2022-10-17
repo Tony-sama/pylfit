@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/30
-# @updated: 2019/05/03
+# @updated: 2022/08/31
 #
 # @desc: simple ACEDIA implementation:
 #   - INPUT: a set of pairs of continuous valued state transitions
@@ -19,13 +19,16 @@
 from ..utils import eprint
 from ..objects.continuum import Continuum
 from ..objects.continuumRule import ContinuumRule
-from ..objects.continuumLogicProgram import ContinuumLogicProgram
+from ..algorithms.algorithm import Algorithm
+from ..datasets import ContinuousStateTransitionsDataset
 
 import warnings
 
 import csv
+import multiprocessing
+import itertools
 
-class ACEDIA: # TODO link to Algorithm
+class ACEDIA (Algorithm):
     """
     Define a simple complete version of the ACEDIA algorithm.
     Learn logic rules that explain state transitions
@@ -37,88 +40,89 @@ class ACEDIA: # TODO link to Algorithm
     """
 
     @staticmethod
-    def load_input_from_csv(filepath):
+    def fit(dataset, targets_to_learn=None, verbose=0, threads=1):
         """
-        Load transitions from a csv file
-
-        Args:
-            filepath: String
-                Path to csv file encoding transitions
-        """
-        output = []
-        with open(filepath) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            line_count = 0
-            x_size = 0
-
-            for row in csv_reader:
-                if line_count == 0:
-                    x_size = row.index("y0")
-                    x = row[:x_size]
-                    y = row[x_size:]
-                    #eprint("x: "+str(x))
-                    #eprint("y: "+str(y))
-                else:
-                    row = [float(i) for i in row] # float convertion
-                    output.append([row[:x_size], row[x_size:]]) # x/y split
-                line_count += 1
-
-            #eprint(f'Processed {line_count} lines.')
-        return output
-
-    @staticmethod
-    def fit(variables, domains, transitions):
-        """
-        Preprocess transitions and learn rules for all observed variables/values.
+        Preprocess transitions and learn rules for all target_to_learn variables.
         Assume deterministics transitions: only one future for each state.
 
         Args:
-            variables: list of string
-                variables of the system
-            domains: list of Continuum
-                domains of value of each variable
-            transitions: list of tuple (list of float, list of float)
-                state transitions of continuous valued dynamic system
+            dataset: pylfit.datasets.StateTransitionsDataset
+                state transitions of a the system
+            targets_to_learn: list of String
+                target variables of the dataset for wich we want to learn rules.
+                If not given, all targets variables will be learned.
 
         Returns:
-            ContinuumLogicProgram
-                A continuum logic program whose rules:
-                    - explain/reproduce all the input transitions
-                    - are minimals
+            list of pylfit.objects.ContinuumRule
+                A set of CLP rules that is:
+                    - correct: explain/reproduce all the transitions of the dataset.
+                    - complete: matches all possible feature states (even not in the dataset).
+                    - optimal: all rules are minimals
+
         """
         #eprint("Start ACEDIA learning...")
+
+        if not isinstance(dataset, ContinuousStateTransitionsDataset):
+            raise ValueError('Dataset type not supported, ACEDIA expect ' + str(ContinuousStateTransitionsDataset.__name__))
+
+        if targets_to_learn is None:
+            targets_to_learn = [var for var, vals in dataset.targets]
+        elif not isinstance(targets_to_learn, list) or not all(isinstance(var, str) for var in targets_to_learn):
+            raise ValueError('targets_to_learn must be a list of string')
+        else:
+            for target in targets_to_learn:
+                targets_names = [var for var, vals in dataset.targets]
+                if target not in targets_names:
+                    raise ValueError('targets_to_learn values must be dataset target variables')
 
         rules = []
 
         # Learn rules for each variable
-        for var in range(0, len(variables)):
-                rules += ACEDIA.fit_var(variables, domains, transitions, var)
+        thread_parameters = []
+        for target_id in range(0, len(dataset.targets)):
+            #rules += ACEDIA.fit_var(dataset.features, dataset.data, target_id, verbose)
 
-        # Instanciate output logic program
-        output = ContinuumLogicProgram(variables, domains, rules)
+            if(threads == 1):
+                rules += ACEDIA.fit_thread([dataset.features, dataset.targets, dataset.data, target_id, verbose])
+            else:
+                thread_parameters.append([dataset.features, dataset.targets, dataset.data, target_id, verbose])
 
-        return output
+        if(threads > 1):
+            if(verbose):
+                eprint("Start learning over "+str(threads)+" threads")
+            with multiprocessing.Pool(processes=threads) as pool:
+                rules = pool.map(ACEDIA.fit_thread, thread_parameters)
+            rules = list(itertools.chain.from_iterable(rules))
+
+        return rules
 
     @staticmethod
-    def fit_var(variables, domains, transitions, variable):
+    def fit_thread(args):
+        feature_domains, target_domains, transitions, var_id, verbose = args
+        if verbose > 0:
+            eprint("\nStart learning of var=", var_id+1,"/", len(target_domains))
+
+        rules = ACEDIA.fit_var(feature_domains, transitions, var_id, verbose)
+
+        if verbose > 0:
+            eprint("\nFinished learning of var=", var_id+1,"/", len(target_domains))
+
+        return rules
+
+    @staticmethod
+    def fit_var(features, transitions, variable, verbose=0):
         """
         Learn minimal rules that realizes the given transitions
 
         Args:
-            variables: list of string
-                variables of the system
-            domains: list of Continuum
-                domains of value of each variable
-            transitions: list of (list of float, list of float)
-                states transitions of the system
-            variable: int
-                variable id
+            TODO
         """
-        #eprint("\rLearning var="+str(variable+1)+"/"+str(len(variables)), end='')
+        #if verbose > 0:
+        #    eprint("\rLearning var="+str(variable+1)+"/"+str(len(features)), end='')
 
         # 0) Initialize undominated rule
         #--------------------------------
-        body = [(var, domains[var]) for var in range(len(domains))]
+        body = [(var, features[var][1]) for var in range(len(features))]
         minimal_rules = [ContinuumRule(variable, Continuum(), body)]
 
         # Revise learned rules against each transition
@@ -126,7 +130,7 @@ class ACEDIA: # TODO link to Algorithm
 
             # 1) Extract unconsistents rules
             #--------------------------------
-            unconsistents = [ rule for rule in minimal_rules if rule.matches(state_1) and not rule.get_head_value().includes(state_2[variable]) ]
+            unconsistents = [ rule for rule in minimal_rules if rule.matches(state_1) and not rule.head_value.includes(state_2[variable]) ]
             minimal_rules = [ rule for rule in minimal_rules if rule not in unconsistents ]
 
             for unconsistent in unconsistents:
@@ -154,13 +158,13 @@ class ACEDIA: # TODO link to Algorithm
         output = []
 
         for r in minimal_rules:
-            if r.get_head_value().is_empty():
+            if r.head_value.is_empty():
                 continue
 
             r_ = r.copy()
 
-            for var, val in r.get_body():
-                if val == domains[var]:
+            for var, val in r.body:
+                if val == features[var][1]:
                     r_.remove_condition(var)
 
             output.append(r_)
@@ -193,34 +197,34 @@ class ACEDIA: # TODO link to Algorithm
             raise ValueError("Attempting to revise a consistent rule, revision would be itself, this call is useless in ACEDIA and must be an error")
 
         # Consistent rule
-        if rule.get_head_value().includes(state_2[rule.get_head_variable()]):
+        if rule.head_value.includes(state_2[rule.head_variable]):
             raise ValueError("Attempting to revise a consistent rule, revision would be itself, this call is useless in ACEDIA and must be an error")
 
 
         # 1) Revise conclusion
         #----------------------
-        head_var = rule.get_head_variable()
+        head_var = rule.head_variable
         next_value = state_2[head_var]
         revisions = []
 
         head_revision = rule.copy()
-        head_value = head_revision.get_head_value()
+        head_value = head_revision.head_value
 
         # Empty set head case
         if head_value.is_empty():
             head_value = Continuum(next_value, next_value, True, True)
-        elif next_value <= head_value.get_min_value():
+        elif next_value <= head_value.min_value:
             head_value.set_lower_bound(next_value, True)
         else:
             head_value.set_upper_bound(next_value, True)
 
-        head_revision.set_head_value(head_value)
+        head_revision.head_value = head_value
 
         revisions.append(head_revision)
 
         # 2) Revise each condition
         #---------------------------
-        for var, val in rule.get_body():
+        for var, val in rule.body:
             state_value = state_1[var]
 
             # min revision

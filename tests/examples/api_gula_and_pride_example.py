@@ -26,8 +26,8 @@ if __name__ == '__main__':
     (["0","1","1"],["1","0","1"]), \
     (["1","1","1"],["1","1","0"])]
 
-    # Convert array data as a StateTransitionsDataset using pylfit.preprocessing
-    dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, \
+    # Convert array data as a DiscreteStateTransitionsDataset using pylfit.preprocessing
+    dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, \
     feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
     dataset.summary()
     print()
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     print("All transitions:", transitions)
 
-    dataset = pylfit.preprocessing.transitions_dataset_from_array(data=transitions, feature_names=[var for var,vals in dataset.features], target_names=[var for var,vals in dataset.targets])
+    dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=transitions, feature_names=[var for var,vals in dataset.features], target_names=[var for var,vals in dataset.targets])
 
     print("Saving transitions to csv...")
     dataset.to_csv('tmp/output.csv')

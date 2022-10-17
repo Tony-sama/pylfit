@@ -11,7 +11,7 @@ from . import DMVLP
 from ..utils import eprint
 from ..objects import Rule
 
-from ..datasets import StateTransitionsDataset
+from ..datasets import DiscreteStateTransitionsDataset
 
 from ..algorithms import Algorithm
 from ..algorithms import GULA
@@ -44,7 +44,7 @@ class WDMVLP(DMVLP):
 
 
     """ Dataset types compatible with dmvlp """
-    _COMPATIBLE_DATASETS = [StateTransitionsDataset]
+    _COMPATIBLE_DATASETS = [DiscreteStateTransitionsDataset]
 
     """ Learning algorithms that can be use to fit this model """
     _ALGORITHMS = ["gula", "pride", "lf1t", "brute-force"]
@@ -110,7 +110,7 @@ class WDMVLP(DMVLP):
         else:
             raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in DMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
-    def fit(self, dataset, verbose=0):
+    def fit(self, dataset, verbose=0, heuristics=None, threads=1):
         """
         Use the algorithm set by compile() to fit the rules to the dataset.
             - Learn a model from scratch using the chosen algorithm.
@@ -132,33 +132,33 @@ class WDMVLP(DMVLP):
 
         msg = 'Dataset type (' + str(dataset.__class__.__name__) + ') not supported \
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
-        Dataset must be of type ' + str(StateTransitionsDataset.__class__.__name__)
+        Dataset must be of type ' + str(DiscreteStateTransitionsDataset.__class__.__name__)
 
         if self.algorithm == "gula":
-            if not isinstance(dataset, StateTransitionsDataset):
+            if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with GULA")
                 eprint("Learning possibilities...")
-            rules = GULA.fit(dataset=dataset, verbose=verbose) #, targets_to_learn={'y1': ['1']})
+            rules = GULA.fit(dataset=dataset, verbose=verbose, threads=threads) #, targets_to_learn={'y1': ['1']})
 
             if verbose > 0:
                 eprint("Learning impossibilities...")
-            unlikeliness_rules = GULA.fit(dataset=dataset, impossibility_mode=True)
+            unlikeliness_rules = GULA.fit(dataset=dataset, impossibility_mode=True, threads=threads)
 
         elif self.algorithm == "pride":
-            if not isinstance(dataset, StateTransitionsDataset):
+            if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with PRIDE")
                 eprint("Learning likeliness...")
-            rules = PRIDE.fit(dataset=dataset, verbose=verbose) #, targets_to_learn={'y1': ['1']})
+            rules = PRIDE.fit(dataset=dataset, verbose=verbose, heuristics=heuristics, threads=threads) #, targets_to_learn={'y1': ['1']})
 
             if verbose > 0:
                 eprint("Learning unlikeliness...")
-            unlikeliness_rules = PRIDE.fit(dataset=dataset, impossibility_mode=True)
+            unlikeliness_rules = PRIDE.fit(dataset=dataset, impossibility_mode=True, heuristics=heuristics, threads=threads)
         elif self.algorithm == "brute-force":
-                if not isinstance(dataset, StateTransitionsDataset):
+                if not isinstance(dataset, DiscreteStateTransitionsDataset):
                     raise ValueError(msg)
                 if verbose > 0:
                     eprint("Starting fit with BruteForce")
@@ -213,7 +213,7 @@ class WDMVLP(DMVLP):
         Complete the model with additional optimal rules of the given dataset that also match the features states of feature_states if there exists.
 
         Args:
-            dataset: StateTransitionsDataset
+            dataset: DiscreteStateTransitionsDataset
                 State transitions to learn from.
             feature_states: list of (list of string)
                 Features states that must be matched by the new rules to be found.

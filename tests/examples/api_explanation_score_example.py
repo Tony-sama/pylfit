@@ -27,8 +27,8 @@ if __name__ == '__main__':
     (["1","1","1"],["1","1","0"])\
     ]
 
-    print("Convert array data as a StateTransitionsDataset using pylfit.preprocessing")
-    full_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+    print("Convert array data as a DiscreteStateTransitionsDataset using pylfit.preprocessing")
+    full_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
     full_dataset.summary()
 
     print("Optimal WDMVLP learn by GULA from all possible transitions")
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     (["1","1","1"],["1","1","0"])\
     ]
 
-    train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data,\
+    train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data,\
     feature_domains=[("p_t_1",["0","1"]),("q_t_1",["0","1"]),("r_t_1",["0","1"])],\
     target_domains=[("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])])
     train_dataset.summary()
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     #(["1","1","1"],["1","1","0"])\
     ]
 
-    print("Convert array data as a StateTransitionsDataset using pylfit.preprocessing")
-    test_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data,\
+    print("Convert array data as a DiscreteStateTransitionsDataset using pylfit.preprocessing")
+    test_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data,\
     feature_domains=[("p_t_1",["0","1"]),("q_t_1",["0","1"]),("r_t_1",["0","1"])],\
     target_domains=[("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])])
     test_dataset.summary()

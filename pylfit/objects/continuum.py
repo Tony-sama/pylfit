@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/25
-# @updated: 2019/05/03
+# @updated: 2022/08/31
 #
 # @desc: Class Continuum python source code file
 #-------------------------------------------------------------------------------
@@ -17,19 +17,19 @@ class Continuum:
     """
 
     """ is the empty set: boolean """
-    __empty_set = True
+    #_empty_set = True
 
     """ lower bound value: float """
-    __min_value = None
+    #_min_value = None
 
     """ upper bound value: float """
-    __max_value = None
+    #_max_value = None
 
     """ lower bound open/close: boolean """
-    __min_included = None
+    #_min_included = None
 
     """ upper bound open/close: boolean """
-    __max_included = None
+    #_max_included = None
 
 #--------------
 # Constructors
@@ -56,11 +56,11 @@ class Continuum:
             if min_value is not None or max_value is not None or min_included is not None or max_included is not None:
                 raise ValueError("Incomplete constructor: either no argument or all arguments must be given")
 
-            self.__empty_set = True
-            self.__min_value = None
-            self.__max_value = None
-            self.__min_included = None
-            self.__max_included = None
+            self._empty_set = True
+            self._min_value = None
+            self._max_value = None
+            self._min_included = None
+            self._max_included = None
             return
 
         # check type of arguments
@@ -71,19 +71,19 @@ class Continuum:
 
         # implicit empty set
         if min_value == max_value and (not min_included or not max_included):
-            self.__empty_set = True
-            self.__min_value = None
-            self.__max_value = None
-            self.__min_included = None
-            self.__max_included = None
+            self._empty_set = True
+            self._min_value = None
+            self._max_value = None
+            self._min_included = None
+            self._max_included = None
             return
 
         # Regular interval
-        self.__empty_set = False
-        self.__min_value = float(min_value)
-        self.__max_value = float(max_value)
-        self.__min_included = min_included
-        self.__max_included = max_included
+        self._empty_set = False
+        self._min_value = float(min_value)
+        self._max_value = float(max_value)
+        self._min_included = min_included
+        self._max_included = max_included
 
     def copy(self):
         """
@@ -93,40 +93,7 @@ class Continuum:
             Continuum
                 A copy of the continuum
         """
-        return Continuum(self.__min_value, self.__max_value, self.__min_included, self.__max_included)
-
-    @staticmethod
-    def random(min_value, max_value, min_size=0):
-        """
-        Generates randomly a valid continuum inside the given range of value.
-
-        Args:
-            min_value: float
-                minimal lower bound value
-            max_value: float
-                maximal upper bound value
-            min_size: float
-                minimal size of the produced Continuum
-
-        Returns:
-            Continuum
-                A random valid continuum
-        """
-
-        # Invalid interval
-        if min_value > max_value:
-            raise ValueError("Continuum min value must be <= max value")
-
-        if min_size < 0 or min_size > (max_value - min_value):
-            raise ValueError("expected 0 <= min_size < (max_value - min_value)")
-
-        min = random.uniform(min_value,max_value-min_size)
-        max = random.uniform(min+min_size, max_value)
-
-        min_included = random.choice([True, False])
-        max_included = random.choice([True, False])
-
-        return Continuum(min, max, min_included, max_included)
+        return Continuum(self._min_value, self._max_value, self._min_included, self._max_included)
 
 #--------------
 # Observers
@@ -141,29 +108,7 @@ class Continuum:
                 True if the continuum is the empty set,
                 False otherwize
         """
-        return self.__empty_set
-
-    def min_included(self):
-        """
-        Check if the continuum lower bound value is included
-
-        Returns:
-            boolean
-                True if the lower bound is inclusive,
-                False otherwize
-        """
-        return self.__min_included
-
-    def max_included(self):
-        """
-        Check if the continuum upper bound value is included
-
-        Returns:
-            boolean
-                True if the upper bound is inclusive,
-                False otherwize
-        """
-        return self.__max_included
+        return self._empty_set
 
     def size(self):
         """
@@ -176,7 +121,7 @@ class Continuum:
         if self.is_empty():
             return 0.0
 
-        return abs(self.__max_value - self.__min_value)
+        return abs(self._max_value - self._min_value)
 
     def includes(self, element):
         """
@@ -197,15 +142,15 @@ class Continuum:
                 return False
 
             # Lower bound
-            if element == self.get_min_value():
-                return self.min_included()
+            if element == self.min_value:
+                return self.min_included
 
             # upper bound
-            if element == self.get_max_value():
-                return self.max_included()
+            if element == self.max_value:
+                return self.max_included
 
             # Inside interval
-            return element > self.get_min_value() and element < self.get_max_value()
+            return element > self.min_value and element < self.max_value
 
         # Argument is a continuum
         if isinstance(element, Continuum):
@@ -217,10 +162,10 @@ class Continuum:
             if element.is_empty():
                 return True
 
-            min = self.get_min_value()
-            max = self.get_max_value()
-            min_other = element.get_min_value()
-            max_other= element.get_max_value()
+            min = self.min_value
+            max = self.max_value
+            min_other = element.min_value
+            max_other= element.max_value
 
             # Lower bound over
             if min_other < min:
@@ -228,7 +173,7 @@ class Continuum:
 
             # Lower bound value over
             if min_other == min:
-                if not self.min_included() and element.min_included():
+                if not self.min_included and element.min_included:
                     return False
 
             # upper bound over
@@ -237,10 +182,10 @@ class Continuum:
 
             # upper bound value over
             if max_other == max:
-                if not self.max_included() and element.max_included():
+                if not self.max_included and element.max_included:
                     return False
 
-            return element.get_min_value() >= min and element.get_max_value() <= max
+            return element.min_value >= min and element.max_value <= max
 
         raise TypeError("argument must be either a float, a int or a Continuum")
 
@@ -261,10 +206,10 @@ class Continuum:
         if self.is_empty() or continuum.is_empty():
             return False
 
-        min = self.get_min_value()
-        max = self.get_max_value()
-        min_other = continuum.get_min_value()
-        max_other= continuum.get_max_value()
+        min = self.min_value
+        max = self.max_value
+        min_other = continuum.min_value
+        max_other= continuum.max_value
 
         # all before lower bound
         if max < min_other:
@@ -272,7 +217,7 @@ class Continuum:
 
         # touching bounds
         if max == min_other:
-            if not continuum.min_included() or not self.max_included():
+            if not continuum.min_included or not self.max_included:
                 return False
 
         # all after upper bound
@@ -281,7 +226,7 @@ class Continuum:
 
         # touching bounds
         if min == max_other:
-            if not continuum.max_included() or not self.min_included():
+            if not continuum.max_included or not self.min_included:
                 return False
 
         # Intervals are intersectings
@@ -307,19 +252,19 @@ class Continuum:
         if not isinstance(continuum, Continuum):
             return False
 
-        if self.__empty_set != continuum.__empty_set:
+        if self._empty_set != continuum._empty_set:
             return False
 
-        if self.__min_value != continuum.__min_value:
+        if self._min_value != continuum._min_value:
             return False
 
-        if self.__min_included != continuum.__min_included:
+        if self._min_included != continuum._min_included:
             return False
 
-        if self.__max_value != continuum.__max_value:
+        if self._max_value != continuum._max_value:
             return False
 
-        if self.__max_included != continuum.__max_included:
+        if self._max_included != continuum._max_included:
             return False
 
         return True
@@ -329,6 +274,9 @@ class Continuum:
 
     def __repr__(self):
         return self.to_string()
+
+    def __hash__(self):
+        return hash(str(self))
 
 #--------------
 # Methods
@@ -344,19 +292,19 @@ class Continuum:
         """
 
         # Emptyset
-        if self.__empty_set:
+        if self._empty_set:
             return u"\u2205"
 
         out = ""
 
-        if self.__min_included:
+        if self._min_included:
             out += "["
         else:
             out += "]"
 
-        out += str(self.__min_value) + "," + str(self.__max_value)
+        out += str(self._min_value) + "," + str(self._max_value)
 
-        if self.__max_included:
+        if self._max_included:
             out += "]"
         else:
             out += "["
@@ -367,25 +315,21 @@ class Continuum:
 # Accessors
 #--------------
 
-    def get_min_value(self):
-        """
-        lower bound accessor method
+    @property
+    def min_value(self):
+        return self._min_value
 
-        Returns:
-            float
-                lower bound value
-        """
-        return self.__min_value
+    @property
+    def max_value(self):
+        return self._max_value
 
-    def get_max_value(self):
-        """
-        upper bound accessor method
+    @property
+    def min_included(self):
+        return self._min_included
 
-        Returns:
-            float
-                upper bound value
-        """
-        return self.__max_value
+    @property
+    def max_included(self):
+        return self._max_included
 
 #--------------
 # Mutators
@@ -412,24 +356,24 @@ class Continuum:
         if self.is_empty() and not included:
             raise ValueError("Continuum is the empty set, thus the new bound must be inclusive to create a new continuum")
 
-        if not self.is_empty() and self.get_max_value() < value:
+        if not self.is_empty() and self.max_value < value:
             raise ValueError("New min value must be inferior to current max value")
 
         if self.is_empty():
-            self.__empty_set = False
-            self.__max_value = value
-            self.__max_included = included
+            self._empty_set = False
+            self._max_value = value
+            self._max_included = included
 
-        self.__min_value = value
-        self.__min_included = included
+        self._min_value = value
+        self._min_included = included
 
         # Empty set
-        if self.__min_value == self.__max_value and (not self.__min_included or not self.__max_included):
-            self.__empty_set = True
-            self.__min_value = None
-            self.__max_value = None
-            self.__min_included = None
-            self.__max_included = None
+        if self._min_value == self._max_value and (not self._min_included or not self._max_included):
+            self._empty_set = True
+            self._min_value = None
+            self._max_value = None
+            self._min_included = None
+            self._max_included = None
 
     def set_upper_bound(self, value, included):
         """
@@ -452,21 +396,21 @@ class Continuum:
         if self.is_empty() and not included:
             raise ValueError("Continuum is the empty set, thus the new bound must be inclusive to create a new continuum")
 
-        if not self.is_empty() and self.get_min_value() > value:
+        if not self.is_empty() and self.min_value > value:
             raise ValueError("New max value must be superior to current min value")
 
         if self.is_empty():
-            self.__empty_set = False
-            self.__min_value = value
-            self.__min_included = included
+            self._empty_set = False
+            self._min_value = value
+            self._min_included = included
 
-        self.__max_value = value
-        self.__max_included = included
+        self._max_value = value
+        self._max_included = included
 
         # Empty set
-        if self.__min_value == self.__max_value and (not self.__min_included or not self.__max_included):
-            self.__empty_set = True
-            self.__min_value = None
-            self.__max_value = None
-            self.__min_included = None
-            self.__max_included = None
+        if self._min_value == self._max_value and (not self._min_included or not self._max_included):
+            self._empty_set = True
+            self._min_value = None
+            self._max_value = None
+            self._min_included = None
+            self._max_included = None

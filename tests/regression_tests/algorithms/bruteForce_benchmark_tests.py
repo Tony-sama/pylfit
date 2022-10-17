@@ -23,13 +23,13 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_StateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms import BruteForce
 from pylfit.objects import Rule
 
-from pylfit.datasets import StateTransitionsDataset
+from pylfit.datasets import DiscreteStateTransitionsDataset
 from pylfit.preprocessing import transitions_dataset_from_csv
 
 from pylfit.models import DMVLP
@@ -248,22 +248,23 @@ class BruteForce_benchmark_tests(unittest.TestCase):
         predicted = set()
 
         for s1 in model.feature_states():
-            prediction = model.predict(s1)
-            for s2 in prediction:
+            prediction = model.predict([s1])
+            for s2 in prediction[tuple(s1)]:
                 predicted.add( (tuple(s1), tuple(s2)) )
 
-        eprint()
         done = 0
         for s1,s2 in expected:
             done += 1
-            eprint("\rChecking transitions ",done,"/",len(expected),end='')
+            eprint("\r.>>> Checking transitions ",done,"/",len(expected),end='')
             self.assertTrue((s1,s2) in predicted)
+        eprint()
 
         done = 0
         for s1,s2 in predicted:
             done += 1
-            eprint("\rChecking transitions ",done,"/",len(predicted),end='')
+            eprint("\r.>>> Checking transitions ",done,"/",len(predicted),end='')
             self.assertTrue((s1,s2) in expected)
+        eprint()
 
 
 if __name__ == '__main__':

@@ -28,13 +28,13 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_StateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms.bruteForce import BruteForce
 from pylfit.objects.rule import Rule
 
-from pylfit.datasets import StateTransitionsDataset
+from pylfit.datasets import DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -68,12 +68,12 @@ class BruteForce_tests(unittest.TestCase):
             #---------------
 
             # Datatset type
-            dataset = "" # not a StateTransitionsDataset
+            dataset = "" # not a DiscreteStateTransitionsDataset
             self.assertRaises(ValueError, BruteForce.fit, dataset)
 
             # 1) No transitions
             #--------------------
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=0, \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -98,7 +98,7 @@ class BruteForce_tests(unittest.TestCase):
                 for verbose in [0,1]:
 
                     # Generate transitions
-                    dataset = random_StateTransitionsDataset( \
+                    dataset = random_DiscreteStateTransitionsDataset( \
                     nb_transitions=random.randint(1, self._nb_transitions), \
                     nb_features=random.randint(1,self._nb_features), \
                     nb_targets=random.randint(1,self._nb_targets), \
@@ -177,7 +177,7 @@ class BruteForce_tests(unittest.TestCase):
                     # 2.3) minimality
                     # -----------------
                     # All rules conditions are necessary, i.e. removing a condition makes realizes unobserved target value from observation
-                    # Encode data with StateTransitionsDataset
+                    # Encode data with DiscreteStateTransitionsDataset
                     data_encoded = []
                     for (s1,s2) in dataset.data:
                         s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -233,14 +233,14 @@ class BruteForce_tests(unittest.TestCase):
         for i in range(self._nb_tests):
 
             # Generate transitions
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
             max_feature_values=self._nb_feature_values, \
             max_target_values=self._nb_target_values)
 
-            # Encode data with StateTransitionsDataset
+            # Encode data with DiscreteStateTransitionsDataset
             data_encoded = []
             for (s1,s2) in dataset.data:
                 s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -294,7 +294,7 @@ class BruteForce_tests(unittest.TestCase):
         for i in range(self._nb_tests):
 
             # Generate transitions
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -303,7 +303,7 @@ class BruteForce_tests(unittest.TestCase):
 
             #dataset.summary()
 
-            # Encode data with StateTransitionsDataset
+            # Encode data with DiscreteStateTransitionsDataset
             data_encoded = []
             for (s1,s2) in dataset.data:
                 s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]

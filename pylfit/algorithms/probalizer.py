@@ -1,9 +1,9 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/11/06
-# @updated: 2019/11/06
+# @updated: 2022/09/01
 #
-# @desc: simple Probabilizer implementation, for Learning from probabilistic states transitions.
+# @desc: simple Probalizer implementation, for Learning from probabilistic states transitions.
 #   - INPUT: a set of pairs of discrete multi-valued states
 #   - OUTPUT: multiple set of minimal rules which together realize only the input transitions
 #   - THEORY:
@@ -16,19 +16,19 @@
 
 from ..utils import eprint
 from ..objects.rule import Rule
-from ..objects.logicProgram import LogicProgram
 from ..algorithms.gula import GULA
 from ..algorithms.pride import PRIDE
 from ..algorithms.synchronizer import Synchronizer
 from ..algorithms.algorithm import Algorithm
+from ..datasets import DiscreteStateTransitionsDataset
 
 import csv
 import itertools
 import math
 
-class Probabilizer (Algorithm):
+class Probalizer (Algorithm):
     """
-    Define a simple complete version of the Probabilizer algorithm.
+    Define a simple complete version of the Probalizer algorithm.
     Learn logic rules that explain sequences of state transitions
     of a probabilistic dynamic system:
         - discrete
@@ -39,22 +39,24 @@ class Probabilizer (Algorithm):
     """
 
     @staticmethod
-    def fit(data, feature_domains, target_domains, complete=True, synchronous_independant=True): # variables, values, transitions, complete=True, synchronous_independant=True):
+    def fit(dataset, complete=True, synchronous_independant=True, verbose=0, threads=1): # variables, values, transitions, complete=True, synchronous_independant=True):
         """
         Preprocess transitions and learn rules for all variables/values.
 
         Args:
-            data: list of tuple (list of int, list of int)
+            dataset: pylfit.datasets.DiscreteStateTransitionsDataset
                 state transitions of a the system
-            feature_domains: list of (String, list of int)
-                feature variables of the system and their values id that can appear in rules
-            target_domains: list of (String, list of int)
-                target variables of the system and their values id that can appear in rules
+            targets: dict of {String: list of String}
+                target variables values of the dataset for wich we want to learn rules.
+                If not given, all targets values will be learned.
+
 
         Returns:
-            LogicProgram
-                - each rules are minimals
-                - the output set explains/reproduces the input transitions
+            list of pylfit.objects.Rule
+                A set of DMVLP rules that is:
+                    - correct: explain/reproduce all the transitions of the dataset.
+                    - complete: matches all possible feature states (even not in the dataset).
+                    - optimal: all rules are minimals
         """
         #eprint("Start LUST learning...")
 
@@ -65,11 +67,11 @@ class Probabilizer (Algorithm):
         #eprint("Raw transitions:", input)
 
         # Replace target values by their probability
-        probability_encoded_input = Probabilizer.encode(data, synchronous_independant)
-        probability_encoded_targets = Probabilizer.conclusion_values(target_domains, probability_encoded_input)
+        probability_encoded_input = Probalizer.encode(dataset.data, synchronous_independant)
+        probability_encoded_targets = Probalizer.conclusion_values(dataset.targets, probability_encoded_input)
 
         # DBG
-        eprint("total encoded transitions: ",len(probability_encoded_input))
+        #eprint("total encoded transitions: ",len(probability_encoded_input))
 
         #for i in encoded_input:
         #    eprint(i)
@@ -87,28 +89,27 @@ class Probabilizer (Algorithm):
         #                j[var] = occurence_ratio_encoded_targets[var][1][val_id].index(j[var])
         #                break
 
-        final_encoded_input = [(i, tuple([probability_encoded_targets[var][1].index(j[var]) for var in range(len(j))])) for (i,j) in probability_encoded_input]
+        #final_encoded_input = [(i, tuple([probability_encoded_targets[var][1].index(j[var]) for var in range(len(j))])) for (i,j) in probability_encoded_input]
+        final_encoded_input = DiscreteStateTransitionsDataset(probability_encoded_input, dataset.features, probability_encoded_targets)
+        #eprint("Probabilistic target value domain id encoded transitions:", final_encoded_input)
 
-        eprint("Probabilistic target value domain id encoded transitions:", final_encoded_input)
-
-        #domain_encoded_input = Probabilizer.encode_transitions_set(encoded_input, feature_domains, conclusion_values)
+        #domain_encoded_input = Probalizer.encode_transitions_set(encoded_input, feature_domains, conclusion_values)
 
         #eprint("Conclusion value domain id encoded transitions:", domain_encoded_input)
-
+        rules = []
+        constraints = []
         if synchronous_independant:
             if complete:
-                model = GULA.fit(final_encoded_input, feature_domains, probability_encoded_targets) #variables, values, encoded_input, conclusion_values)
+                rules = GULA.fit(dataset=final_encoded_input, verbose=0, threads=threads) #variables, values, encoded_input, conclusion_values)
             else:
-                model = PRIDE.fit(final_encoded_input, feature_domains, probability_encoded_targets) #variables, values, encoded_input)
+                rules = PRIDE.fit(dataset=final_encoded_input, verbose=0, threads=threads) #variables, values, encoded_input)
         else:
-            model = Synchronizer.fit(final_encoded_input, feature_domains, probability_encoded_targets, complete) # variables, values, encoded_input, conclusion_values, complete)
+            rules, constraints = Synchronizer.fit(dataset=final_encoded_input, complete=complete, verbose=0, threads=threads) # variables, values, encoded_input, conclusion_values, complete)
 
-        output = model #LogicProgram(feature_domains, conclusion_values, model.get_rules(), model.get_constraints()) #variables, values, model.get_rules(), model.get_constraints(), conclusion_values)
+        #eprint("Probalizer output raw: \n", output.to_string())
+        #eprint("Probalizer output logic form: \n", output.logic_form())
 
-        eprint("Probabilizer output raw: \n", output.to_string())
-        #eprint("Probabilizer output logic form: \n", output.logic_form())
-
-        return output #, conclusion_values
+        return probability_encoded_targets, rules, constraints
 
     def encode(transitions, synchronous_independant=True):
         # Extract occurences of each transition
@@ -176,7 +177,7 @@ class Probabilizer (Algorithm):
                     str(int(p/math.gcd(p,nb_transitions_from[s_i])))+
                     "/"+str(int(nb_transitions_from[s_i]/math.gcd(p,nb_transitions_from[s_i])))
                     for var in range(0,len(j))]
-                encoded_input.append([i,tuple(encoded_j)])
+                encoded_input.append((list(i),list(encoded_j)))
 
         #eprint("String encoded transitions:", encoded_input)
 

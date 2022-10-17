@@ -11,7 +11,7 @@ from . import DMVLP
 from ..utils import eprint
 from ..objects import Rule
 
-from ..datasets import StateTransitionsDataset
+from ..datasets import DiscreteStateTransitionsDataset
 
 from ..algorithms import Synchronizer
 
@@ -41,7 +41,7 @@ class CDMVLP(DMVLP):
 
 
     """ Dataset types compatible with dmvlp """
-    _COMPATIBLE_DATASETS = [StateTransitionsDataset]
+    _COMPATIBLE_DATASETS = [DiscreteStateTransitionsDataset]
 
     """ Learning algorithms that can be use to fit this model """
     _ALGORITHMS = ["synchronizer","synchronizer-pride"]
@@ -74,6 +74,11 @@ class CDMVLP(DMVLP):
 # Operators
 #--------------
 
+    def copy(self):
+        output = CDMVLP(self.features, self.targets, self.rules, self.constraints)
+        output.algorithm = self.algorithm
+        return output
+
 #--------------
 # Methods
 #--------------
@@ -96,7 +101,7 @@ class CDMVLP(DMVLP):
         else:
             raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in CDMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
-    def fit(self, dataset, verbose=0):
+    def fit(self, dataset, verbose=0, threads=1):
         """
         Use the algorithm set by compile() to fit the rules to the dataset.
             - Learn a model from scratch using the chosen algorithm.
@@ -121,20 +126,20 @@ class CDMVLP(DMVLP):
 
         msg = 'Dataset type (' + str(dataset.__class__.__name__) + ') not supported \
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
-        Dataset must be of type ' + str(StateTransitionsDataset.__class__.__name__)
+        Dataset must be of type ' + str(DiscreteStateTransitionsDataset.__class__.__name__)
 
         if self.algorithm == "synchronizer":
-            if not isinstance(dataset, StateTransitionsDataset):
+            if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with Synchronizer using GULA")
-            self.rules, self.constraints = Synchronizer.fit(dataset=dataset, verbose=verbose)
+            self.rules, self.constraints = Synchronizer.fit(dataset=dataset, verbose=verbose, threads=1)
         elif self.algorithm == "synchronizer-pride":
-            if not isinstance(dataset, StateTransitionsDataset):
+            if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with Synchronizer using PRIDE")
-            self.rules, self.constraints = Synchronizer.fit(dataset=dataset, complete=False, verbose=verbose)
+            self.rules, self.constraints = Synchronizer.fit(dataset=dataset, complete=False, verbose=verbose, threads=1)
         else:
             raise NotImplementedError('<DEV> self.algorithm="'+str(self.algorithm)+'" is in CDMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
@@ -159,7 +164,7 @@ class CDMVLP(DMVLP):
         if not all(len(i) == len(self.features) for i in feature_states):
             raise TypeError("Features state must correspond to the model feature variables (bad length)")
 
-        output = []
+        output = dict()
         for feature_state in feature_states:
 
             # Encode feature state with domain value id
@@ -173,8 +178,9 @@ class CDMVLP(DMVLP):
             target_states = SynchronousConstrained.next(feature_state_encoded, self.targets, self.rules, self.constraints)
 
             # Decode target states
-            local_output = []
-            for s in target_states:
+            local_output = dict()
+
+            for s, rules in target_states.items():
                 target_state = []
                 for var_id, val_id in enumerate(s):
                     #eprint(var_id, val_id)
@@ -182,8 +188,10 @@ class CDMVLP(DMVLP):
                         target_state.append("?")
                     else:
                         target_state.append(self.targets[var_id][1][val_id])
-                local_output.append(target_state)
-            output.append((list(feature_state), local_output))
+
+                local_output[tuple(target_state)] = rules
+
+            output[tuple(feature_state)] = local_output
 
         return output
 

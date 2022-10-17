@@ -1,9 +1,9 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2021/06/15
+# @updated: 2022/08/17
 #
-# @desc: dataset class unit test script
+# @desc: DiscreteStateTransitionsDataset class unit test script
 # done:
 # - __init__
 # - summary
@@ -27,14 +27,14 @@ from io import StringIO
 import pathlib
 sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from tests_generator import random_StateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset
 
 from pylfit.utils import eprint
-from pylfit.datasets import StateTransitionsDataset
+from pylfit.datasets import DiscreteStateTransitionsDataset
 
 random.seed(0)
 
-class StateTransitionsDataset_tests(unittest.TestCase):
+class DiscreteStateTransitionsDataset_tests(unittest.TestCase):
     """
         Unit test of class Datatset from dataset.py
     """
@@ -55,7 +55,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
     #------------------
 
     def test_constructor(self):
-        print(">> pylfit.datasets.StateTransitionsDataset.__init__(self, data, feature_domains, targets_domains)")
+        print(">> pylfit.datasets.DiscreteStateTransitionsDataset.__init__(self, data, feature_domains, targets_domains)")
         for i in range(self._nb_tests):
             features = [("x_"+str(var), ["val_"+str(val) for val in range(0, random.randint(1,self._nb_feature_values))]) for var in range(0, random.randint(1,self._nb_features))]
             targets = [("y_"+str(var), ["val_"+str(val) for val in range(0, random.randint(1,self._nb_target_values))]) for var in range(0, random.randint(1,self._nb_targets))]
@@ -63,7 +63,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
 
 
             # Constructor data/features/targets
-            dataset = StateTransitionsDataset(data, features, targets)
+            dataset = DiscreteStateTransitionsDataset(data, features, targets)
 
 
             self.assertEqual(dataset.features, features)
@@ -81,7 +81,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             ([0,0.6,0],[1,0,0]), \
             ([1,0,0],[0,0,0])]"
 
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # data is not list of pairs
             data = [ \
@@ -89,7 +89,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             ([1,0,0],[0,0,0])]
 
             #data = [([str(val) for val in s1],[str(val) for val in s2]) for s1,s2 in data]
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # Not same size for features
             data = [ \
@@ -98,7 +98,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             ([1,0],[0,0,0,1])]
 
             data = [([str(val) for val in s1], [str(val) for val in s2]) for s1,s2 in data]
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # Not same size for targets
             data = [ \
@@ -107,7 +107,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             ([1,0,0],[0,0,0,0])]
 
             data = [([str(val) for val in s1], [str(val) for val in s2]) for s1,s2 in data]
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # Not only string in features
             data = [ \
@@ -115,7 +115,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             ([0,0.3,0],["1","0","0","1"]), \
             (["1","0",0],["0","0","0","1"])]
 
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # Not only int/string in targets
             data = [ \
@@ -123,7 +123,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             (["0","0","0"],[1,0,0,"1"]), \
             (["1","0","0"],[0,0,0,"1"])]
 
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # Value not in features domain
             data = [ \
@@ -131,7 +131,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             (["0","0","0"],["1","0","0","1"]), \
             (["1","0","0"],["0","0","0","1"])]
 
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # Value not in features domain
             data = [ \
@@ -139,7 +139,7 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             (["0","0","0"],["1","0","-1","1"]), \
             (["1","0","0"],["0","0","0","1"])]
 
-            self.assertRaises(ValueError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # features is not list of string
             data = [ \
@@ -151,13 +151,15 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             targets = [("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])]
 
             features = "" # not list
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
             features = [("p_t-1",["0","1"]),("q_t-1",["0","1"],"r_t-1",["0","1"])] # not tuple var/vals
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
             features = [("p_t-1","1"),("q_t-1",["0","1"]),("r_t-1",["0","1"])] # vals not list
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
             features = [("p_t-1",["0","1"]),("q_t-1",["0",1]),("r_t-1",[0.2,"1"])] # vals not only string
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
+            features = [("p_t-1",["0","1"]),("q_t-1",["0","1"]),("p_t-1",["0","1"])] # duplicate var name
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
             # targets is not list of string
             data = [ \
@@ -169,26 +171,28 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             targets = [("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])]
 
             targets = "" # not list
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
             targets = [("p_t-1",["0","1"]),("q_t-1",["0","1"],"r_t-1",["0","1"])] # not tuple var/vals
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
             targets = [("p_t-1","1"),("q_t-1",["0","1"]),("r_t-1",["0","1"])] # vals not list
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
             targets = [("p_t-1",["0","1"]),("q_t-1",["0",1]),("r_t-1",[0.2,"1"])] # vals not only string
-            self.assertRaises(TypeError, StateTransitionsDataset, data, features, targets)
+            self.assertRaises(TypeError, DiscreteStateTransitionsDataset, data, features, targets)
+            targets = [("p_t-1",["0","1"]),("q_t-1",["0","1"]),("p_t-1",["0","1"])] # duplicate var name
+            self.assertRaises(ValueError, DiscreteStateTransitionsDataset, data, features, targets)
 
     def test_summary(self):
-        print(">> pylfit.datasets.StateTransitionsDataset.summary()")
+        print(">> pylfit.datasets.DiscreteStateTransitionsDataset.summary()")
         for i in range(self._nb_tests):
             # Empty dataset
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=0, \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
             max_feature_values=self._nb_feature_values, \
             max_target_values=self._nb_target_values)
 
-            expected_print = "StateTransitionsDataset summary:\n"
+            expected_print = "DiscreteStateTransitionsDataset summary:\n"
             expected_print += " Features: \n"
             for var,vals in dataset.features:
                 expected_print += "  " + var + ": " + str(vals) + "\n"
@@ -205,14 +209,14 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             self.assertEqual(mystdout.getvalue(), expected_print)
 
             # Usual dataset
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
             max_feature_values=self._nb_feature_values, \
             max_target_values=self._nb_target_values)
 
-            expected_print = "StateTransitionsDataset summary:\n"
+            expected_print = "DiscreteStateTransitionsDataset summary:\n"
             expected_print += " Features: \n"
             for var,vals in dataset.features:
                 expected_print += "  " + var + ": " + str(vals) + "\n"
@@ -231,9 +235,9 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             self.assertEqual(mystdout.getvalue(), expected_print)
 
     def test_to_string(self):
-        print(">> pylfit.datasets.StateTransitionsDataset.to_string()")
+        print(">> pylfit.datasets.DiscreteStateTransitionsDataset.to_string()")
         for i in range(self._nb_tests):
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -250,16 +254,16 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             self.assertEqual(dataset.to_string(), expected)
 
     def test_to_csv(self):
-        print(">> pylfit.datasets.StateTransitionsDataset.to_csv(path_to_file)")
+        print(">> pylfit.datasets.DiscreteStateTransitionsDataset.to_csv(path_to_file)")
         for i in range(self._nb_tests):
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
             max_feature_values=self._nb_feature_values, \
             max_target_values=self._nb_target_values)
 
-            path = "tmp/StateTransitionsDataset_test.csv"
+            path = "tmp/DiscreteStateTransitionsDataset_test.csv"
             dataset.to_csv(path)
 
             self.assertTrue(os.path.isfile(path))
@@ -272,6 +276,43 @@ class StateTransitionsDataset_tests(unittest.TestCase):
             for id, line in enumerate(data[1:]):
                 self.assertEqual(line, [val for val in list(dataset.data[id][0]) + list(dataset.data[id][1]) ] )
 
+    def test___eq__(self):
+        print(">> pylfit.datasets.DiscreteStateTransitionsDataset.__eq__(path_to_file)")
+        for i in range(self._nb_tests):
+            dataset = random_DiscreteStateTransitionsDataset( \
+            nb_transitions=random.randint(1, self._nb_transitions), \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            max_feature_values=self._nb_feature_values, \
+            max_target_values=self._nb_target_values)
+
+            self.assertTrue(dataset == dataset)
+            self.assertTrue(dataset == dataset.copy())
+
+
+            dataset1 = random_DiscreteStateTransitionsDataset( \
+            nb_transitions=random.randint(1, 10), \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            max_feature_values=self._nb_feature_values, \
+            max_target_values=self._nb_target_values)
+
+            dataset2 = random_DiscreteStateTransitionsDataset( \
+            nb_transitions=random.randint(11, 20), \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            max_feature_values=self._nb_feature_values, \
+            max_target_values=self._nb_target_values)
+
+            self.assertTrue(dataset1 != dataset2)
+
+            dataset3 = dataset1.copy()
+            dataset3.data = dataset3.data[:-1]
+            self.assertTrue(dataset1 != dataset3)
+
+            dataset4 = dataset1.copy()
+            dataset4.data[-1] = (np.array(["lol" for var in dataset4.data[-1][0]]),np.array(["lol" for var in dataset4.data[-1][1]]))
+            self.assertTrue(dataset1 != dataset4)
 '''
 @desc: main
 '''

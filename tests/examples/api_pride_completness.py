@@ -27,7 +27,7 @@ if __name__ == '__main__':
     (["1","1","1"],["1","1","0"])\
     ]
 
-    full_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data,\
+    full_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data,\
     feature_domains=[("p_t_1",["0","1"]),("q_t_1",["0","1"]),("r_t_1",["0","1"])],\
     target_domains=[("p_t",["0","1"]),("q_t",["0","1"]),("r_t",["0","1"])])
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #(["1","1","1"],["1","1","0"])\
     ]
 
-    train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data,\
+    train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data,\
     feature_domains=full_dataset.features,\
     target_domains=full_dataset.targets)
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     (["1","1","1"],["1","1","0"])\
     ]
 
-    test_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data,\
+    test_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data,\
     feature_domains=full_dataset.features,\
     target_domains=full_dataset.targets)
 

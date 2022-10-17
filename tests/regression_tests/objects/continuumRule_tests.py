@@ -9,33 +9,47 @@
 
 import unittest
 import random
+import sys
 
 from pylfit.utils import eprint
 from pylfit.objects.continuum import Continuum
 from pylfit.objects.continuumRule import ContinuumRule
 
-#random.seed(0)
+import pathlib
+sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
+
+from tests_generator import random_Continuum, random_ContinuumRule, random_CLP, random_continuous_state
+
+random.seed(0)
 
 class ContinuumRuleTest(unittest.TestCase):
     """
         Unit test of class ContinuumRule from continuumRule.py
     """
 
-    __nb_unit_test = 10
+    _nb_tests = 10
 
-    __max_variables = 5
+    _nb_transitions = 10
 
-    """ must be < __max_value"""
-    __min_value = -100.0
+    _nb_features = 3
 
-    """ must be > __min_value"""
-    __max_value = 100.0
+    _nb_targets = 3
 
-    __min_domain_size = 0.01
+    _min_epsilon = 0.3
 
-    __min_continuum_size = 0.01
+    """ must be < _max_value"""
+    _min_value = -100.0
 
-    __max_size = 5
+    """ must be > _min_value"""
+    _max_value = 100.0
+
+    _min_domain_size = 1.0
+
+    _min_continuum_size = 1
+
+    _nb_rules = 10
+
+    _body_size = 10
 
 
     #------------------
@@ -45,54 +59,54 @@ class ContinuumRuleTest(unittest.TestCase):
     def test_constructor_empty(self):
         eprint(">> ContinuumRule.__init__(self, head_variable, head_value)")
 
-        for i in range(self.__nb_unit_test):
-            var_id = random.randint(0, self.__max_variables)
-            domain = Continuum.random(self.__min_value, self.__max_value)
+        for i in range(self._nb_tests):
+            var_id = random.randint(0, self._nb_features)
+            domain = random_Continuum(self._min_value, self._max_value)
             c = ContinuumRule(var_id, domain)
 
-            self.assertEqual(c.get_head_variable(), var_id)
-            self.assertEqual(c.get_head_value(), domain)
-            self.assertEqual(c.get_body(), [])
+            self.assertEqual(c.head_variable, var_id)
+            self.assertEqual(c.head_value, domain)
+            self.assertEqual(c.body, [])
 
     def test_constructor_full(self):
         eprint(">> ContinuumRule.__init__(self, head_variable, head_value, body)")
 
-        for i in range(self.__nb_unit_test):
-            head_var_id = random.randint(0, self.__max_variables)
-            head_domain = Continuum.random(self.__min_value, self.__max_value)
+        for i in range(self._nb_tests):
+            head_var_id = random.randint(0, self._nb_features)
+            head_domain = random_Continuum(self._min_value, self._max_value)
 
-            size = random.randint(1, self.__max_variables)
+            size = random.randint(1, self._nb_features)
             body = []
             locked = []
             for j in range(size):
-                var_id = random.randint(0, self.__max_variables)
-                domain = Continuum.random(self.__min_value, self.__max_value)
+                var_id = random.randint(0, self._nb_features)
+                domain = random_Continuum(self._min_value, self._max_value)
                 if var_id not in locked:
                     body.append( (var_id, domain) )
                     locked.append(var_id)
 
             r = ContinuumRule(head_var_id, head_domain, body)
 
-            self.assertEqual(r.get_head_variable(), head_var_id)
-            self.assertEqual(r.get_head_value(), head_domain)
+            self.assertEqual(r.head_variable, head_var_id)
+            self.assertEqual(r.head_value, head_domain)
             for e in body:
-                self.assertTrue(e in r.get_body())
-            for e in r.get_body():
+                self.assertTrue(e in r.body)
+            for e in r.body:
                 self.assertTrue(e in body)
 
     def test_copy(self):
         eprint(">> ContinuumRule.copy(self)")
 
-        for i in range(self.__nb_unit_test):
-            head_var_id = random.randint(0, self.__max_variables)
-            head_domain = Continuum.random(self.__min_value, self.__max_value)
+        for i in range(self._nb_tests):
+            head_var_id = random.randint(0, self._nb_features)
+            head_domain = random_Continuum(self._min_value, self._max_value)
 
-            size = random.randint(1, self.__max_variables)
+            size = random.randint(1, self._nb_features)
             body = []
             locked = []
             for j in range(size):
-                var_id = random.randint(0, self.__max_variables)
-                domain = Continuum.random(self.__min_value, self.__max_value)
+                var_id = random.randint(0, self._nb_features)
+                domain = random_Continuum(self._min_value, self._max_value)
                 if var_id not in locked:
                     body.append( (var_id, domain) )
                     locked.append(var_id)
@@ -100,65 +114,19 @@ class ContinuumRuleTest(unittest.TestCase):
             r_ = ContinuumRule(head_var_id, head_domain, body)
             r = r_.copy()
 
-            self.assertEqual(r.get_head_variable(), head_var_id)
-            self.assertEqual(r.get_head_value(), head_domain)
+            self.assertEqual(r.head_variable, head_var_id)
+            self.assertEqual(r.head_value, head_domain)
             for e in body:
-                self.assertTrue(e in r.get_body())
-            for e in r.get_body():
+                self.assertTrue(e in r.body)
+            for e in r.body:
                 self.assertTrue(e in body)
 
-            self.assertEqual(r.get_head_variable(), r_.get_head_variable())
-            self.assertEqual(r.get_head_value(), r_.get_head_value())
-            for e in r_.get_body():
-                self.assertTrue(e in r.get_body())
-            for e in r.get_body():
-                self.assertTrue(e in r_.get_body())
-
-    def test_static_random(self):
-        eprint(">> ContinuumRule.random(min_value, max_value)")
-
-        for i in range(self.__nb_unit_test):
-
-            variables, domains = self.random_system()
-
-            # rule characteristics
-            var = random.randint(0,len(variables)-1)
-            var_domain = domains[var]
-            val = Continuum.random(var_domain.get_min_value(), var_domain.get_max_value())
-            min_size = random.randint(0, len(variables))
-            max_size = random.randint(min_size, len(variables))
-            r = ContinuumRule.random(var, val, variables, domains, min_size, max_size)
-
-            # Check head
-            self.assertEqual(r.get_head_variable(), var)
-            self.assertEqual(r.get_head_value(), val)
-
-            # Check body
-            self.assertTrue(r.size() >= min_size)
-            self.assertTrue(r.size() <= max_size)
-
-            appears = []
-            for var, val in r.get_body():
-                self.assertTrue(var >= 0 and var < len(variables))
-                self.assertTrue(domains[var].includes(val))
-
-                self.assertFalse(var in appears)
-                appears.append(var)
-
-            # min > max
-            min_size = random.randint(0, len(variables))
-            max_size = random.randint(-100, min_size-1)
-            self.assertRaises(ValueError, ContinuumRule.random, var, val, variables, domains, min_size, max_size)
-
-            # min > nb variables
-            min_size = random.randint(len(variables)+1, len(variables)+100)
-            max_size = random.randint(min_size, len(variables)+100)
-            self.assertRaises(ValueError, ContinuumRule.random, var, val, variables, domains, min_size, max_size)
-
-            # max > nb variables
-            min_size = random.randint(0, len(variables))
-            max_size = random.randint(len(variables)+1, len(variables)+100)
-            self.assertRaises(ValueError, ContinuumRule.random, var, val, variables, domains, min_size, max_size)
+            self.assertEqual(r.head_variable, r_.head_variable)
+            self.assertEqual(r.head_value, r_.head_value)
+            for e in r_.body:
+                self.assertTrue(e in r.body)
+            for e in r.body:
+                self.assertTrue(e in r_.body)
 
     #--------------
     # Observers
@@ -166,65 +134,75 @@ class ContinuumRuleTest(unittest.TestCase):
 
     def test_size(self):
         print(">> ContinuumRule.size(self)")
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            r = self.random_rule(variables, domains)
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
 
-            self.assertEqual(r.size(), len(r.get_body()))
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+
+            self.assertEqual(r.size(), len(r.body))
 
     def test_get_condition(self):
         print(">> ContinuumRule.get_condition(self, variable)")
 
-        for i in range(self.__nb_unit_test):
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
+
             # Empty rule
-            variables, domains = self.random_system()
-            var = random.randint(0,len(variables))
-            val = Continuum.random(self.__min_value, self.__max_value)
+            var = random.randint(0,len(model.features))
+            val = random_Continuum(self._min_value, self._max_value)
             r = ContinuumRule(var,val)
 
-            for var in range(len(variables)):
+            for var in range(len(model.features)):
                 self.assertEqual(r.get_condition(var),None)
 
             # Regular rule
-            variables, domains = self.random_system()
             while r.size() == 0:
-                r = self.random_rule(variables, domains)
-            body = r.get_body()
+                r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+            body = r.body
 
             appears = []
             for var, val in body:
                 appears.append(var)
                 self.assertEqual(r.get_condition(var),val)
 
-            for var in range(len(variables)):
+            for var in range(len(model.features)):
                 if var not in appears:
                     self.assertEqual(r.get_condition(var),None)
 
     def test_has_condition(self):
         print(">> ContinuumRule.has_condition(self, variable)")
 
-        for i in range(self.__nb_unit_test):
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
+
             # Empty rule
-            variables, domains = self.random_system()
-            var = random.randint(0,len(variables))
-            val = Continuum.random(self.__min_value, self.__max_value)
+            var = random.randint(0,len(model.features))
+            val = random_Continuum(self._min_value, self._max_value)
             r = ContinuumRule(var,val)
 
-            for var in range(len(variables)):
+            for var in range(len(model.features)):
                 self.assertEqual(r.has_condition(var),False)
 
             # Regular rule
-            variables, domains = self.random_system()
             while r.size() == 0:
-                r = self.random_rule(variables, domains)
-            body = r.get_body()
+                r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+            body = r.body
 
             appears = []
             for var, val in body:
                 appears.append(var)
                 self.assertEqual(r.has_condition(var),True)
 
-            for var in range(len(variables)):
+            for var in range(len(model.features)):
                 if var not in appears:
                     self.assertEqual(r.has_condition(var),False)
 
@@ -238,16 +216,20 @@ class ContinuumRuleTest(unittest.TestCase):
 
     def test_to_string(self):
         print(">> ContinuumRule.to_string(self)")
-        for i in range(self.__nb_unit_test):
+        for i in range(self._nb_tests):
 
-            variables, domains = self.random_system()
-            r = self.random_rule(variables, domains)
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
 
-            string = str(r.get_head_variable()) + "=" + r.get_head_value().to_string() + " :- "
-            for a, b in r.get_body():
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+
+            string = str(r.head_variable) + "=" + r.head_value.to_string() + " :- "
+            for a, b in r.body:
                 string += str(a) + "=" + b.to_string() + ", "
 
-            if len(r.get_body()) > 0:
+            if len(r.body) > 0:
                 string = string[:-2]
             string += "."
 
@@ -257,75 +239,63 @@ class ContinuumRuleTest(unittest.TestCase):
             #eprint(r)
 
     def test_logic_form(self):
-        print(">> ContinuumRule.logic_form(self, variables)")
+        print(">> ContinuumRule.logic_form(self, features)")
 
         # One step rules
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            r = self.random_rule(variables, domains)
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
 
-            max_var_id = r.get_head_variable()
-            max_val_id = r.get_head_value()
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
-            string = variables[r.get_head_variable()] + "(" + r.get_head_value().to_string() + ",T) :- "
-            for var, val in r.get_body():
-                string += variables[var] + "(" + val.to_string() + ",T-1), "
+            max_var_id = r.head_variable
+            max_val_id = r.head_value
 
-            if len(r.get_body()) > 0:
+            string = model.targets[r.head_variable][0] + "(" + r.head_value.to_string() + ") :- "
+            for var, val in r.body:
+                string += model.features[var][0] + "(" + val.to_string() + "), "
+
+            if len(r.body) > 0:
                 string = string[:-2]
             string += "."
-
-            self.assertEqual(r.logic_form(variables),string)
-
-        # Delayed rules
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            r = self.random_rule(variables, domains)
-
-            variables = ["x"+str(var) for var in range(int(len(variables)/3)+1)]
-
-            string = variables[r.get_head_variable() % len(variables)] + "(" + r.get_head_value().to_string() + ",T) :- "
-            for var, val in r.get_body():
-                delay = int(var / len(variables)) + 1
-                string += variables[var % len(variables)] + "(" + val.to_string() + ",T-" + str(delay) + "), "
-
-            if len(r.get_body()) > 0:
-                string = string[:-2]
-            string += "."
-
-            self.assertEqual(r.logic_form(variables),string)
-            #eprint(string)
+            self.assertEqual(r.logic_form(model.features, model.targets),string)
 
     def test_matches(self):
         print(">> ContinuumRule.matches(self, state)")
 
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            r = self.random_rule(variables, domains)
-            state = self.random_state(variables, domains)
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
 
-            body = r.get_body()
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+            state = random_continuous_state(model.features)
+
+            body = r.body
 
             for var, val in body:
-                min = val.get_min_value()
-                max = val.get_max_value()
+                min = val.min_value
+                max = val.max_value
                 if not val.min_included:
-                    min += self.__min_continuum_size * 0.1
+                    min += self._min_continuum_size * 0.1
                 if not val.max_included:
-                    max -= self.__min_continuum_size * 0.1
+                    max -= self._min_continuum_size * 0.1
                 state[var] = random.uniform(min, max)
 
             self.assertTrue(r.matches(state))
 
             while r.size() == 0:
-                r = self.random_rule(variables, domains)
-            state = self.random_state(variables, domains)
+                r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+            state = random_continuous_state(model.features)
 
-            var, val = random.choice(r.get_body())
-            val_ = val.get_max_value() - ( (val.get_min_value() - val.get_max_value()) / 2.0 )
+            var, val = random.choice(r.body)
+            val_ = val.max_value - ( (val.min_value - val.max_value) / 2.0 )
 
             while val.includes(val_):
-                val_ = random.uniform(self.__min_value-100.0, self.__max_value+100.0)
+                val_ = random.uniform(self._min_value-100.0, self._max_value+100.0)
 
             state[var] = val_
 
@@ -337,34 +307,38 @@ class ContinuumRuleTest(unittest.TestCase):
     def test_dominates(self):
         print(">> ContinuumRule.dominates(self, rule)")
 
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            var = random.randint(0, len(variables)-1)
-            r = self.random_rule(variables, domains)
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
+
+            var = random.randint(0, len(model.features)-1)
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
             # Undominated rule: var = emptyset if anything
-            r0 = ContinuumRule(r.get_head_variable(),Continuum())
+            r0 = ContinuumRule(r.head_variable,Continuum())
 
             self.assertTrue(r0.dominates(r0))
 
             # r1 is a regular rule
-            r1 = self.random_rule(variables, domains)
+            r1 = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
             while r1.size() == 0:
-                r1 = self.random_rule(variables, domains)
-            var = r.get_head_variable()
-            val = Continuum.random(domains[var].get_min_value(),domains[var].get_max_value())
-            r1 = ContinuumRule(var, val, r1.get_body()) # set head
+                r1 = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+            var = r.head_variable
+            val = random_Continuum(model.targets[var][1].min_value, model.targets[var][1].max_value)
+            r1 = ContinuumRule(var, val, r1.body) # set head
 
             self.assertTrue(r0.dominates(r1))
             self.assertFalse(r1.dominates(r0))
 
             # r2 is precision of r1 (head specification)
             r2 = r1.copy()
-            var = r2.get_head_variable()
-            val = r2.get_head_value()
-            while r2.get_head_value() == val or not r2.get_head_value().includes(val):
-                val = Continuum.random(val.get_min_value(), val.get_max_value())
-            r2.set_head_value(val)
+            var = r2.head_variable
+            val = r2.head_value
+            while r2.head_value == val or not r2.head_value.includes(val):
+                val = random_Continuum(val.min_value, val.max_value)
+            r2.head_value = val
 
             self.assertEqual(r0.dominates(r2), True)
             self.assertEqual(r2.dominates(r0), False)
@@ -373,12 +347,12 @@ class ContinuumRuleTest(unittest.TestCase):
 
             # r3 is a generalization of r1 (body generalization)
             r3 = r1.copy()
-            var, val = random.choice(r3.get_body())
+            var, val = random.choice(r3.body)
             val_ = val
-            modif_min = random.uniform(0, self.__max_value)
-            modif_max = random.uniform(0, self.__max_value)
+            modif_min = random.uniform(0, self._max_value)
+            modif_max = random.uniform(0, self._max_value)
             while val_ == val or not val_.includes(val):
-                val_ = Continuum.random(val.get_min_value()-modif_min, val.get_max_value()+modif_max)
+                val_ = random_Continuum(val.min_value-modif_min, val.max_value+modif_max)
             r3.set_condition(var, val_)
 
             self.assertEqual(r0.dominates(r3), True)
@@ -388,13 +362,13 @@ class ContinuumRuleTest(unittest.TestCase):
 
             # r4 is unprecision of r1 (head generalization)
             r4 = r1.copy()
-            var = r4.get_head_variable()
-            val = r4.get_head_value()
-            modif_min = random.uniform(0, self.__max_value)
-            modif_max = random.uniform(0, self.__max_value)
-            while r4.get_head_value() == val or not val.includes(r4.get_head_value()):
-                val = Continuum(val.get_min_value()-modif_min, val.get_max_value()+modif_max,random.choice([True,False]),random.choice([True,False]))
-            r4.set_head_value(val)
+            var = r4.head_variable
+            val = r4.head_value
+            modif_min = random.uniform(0, self._max_value)
+            modif_max = random.uniform(0, self._max_value)
+            while r4.head_value == val or not val.includes(r4.head_value):
+                val = Continuum(val.min_value-modif_min, val.max_value+modif_max,random.choice([True,False]),random.choice([True,False]))
+            r4.head_value = val
 
             self.assertEqual(r0.dominates(r4), True)
             self.assertEqual(r4.dominates(r0), False)
@@ -403,10 +377,10 @@ class ContinuumRuleTest(unittest.TestCase):
 
             # r5 is specialization of r1 (body specialization)
             r5 = r1.copy()
-            var, val = random.choice(r5.get_body())
+            var, val = random.choice(r5.body)
             val_ = val
             while val_ == val or not val.includes(val_):
-                val_ = Continuum.random(val.get_min_value(), val.get_max_value())
+                val_ = random_Continuum(val.min_value, val.max_value)
             r5.set_condition(var,val_)
 
             self.assertEqual(r0.dominates(r5), True)
@@ -415,31 +389,31 @@ class ContinuumRuleTest(unittest.TestCase):
             self.assertEqual(r1.dominates(r5), True)
 
             # r6 is a random rule
-            r6 = self.random_rule(variables, domains)
+            r6 = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
             # head var difference
-            if r6.get_head_variable() != r1.get_head_variable():
+            if r6.head_variable != r1.head_variable:
                 self.assertFalse(r6.dominates(r1))
                 self.assertFalse(r1.dominates(r6))
 
-            r6 = ContinuumRule(r1.get_head_variable(), r6.get_head_value(), r6.get_body()) # same head var
+            r6 = ContinuumRule(r1.head_variable, r6.head_value, r6.body) # same head var
             #eprint("r1: ", r1)
             #eprint("r6: ", r6)
 
             # head val inclusion
-            if not r1.get_head_value().includes(r6.get_head_value()):
+            if not r1.head_value.includes(r6.head_value):
                 self.assertFalse(r6.dominates(r1))
 
-            r6 = ContinuumRule(r1.get_head_variable(), r1.get_head_value(), r6.get_body()) # same head var, same head val
+            r6 = ContinuumRule(r1.head_variable, r1.head_value, r6.body) # same head var, same head val
 
             # body subsumption
             if r1.dominates(r6):
-                for var,val in r1.get_body():
+                for var,val in r1.body:
                     self.assertTrue(val.includes(r6.get_condition(var)))
 
             # body subsumption
             if r6.dominates(r1):
-                for var,val in r6.get_body():
+                for var,val in r6.body:
                     self.assertTrue(val.includes(r1.get_condition(var)))
 
             # incomparable
@@ -450,7 +424,7 @@ class ContinuumRuleTest(unittest.TestCase):
                 conflicts = False
                 dominant_r1 = False
                 dominant_r6 = False
-                for var, val in r1.get_body():
+                for var, val in r1.body:
                     # condition not appearing
                     if not r6.has_condition(var):
                         conflicts = True
@@ -471,7 +445,7 @@ class ContinuumRuleTest(unittest.TestCase):
                             conflicts = True
                             break
 
-                for var, val in r6.get_body():
+                for var, val in r6.body:
                     # condition not appearing
                     if not r1.has_condition(var):
                         conflicts = True
@@ -508,18 +482,22 @@ class ContinuumRuleTest(unittest.TestCase):
     def test_set_condition(self):
         print(">> ContinuumRule.set_condition(self, variable, value)")
 
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            var = random.randint(0, len(variables)-1)
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
+
+            var = random.randint(0, len(model.features)-1)
 
             # empty rule
-            r = self.random_rule(variables, domains)
-            r = ContinuumRule(r.get_head_variable(), r.get_head_value(), [])
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
+            r = ContinuumRule(r.head_variable, r.head_value, [])
 
-            for j in range(len(variables)):
+            for j in range(len(model.features)):
 
-                var = random.randint(0, len(variables)-1)
-                val = Continuum.random(domains[var].get_min_value(), domains[var].get_max_value())
+                var = random.randint(0, len(model.features)-1)
+                val = random_Continuum(model.features[var][1].min_value, model.features[var][1].max_value)
                 size = r.size()
                 exist = r.has_condition(var)
                 r.set_condition(var, val)
@@ -535,16 +513,16 @@ class ContinuumRuleTest(unittest.TestCase):
 
                 # Ordering ensured
                 prev = -1
-                for v, val in r.get_body():
+                for v, val in r.body:
                     v > prev
                     prev = v
 
             # regular rule
-            r = self.random_rule(variables, domains)
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
-            for j in range(len(variables)):
-                var = random.randint(0, len(variables)-1)
-                val = Continuum.random(domains[var].get_min_value(), domains[var].get_max_value())
+            for j in range(len(model.features)):
+                var = random.randint(0, len(model.features)-1)
+                val = random_Continuum(model.features[var][1].min_value, model.features[var][1].max_value)
                 size = r.size()
                 exist = r.has_condition(var)
 
@@ -566,29 +544,33 @@ class ContinuumRuleTest(unittest.TestCase):
 
                 # Ordering ensured
                 prev = -1
-                for v, val in r.get_body():
+                for v, val in r.body:
                     v > prev
                     prev = v
 
     def test___eq__(self):
         print(">> ContinuumRule.__eq__(self, other)")
 
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            r = self.random_rule(variables, domains)
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
+
+            r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
             self.assertTrue(r == r)
             self.assertFalse(r != r)
 
-            r_ = self.random_rule(variables, domains)
+            r_ = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
-            if r.get_head_variable() != r_.get_head_variable():
+            if r.head_variable != r_.head_variable:
                 self.assertFalse(r == r_)
 
-            if r.get_head_value() != r_.get_head_value():
+            if r.head_value != r_.head_value:
                 self.assertFalse(r == r_)
 
-            if r.get_body() != r_.get_body():
+            if r.body != r_.body:
                 self.assertFalse(r == r_)
 
             # different type
@@ -598,23 +580,23 @@ class ContinuumRuleTest(unittest.TestCase):
             self.assertFalse(r == [1,2,3])
 
             # different size
-            r_ = self.random_rule(variables, domains)
+            r_ = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
             while r_.size() == r.size():
-                r_ = self.random_rule(variables, domains)
+                r_ = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
-            r_.set_head_variable(r.get_head_variable())
-            r_.set_head_value(r.get_head_value())
+            r_.head_variable = r.head_variable
+            r_.head_value = r.head_value
             self.assertFalse(r == r_)
 
             # Same size, same head
             while r.size() == 0:
-                r = self.random_rule(variables, domains)
+                r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
             r_ = r.copy()
-            var, val = random.choice(r.get_body())
+            var, val = random.choice(r.body)
 
             new_val = val
             while new_val == val:
-                new_val = Continuum.random(domains[var].get_min_value(), domains[var].get_max_value())
+                new_val = random_Continuum(model.features[var][1].min_value, model.features[var][1].max_value)
                 r_.set_condition(var, new_val)
 
             self.assertFalse(r == r_)
@@ -623,22 +605,26 @@ class ContinuumRuleTest(unittest.TestCase):
         print(">> ContinuumRule.remove_condition(self, variable)")
 
         # Empty rule
-        for i in range(self.__nb_unit_test):
-            variables, domains = self.random_system()
-            var = random.randint(0,len(variables)-1)
-            val = Continuum.random(domains[var].get_min_value(), domains[var].get_max_value())
+        for i in range(self._nb_tests):
+            model = random_CLP( \
+            nb_features=random.randint(1,self._nb_features), \
+            nb_targets=random.randint(1,self._nb_targets), \
+            algorithm="acedia")
+
+            var = random.randint(0,len(model.features)-1)
+            val = random_Continuum(model.features[var][1].min_value, model.features[var][1].max_value)
             r = ContinuumRule(var,val)
 
-            var = random.randint(0,len(variables)-1)
+            var = random.randint(0,len(model.features)-1)
 
             self.assertFalse(r.has_condition(var))
             r.remove_condition(var)
             self.assertFalse(r.has_condition(var))
 
             while r.size() == 0:
-                r = self.random_rule(variables, domains)
+                r = random_ContinuumRule(model.features, model.targets, self._min_continuum_size)
 
-            var, val = random.choice(r.get_body())
+            var, val = random.choice(r.body)
 
             self.assertTrue(r.has_condition(var))
             r.remove_condition(var)
@@ -647,26 +633,6 @@ class ContinuumRuleTest(unittest.TestCase):
     #------------------
     # Tool functions
     #------------------
-
-    def random_system(self):
-        # generates variables/domains
-        nb_variables = random.randint(1, self.__max_variables)
-        variables = ["x"+str(var) for var in range(nb_variables)]
-        domains = [ Continuum.random(self.__min_value, self.__max_value, self.__min_domain_size) for var in variables ]
-
-        return variables, domains
-
-    def random_rule(self, variables, domains):
-        var = random.randint(0,len(variables)-1)
-        var_domain = domains[var]
-        val = Continuum.random(var_domain.get_min_value(), var_domain.get_max_value(), self.__min_continuum_size)
-        min_size = random.randint(0, len(variables))
-        max_size = random.randint(min_size, len(variables))
-
-        return ContinuumRule.random(var, val, variables, domains, min_size, max_size)
-
-    def random_state(self, variables, domains):
-        return [random.uniform(domains[var].get_min_value(),domains[var].get_max_value()) for var in range(len(variables))]
 '''
 @desc: main
 '''

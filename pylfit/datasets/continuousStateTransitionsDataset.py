@@ -1,37 +1,35 @@
 #-----------------------
 # @author: Tony Ribeiro
-# @created: 2021/01/13
-# @updated: 2021/06/15
+# @created: 2022/08/24
+# @updated: 2022/08/24
 #
-# @desc: Dataset container class for state transitions data
-#   - Features/target variables labels and domain
+# @desc: Dataset container class for contiuous state transitions data
+#   - Features/target variables labels and continuum domain
 #   - Data is a list of pair of feature/target states
-#       - State are nparray of int following the order of features/targets
-#       - Integer value correspond to domain id of corresponding feature/target variable
+#       - State are nparray of float following the order of features/targets
 #-----------------------
 
 from ..utils import eprint
 
 from ..datasets import Dataset
 
+from ..objects import Continuum
+
 import numpy
 import pandas
 import csv
+import collections
 
-class StateTransitionsDataset(Dataset):
+class ContinuousStateTransitionsDataset(Dataset):
     """ Container class for state transitions dataset
 
     Parameters:
-        data: list of tuple (nparray of string, nparray of string)
+        data: list of tuple (nparray of float, nparray of float)
             State transitions as pair of feature/target states
-        features: list of tuple (string, list of string)
+        features: list of tuple (float, Continuum)
             Feature variables name and domain.
-            Can have values not appearing in data.
-            Missing data values will be added.
-        targets: list of tuple (string, list of string)
+        targets: list of tuple (float, Continuum)
             Target variables name and domain.
-            Can have values not appearing in data.
-            Missing data values will be added.
     """
 
 #--------------
@@ -40,19 +38,17 @@ class StateTransitionsDataset(Dataset):
 
     def __init__(self, data, features, targets):
         """
-        Constructor of a state transitions dataset
+        Constructor of a continuous state transitions dataset
 
         Args:
-            data: list of tuple (nparray of string, nparray of string)
+            data: list of tuple (nparray of float, nparray of float)
                 State transitions as pair of feature/target states
-            features: list of tuple (string, list of string)
+            features: list of tuple (float, Continuum)
                 Feature variables name and domain.
-                Can have values not appearing in data.
-                Missing data values will be added.
-            targets: list of tuple (string, list of string)
+                Can be extended to cover all observed values.
+            targets: list of tuple (float, Continuum)
                 Target variables name and domain.
-                Can have values not appearing in data.
-                Missing data values will be added.
+                Can be extended to cover all observed values.
         """
 
         self.data = data
@@ -69,14 +65,14 @@ class StateTransitionsDataset(Dataset):
                 raise ValueError("Transition " + str((s1,s2)) + ": target state of wrong size, targets size is " + str(len(self.targets)))
 
             for var_id, val in enumerate(s1):
-                if str(val) not in features[var_id][1]:
-                    raise ValueError("Transition " + str((s1,s2)) + ": value not in features for variable " + str(var_id))
+                if not features[var_id][1].includes(val):
+                    raise ValueError("Transition " + str((s1,s2)) + ": value not in domain of feature variable " + str(var_id))
             for var_id, val in enumerate(s2):
-                if str(val) not in targets[var_id][1]:
-                    raise ValueError("Transition " + str((s1,s2)) + ": value not in targets for variable " + str(var_id))
+                if not targets[var_id][1].includes(val):
+                    raise ValueError("Transition " + str((s1,s2)) + ": value not in domain of feature variable " + str(var_id))
 
     def copy(self):
-        return StateTransitionsDataset(self.data, self.features, self.targets)
+        return ContinuousStateTransitionsDataset(self.data, self.features, self.targets)
 #--------------
 # Methods
 #--------------
@@ -101,10 +97,10 @@ class StateTransitionsDataset(Dataset):
         print_fn(str(self.__class__.__name__) + " summary:")
         print_fn(" Features: ")
         for var in self.features:
-            print_fn('  ' + str(var[0]) + ': ' + str(list(var[1])))
+            print_fn('  ' + str(var[0]) + ': ' + str(var[1]))
         print_fn(" Targets: ")
         for var in self.targets:
-            print_fn('  ' + str(var[0]) + ': ' + str(list(var[1])))
+            print_fn('  ' + str(var[0]) + ': ' + str(var[1]))
         if len(self.data) == 0:
             print_fn(' Data: []')
         else:
@@ -148,7 +144,16 @@ class StateTransitionsDataset(Dataset):
 #--------------
 
     def __eq__(self, dataset):
-        return (self.features == dataset.features) and (self.targets == dataset.targets) and (self.data == dataset.data)
+        if (self.features != dataset.features):
+            return False
+        if (self.targets != dataset.targets):
+            return False
+        if len(self.data) != len(dataset.data):
+            return False
+        for id, (i,j) in enumerate(self.data):
+            if (dataset.data[id][0] != i).any() or (dataset.data[id][1] != j).any():
+                return False
+        return True
 
 #--------------
 # Statics methods
@@ -165,7 +170,7 @@ class StateTransitionsDataset(Dataset):
     @data.setter
     def data(self, value):
 
-        msg = "Constructing a "+self.__class__.__name__+" with wrong argument format: data must be a list of tuple (list of string, list of string)"
+        msg = "Constructing a "+self.__class__.__name__+" with wrong argument format: data must be a list of tuple (list of float, list of float)"
 
         if not isinstance(value, list): # data must be a list
             raise TypeError(msg)
@@ -176,10 +181,10 @@ class StateTransitionsDataset(Dataset):
             target_state = transition[1]
             #if not isinstance(feature_state, numpy.ndarray) or not isinstance(target_state, numpy.ndarray): # States must be ndarray
             #    raise ValueError(msg)
-            if not all(isinstance(val, (str)) for val in feature_state) or not all(isinstance(val, (str)) for val in target_state): # Values must be string or int
+            if not all(isinstance(val, (float,int)) for val in feature_state) or not all(isinstance(val, (float,int)) for val in target_state): # Values must be float or int
                 raise ValueError(msg)
 
-        self._data = [(numpy.array([str(i) for i in s1]), numpy.array([str(i) for i in s2])) for s1, s2 in value]
+        self._data = [(numpy.array([float(i) for i in s1]), numpy.array([float(i) for i in s2])) for s1, s2 in value]
 
     @property
     def features(self):
@@ -189,9 +194,12 @@ class StateTransitionsDataset(Dataset):
     def features(self, value):
         if not isinstance(value, list) \
         or not all(isinstance(i, tuple) for i in value) or not all(len(i) == 2 for i in value) \
-        or not all(isinstance(vals, list) for (var,vals) in value) \
-        or not all(isinstance(val, str) for (var,vals) in value for val in vals):
-            raise TypeError("Features must be a list of pair of (string, list of string)")
+        or not all(isinstance(vals, Continuum) for (var,vals) in value):
+            raise TypeError("Features must be a list of pair of (string, Continuum)")
+
+        duplicate = [item for item, count in collections.Counter([var for var,vals in value]).items() if count > 1]
+        if(len(duplicate) > 0):
+            raise ValueError("Feature variables name must be unique: "+str(duplicate)+" are duplicated")
         self._features = value.copy()
 
     @property
@@ -202,7 +210,10 @@ class StateTransitionsDataset(Dataset):
     def targets(self, value):
         if not isinstance(value, list) \
         or not all(isinstance(i, tuple) for i in value) or not all(len(i) == 2 for i in value) \
-        or not all(isinstance(vals, list) for (var,vals) in value) \
-        or not all(isinstance(val, str) for (var,vals) in value for val in vals):
-            raise TypeError("Targets must be a list of pair of (string, list of string)")
+        or not all(isinstance(vals, Continuum) for (var,vals) in value):
+            raise TypeError("Targets must be a list of pair of (string, Continuum)")
+
+        duplicate = [item for item, count in collections.Counter([var for var,vals in value]).items() if count > 1]
+        if(len(duplicate) > 0):
+            raise ValueError("Target variables name must be unique: "+str(duplicate)+" are duplicated")
         self._targets = value.copy()

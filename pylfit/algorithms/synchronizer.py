@@ -7,7 +7,8 @@
 #   - INPUT: a set of pairs of discrete multi-valued states
 #   - OUTPUT: a logic program with constraints that realize only the input transitions
 #   - THEORY:
-#       - NEW (MLJ 2020)
+#       - MLJ 2021: Learning any memory-less discrete semantics for dynamical systems represented by logic programs
+#           https://hal.archives-ouvertes.fr/hal-02925942/
 #   - COMPLEXITY:
 #       - Variables: exponential
 #       - Values: exponential
@@ -42,7 +43,7 @@ class Synchronizer (Algorithm):
     HEURISTIC_PARTIAL_IMPOSSIBLE_STATE = True
 
     @staticmethod
-    def fit(dataset, complete=True, verbose=0): #variables, values, transitions, conclusion_values=None, complete=True):
+    def fit(dataset, complete=True, verbose=0, threads=1): #variables, values, transitions, conclusion_values=None, complete=True):
         """
         Preprocess state transitions and learn rules for all variables/values.
 
@@ -71,9 +72,9 @@ class Synchronizer (Algorithm):
         # 1) Use GULA to learn local possibilities
         #------------------------------------------
         if complete:
-            rules = GULA.fit(dataset)
+            rules = GULA.fit(dataset=dataset, threads=threads)
         else:
-            rules = PRIDE.fit(dataset)
+            rules = PRIDE.fit(dataset=dataset, threads=threads)
 
         # 2) Learn constraints
         #------------------------------------------

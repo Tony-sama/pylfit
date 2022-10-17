@@ -3,7 +3,7 @@
 # @created: 2020/12/23
 # @updated: 2021/06/15
 #
-# @desc: dataset class unit test script
+# @desc: dmvlp class unit test script
 # done:
 #  - __init__
 # - compile
@@ -40,7 +40,7 @@ from pylfit.utils import eprint
 import pathlib
 sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from tests_generator import random_DMVLP, random_StateTransitionsDataset, random_symmetric_StateTransitionsDataset
+from tests_generator import random_DMVLP, random_DiscreteStateTransitionsDataset, random_symmetric_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -111,6 +111,18 @@ class DMVLP_tests(unittest.TestCase):
 
         targets = [("x0", ["0","1"]), ("x1", [0,"1"]), ("x2", ["0","1"])] # domain values are not string
         self.assertRaises(ValueError, DMVLP, features, targets)
+
+        model = random_DMVLP( \
+        nb_features=random.randint(1,self._nb_features), \
+        nb_targets=random.randint(1,self._nb_targets), \
+        max_feature_values=self._nb_feature_values, \
+        max_target_values=self._nb_target_values, \
+        algorithm="gula")
+
+        rules = ""
+        self.assertRaises(TypeError, DMVLP, model.features, model.targets, rules)
+        rules = model.rules + [""]
+        self.assertRaises(TypeError, DMVLP, model.features, model.targets, rules)
 
     def test_copy(self):
         print(">> DMVLP.copy()")
@@ -190,7 +202,7 @@ class DMVLP_tests(unittest.TestCase):
         for test in range(0,self._nb_tests):
             for verbose in [0,1]:
 
-                dataset = random_StateTransitionsDataset( \
+                dataset = random_DiscreteStateTransitionsDataset( \
                 nb_transitions=random.randint(1, self._nb_transitions), \
                 nb_features=random.randint(1,self._nb_features), \
                 nb_targets=random.randint(1,self._nb_targets), \
@@ -222,30 +234,60 @@ class DMVLP_tests(unittest.TestCase):
                     model = DMVLP(features=dataset.features, targets=dataset.targets)
                     model.compile(algorithm=algorithm)
 
-                    self.assertRaises(ValueError, model.fit, []) # dataset is not of valid type
+                    self.assertRaises(ValueError, model.fit, None, []) # dataset is not of valid type
 
                     model.algorithm = "gulaaaaa"
-                    self.assertRaises(ValueError, model.fit, dataset, verbose) # algorithm is not of valid
+                    self.assertRaises(ValueError, model.fit, dataset, None, verbose) # algorithm is not of valid
                     model.algorithm = algorithm
+
+                    self.assertRaises(ValueError, model.fit, dataset, "", verbose) # targets_to_learn is not of valid
+                    self.assertRaises(ValueError, model.fit, dataset, {var:vals for var,vals in model.targets+model.features}, verbose) # targets_to_learn is not of valid
+                    bad_targets = model.targets.copy()
+                    bad_targets[0] = (bad_targets[0][0],["lol","nope"])
+                    self.assertRaises(ValueError, model.fit, dataset, {var:vals for var,vals in bad_targets}, verbose) # targets_to_learn is not of valid
 
                     original = DMVLP._COMPATIBLE_DATASETS.copy()
                     class newdataset(Dataset):
                         def __init__(self, data, features, targets):
                             x = ""
+                        @property
+                        def data(self):
+                            return ""
+
+                        @data.setter
+                        def data(self, value):
+                            self._data = value
+
+                        @property
+                        def features(self):
+                            return ""
+
+                        @features.setter
+                        def features(self, value):
+                            self._features = value
+
+                        @property
+                        def targets(self):
+                            return ""
+
+                        @targets.setter
+                        def targets(self, value):
+                            self._targets = value
+
                     DMVLP._COMPATIBLE_DATASETS = [newdataset]
-                    self.assertRaises(ValueError, model.fit, newdataset([],[],[]), verbose) # dataset not supported by the algo
+                    self.assertRaises(ValueError, model.fit, newdataset([],[],[]), None, verbose) # dataset not supported by the algo
                     DMVLP._COMPATIBLE_DATASETS = original
 
                     #self.assertRaises(ValueError, model.fit, dataset, verbose) # algorithm is not of valid
                     model.algorithm = "lf1t"
-                    self.assertRaises(NotImplementedError, model.fit, dataset, verbose) # algorithm is not of valid
+                    self.assertRaises(NotImplementedError, model.fit, dataset, None, verbose) # algorithm is not of valid
 
     def test_extend(self):
         print(">> DMVLP.extend(dataset, feature_states)")
 
         for test in range(0,self._nb_tests):
 
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -263,7 +305,7 @@ class DMVLP_tests(unittest.TestCase):
 
                     original_rules = model.rules.copy()
 
-                    # Encode data with StateTransitionsDataset
+                    # Encode data with DiscreteStateTransitionsDataset
                     data_encoded = []
                     for (s1,s2) in dataset.data:
                         s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -381,7 +423,7 @@ class DMVLP_tests(unittest.TestCase):
         feature_names=["p_t-1","q_t-1","r_t-1"]
         target_names=["p_t","q_t","r_t"]
 
-        dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=feature_names, target_names=target_names)
+        dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=feature_names, target_names=target_names)
 
         model = DMVLP(features=dataset.features, targets=dataset.targets)
         model.compile(algorithm="gula")
@@ -401,109 +443,112 @@ class DMVLP_tests(unittest.TestCase):
                 if semantics == "general":
                     semantics_class = General
 
-            dataset = random_StateTransitionsDataset( \
-            nb_transitions=random.randint(1, self._nb_transitions), \
-            nb_features=random.randint(1,self._nb_features), \
-            nb_targets=random.randint(1,self._nb_targets), \
-            max_feature_values=self._nb_feature_values, \
-            max_target_values=self._nb_target_values)
+                dataset = random_DiscreteStateTransitionsDataset( \
+                nb_transitions=random.randint(1, self._nb_transitions), \
+                nb_features=random.randint(1,self._nb_features), \
+                nb_targets=random.randint(1,self._nb_targets), \
+                max_feature_values=self._nb_feature_values, \
+                max_target_values=self._nb_target_values)
 
-            # Need same features/targets for some semantics
-            if semantics == "asynchronous" or semantics == "general":
-                dataset = random_symmetric_StateTransitionsDataset(nb_transitions=random.randint(1, self._nb_transitions), \
-                nb_variables=random.randint(1,self._nb_features), \
-                max_variable_values=self._nb_feature_values)
+                # Need same features/targets for some semantics
+                if semantics == "asynchronous" or semantics == "general":
+                    dataset = random_symmetric_DiscreteStateTransitionsDataset(nb_transitions=random.randint(1, self._nb_transitions), \
+                    nb_variables=random.randint(1,self._nb_features), \
+                    max_variable_values=self._nb_feature_values)
 
-            for algorithm in self._SUPPORTED_ALGORITHMS:
-                model = DMVLP(features=dataset.features, targets=dataset.targets)
-                model.compile(algorithm=algorithm)
-                model.fit(dataset=dataset)
+                for algorithm in self._SUPPORTED_ALGORITHMS:
+                    model = DMVLP(features=dataset.features, targets=dataset.targets)
+                    model.compile(algorithm=algorithm)
+                    model.fit(dataset=dataset)
 
-                feature_states = [list(s) for s in set(tuple(s1) for s1,s2 in dataset.data)]
+                    feature_states = [list(s) for s in set(tuple(s1) for s1,s2 in dataset.data)]
 
-                if semantics is None:
-                    prediction = model.predict(feature_states)
-                else:
-                    prediction = model.predict(feature_states, semantics=semantics)
+                    if semantics is None:
+                        prediction = model.predict(feature_states)
+                    else:
+                        prediction = model.predict(feature_states, semantics=semantics)
 
-                for state_id, s1 in enumerate(feature_states):
-                    feature_state_encoded = []
-                    for var_id, val in enumerate(s1):
-                        val_id = model.features[var_id][1].index(str(val))
-                        feature_state_encoded.append(val_id)
+                    for state_id, s1 in enumerate(feature_states):
+                        feature_state_encoded = []
+                        for var_id, val in enumerate(s1):
+                            val_id = model.features[var_id][1].index(str(val))
+                            feature_state_encoded.append(val_id)
 
-                    #eprint(feature_state_encoded)
+                        #eprint(feature_state_encoded)
 
-                    target_states = semantics_class.next(feature_state_encoded, model.targets, model.rules)
-                    output = dict()
-                    for s in target_states:
-                        target_state = []
-                        for var_id, val_id in enumerate(s):
-                            #eprint(var_id, val_id)
-                            if val_id == -1:
-                                target_state.append("?")
-                            else:
-                                target_state.append(model.targets[var_id][1][val_id])
-                        output[tuple(target_state)] = target_states[s]
+                        target_states = semantics_class.next(feature_state_encoded, model.targets, model.rules)
+                        output = dict()
+                        for s in target_states:
+                            target_state = []
+                            for var_id, val_id in enumerate(s):
+                                #eprint(var_id, val_id)
+                                if val_id == -1:
+                                    target_state.append("?")
+                                else:
+                                    target_state.append(model.targets[var_id][1][val_id])
+                            output[tuple(target_state)] = target_states[s]
 
-                    self.assertEqual(prediction[tuple(s1)], output)
+                        self.assertEqual(prediction[tuple(s1)], output)
 
-                # Force missing value
-                rules = model.rules
-                model.rules = [r for r in model.rules if r.head_variable != random.randint(0,len(model.targets))]
+                    # Force missing value
+                    rules = model.rules
+                    model.rules = [r for r in model.rules if r.head_variable != random.randint(0,len(model.targets))]
 
-                prediction = model.predict(feature_states, semantics=semantics)
-                for state_id, s1 in enumerate(feature_states):
-                    feature_state_encoded = []
-                    for var_id, val in enumerate(s1):
-                        val_id = model.features[var_id][1].index(str(val))
-                        feature_state_encoded.append(val_id)
+                    if semantics is None:
+                        prediction = model.predict(feature_states)
+                    else:
+                        prediction = model.predict(feature_states, semantics=semantics)
+                    for state_id, s1 in enumerate(feature_states):
+                        feature_state_encoded = []
+                        for var_id, val in enumerate(s1):
+                            val_id = model.features[var_id][1].index(str(val))
+                            feature_state_encoded.append(val_id)
 
-                    #eprint(feature_state_encoded)
+                        #eprint(feature_state_encoded)
 
-                    target_states = semantics_class.next(feature_state_encoded, model.targets, model.rules)
-                    output = dict()
-                    for s in target_states:
-                        target_state = []
-                        for var_id, val_id in enumerate(s):
-                            #eprint(var_id, val_id)
-                            if val_id == -1:
-                                target_state.append("?")
-                            else:
-                                target_state.append(model.targets[var_id][1][val_id])
-                        output[tuple(target_state)] = target_states[s]
+                        target_states = semantics_class.next(feature_state_encoded, model.targets, model.rules)
+                        output = dict()
+                        for s in target_states:
+                            target_state = []
+                            for var_id, val_id in enumerate(s):
+                                #eprint(var_id, val_id)
+                                if val_id == -1:
+                                    target_state.append("?")
+                                else:
+                                    target_state.append(model.targets[var_id][1][val_id])
+                            output[tuple(target_state)] = target_states[s]
 
-                    self.assertEqual(prediction[tuple(s1)], output)
-                model.rules = rules
+                        self.assertEqual(prediction[tuple(s1)], output)
+                    model.rules = rules
 
-                # Exceptions:
-                self.assertRaises(TypeError, model.predict, "") # Feature_states bad format: is not a list
-                self.assertRaises(TypeError, model.predict, [["0","1"],0,10]) # Feature_states bad format: is not a list of list
-                self.assertRaises(TypeError, model.predict, [["0","1"],[0,10]]) # Feature_states bad format: is not a list of list of string
+                    # Exceptions:
+                    self.assertRaises(TypeError, model.predict, "") # Feature_states bad format: is not a list
+                    self.assertRaises(TypeError, model.predict, [["0","1"],0,10]) # Feature_states bad format: is not a list of list
+                    self.assertRaises(TypeError, model.predict, [["0","1"],[0,10]]) # Feature_states bad format: is not a list of list of string
 
-                feature_states = [list(s) for s in set(tuple(s1) for s1,s2 in dataset.data)]
-                state_id = random.randint(0,len(feature_states)-1)
-                original = feature_states[state_id].copy()
+                    feature_states = [list(s) for s in set(tuple(s1) for s1,s2 in dataset.data)]
+                    state_id = random.randint(0,len(feature_states)-1)
+                    original = feature_states[state_id].copy()
 
-                feature_states[state_id] = feature_states[state_id][:-random.randint(1,len(dataset.features))]
-                self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features <
-                feature_states[state_id] = original.copy()
+                    feature_states[state_id] = feature_states[state_id][:-random.randint(1,len(dataset.features))]
+                    self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features <
+                    feature_states[state_id] = original.copy()
 
-                feature_states[state_id].extend(["0" for i in range(random.randint(1,10))])
-                self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features >
-                feature_states[state_id] = original.copy()
+                    feature_states[state_id].extend(["0" for i in range(random.randint(1,10))])
+                    self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features >
+                    feature_states[state_id] = original.copy()
 
-                var_id = random.randint(0,len(dataset.features)-1)
-                feature_states[state_id][var_id] = "bad_value"
-                self.assertRaises(ValueError, model.predict, feature_states) # Feature_states bad format: value out of domain
-                feature_states[state_id] = original.copy()
+                    var_id = random.randint(0,len(dataset.features)-1)
+                    feature_states[state_id][var_id] = "bad_value"
+                    self.assertRaises(ValueError, model.predict, feature_states) # Feature_states bad format: value out of domain
+                    feature_states[state_id] = original.copy()
 
-                # Semantics restriction
-                model_2 = model.copy()
-                model_2.targets = model_2.targets + model_2.targets
-                self.assertRaises(ValueError, model_2.predict, feature_states, "asynchronous")
-                self.assertRaises(ValueError, model_2.predict, feature_states, "general")
-                self.assertRaises(ValueError, model_2.predict, feature_states, "badvalue")
+                    # Semantics restriction
+                    model_2 = model.copy()
+                    model_2.targets = model_2.features + model_2.targets
+                    self.assertRaises(ValueError, model_2.predict, feature_states, "asynchronous")
+                    self.assertRaises(ValueError, model_2.predict, feature_states, "general")
+                    self.assertRaises(ValueError, model_2.predict, feature_states, "badvalue")
 
     def test_summary(self):
         print(">> DMVLP.summary()")

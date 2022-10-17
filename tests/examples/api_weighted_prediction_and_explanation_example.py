@@ -26,8 +26,8 @@ if __name__ == '__main__':
     (["0","1","1"],["1","0","1"]), \
     (["1","1","1"],["1","1","0"])]
 
-    # Convert array data as a StateTransitionsDataset using pylfit.preprocessing
-    dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, \
+    # Convert array data as a DiscreteStateTransitionsDataset using pylfit.preprocessing
+    dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, \
     feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
     dataset.summary()
     print()

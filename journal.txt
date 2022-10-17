@@ -37,3 +37,12 @@
 2021/06/15
     - New version up to date with MLJ20 manuscript
 
+2022/10/17
+    - Refactoring of dataset api
+        - Normalize dataset class name and loading function discrete/continuous
+    - Update ACEDIA for pylfit api
+        - Add CLP model and ContinuousStateTransitionsDataset dataset
+        - Updated ContinuumsRule removing delay from to string
+        - added example of ACEDIA use with the api
+    - Added multi-thread support for GULA/PRIDE/Synchronizer/ACEDIA/probalizer
+    - Added heuristic for PRIDE regarding coverage

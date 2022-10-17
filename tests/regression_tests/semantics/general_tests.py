@@ -25,7 +25,7 @@ from pylfit.algorithms import Algorithm
 from pylfit.models import DMVLP
 from pylfit.objects import Rule
 
-from tests_generator import random_DMVLP, random_symmetric_StateTransitionsDataset
+from tests_generator import random_DMVLP, random_symmetric_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -66,7 +66,7 @@ class General_tests(unittest.TestCase):
         feature_names=["p_t-1","q_t-1","r_t-1"]
         target_names=["p_t","q_t","r_t"]
 
-        dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=feature_names, target_names=target_names)
+        dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=feature_names, target_names=target_names)
 
         model = DMVLP(features=dataset.features, targets=dataset.targets)
         model.compile(algorithm="gula")
@@ -118,7 +118,7 @@ class General_tests(unittest.TestCase):
 
         # Random tests
         for i in range(self._nb_tests):
-            dataset = random_symmetric_StateTransitionsDataset(100, random.randint(1,self._nb_features), self._nb_feature_values)
+            dataset = random_symmetric_DiscreteStateTransitionsDataset(100, random.randint(1,self._nb_features), self._nb_feature_values)
 
             model = DMVLP(features=dataset.features, targets=dataset.targets)
             model.compile(algorithm="pride")

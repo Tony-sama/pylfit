@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2021/06/15
+# @updated: 2022/08/16
 #
 # @desc: PRIDE regression test script
 # Tests algorithm methods on random dataset
@@ -19,6 +19,7 @@ import random
 import os
 import io
 import contextlib
+from itertools import chain, combinations
 
 import sys
 
@@ -27,13 +28,13 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_StateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms.pride import PRIDE
 from pylfit.objects.rule import Rule
 
-from pylfit.datasets import StateTransitionsDataset
+from pylfit.datasets import DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -42,13 +43,13 @@ class PRIDE_tests(unittest.TestCase):
         Regression tests of class PRIDE from pride.py
     """
 
-    _nb_tests = 100
+    _nb_tests = 10
 
-    _nb_transitions = 100
+    _nb_transitions = 10
 
-    _nb_features = 4
+    _nb_features = 3
 
-    _nb_targets = 4
+    _nb_targets = 3
 
     _nb_feature_values = 3
 
@@ -64,113 +65,124 @@ class PRIDE_tests(unittest.TestCase):
         for i in range(self._nb_tests):
 
             # Datatset type
-            dataset = "" # not a StateTransitionsDataset
+            dataset = "" # not a DiscreteStateTransitionsDataset
             self.assertRaises(ValueError, PRIDE.fit, dataset)
 
-            # 1) No transitions
-            #--------------------
-            dataset = random_StateTransitionsDataset( \
-            nb_transitions=0, \
-            nb_features=random.randint(1,self._nb_features), \
-            nb_targets=random.randint(1,self._nb_targets), \
-            max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
-
-            f = io.StringIO()
-            with contextlib.redirect_stderr(f):
-                output = PRIDE.fit(dataset=dataset)
-
-            # Output must be empty
-            self.assertTrue(output == [])
-
-            # 2) Random observations
-            # ------------------------
+            #heuristics_list = ["try_all_atoms", "max_coverage_dynamic", "max_coverage_static", "max_diversity", "multi_thread_at_rule_level"]
+            heuristics_list = PRIDE._HEURISTICS
 
             for impossibility_mode in [False,True]:
                 for verbose in [0,1]:
+                    for heuristics in [None] + list(PRIDE_tests.powerset(heuristics_list))[1:]:
+                        for threads in [1,2]:
+                            if heuristics is not None:
+                                heuristics = list(heuristics)
 
-                    # Generate transitions
-                    dataset = random_StateTransitionsDataset( \
-                    nb_transitions=random.randint(1, self._nb_transitions), \
-                    nb_features=random.randint(1,self._nb_features), \
-                    nb_targets=random.randint(1,self._nb_targets), \
-                    max_feature_values=self._nb_feature_values, \
-                    max_target_values=self._nb_target_values)
+                            #eprint(">>> Parameters: impossibility_mode=",impossibility_mode, ", verbose=", verbose, ", heuristics=", heuristics, ", threads=", threads)
 
-                    #dataset.summary()
+                            # 1) No transitions
+                            #--------------------
+                            dataset = random_DiscreteStateTransitionsDataset( \
+                            nb_transitions=0, \
+                            nb_features=random.randint(1,self._nb_features), \
+                            nb_targets=random.randint(1,self._nb_targets), \
+                            max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
 
-                    f = io.StringIO()
-                    with contextlib.redirect_stderr(f):
-                        output = PRIDE.fit(dataset=dataset, impossibility_mode=impossibility_mode, verbose=verbose)
+                            f = io.StringIO()
+                            with contextlib.redirect_stderr(f):
+                                output = PRIDE.fit(dataset=dataset, impossibility_mode=impossibility_mode, verbose=verbose, heuristics=heuristics, threads=threads)
 
-                    # Encode data to check PRIDE output rules
-                    data_encoded = []
-                    for (s1,s2) in dataset.data:
-                        s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
-                        s2_encoded = [domain.index(s2[var_id]) for var_id, (var,domain) in enumerate(dataset.targets)]
-                        data_encoded.append((s1_encoded,s2_encoded))
+                            # Output must be empty
+                            self.assertTrue(output == [])
 
-                    # 2.1.1) Correctness (explain all)
-                    # -----------------
-                    # all transitions are fully explained, i.e. each target value is explained by atleast one rule
-                    for (s1,s2) in data_encoded:
-                        for target_id in range(len(dataset.targets)):
-                            expected_value = s2_encoded[target_id]
-                            realizes_target = False
+                            # 2) Random observations
+                            # ------------------------
+
+                            # Generate transitions
+                            dataset = random_DiscreteStateTransitionsDataset( \
+                            nb_transitions=random.randint(1, self._nb_transitions), \
+                            nb_features=random.randint(1,self._nb_features), \
+                            nb_targets=random.randint(1,self._nb_targets), \
+                            max_feature_values=self._nb_feature_values, \
+                            max_target_values=self._nb_target_values)
+
+                            #dataset.summary()
+
+                            f = io.StringIO()
+                            with contextlib.redirect_stderr(f):
+                                output = PRIDE.fit(dataset=dataset, impossibility_mode=impossibility_mode, verbose=verbose, heuristics=heuristics, threads=threads)
+
+                            # Encode data to check PRIDE output rules
+                            data_encoded = []
+                            for (s1,s2) in dataset.data:
+                                s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
+                                s2_encoded = [domain.index(s2[var_id]) for var_id, (var,domain) in enumerate(dataset.targets)]
+                                data_encoded.append((s1_encoded,s2_encoded))
+
+                            # 2.1.1) Correctness (explain all)
+                            # -----------------
+                            # all transitions are fully explained, i.e. each target value is explained by atleast one rule
+                            for (s1,s2) in data_encoded:
+                                for target_id in range(len(dataset.targets)):
+                                    expected_value = s2_encoded[target_id]
+                                    realizes_target = False
+                                    for r in output:
+                                        if r.head_variable == target_id and r.head_value == expected_value and r.matches(s1_encoded):
+                                            realises_target = True
+                                            #eprint(s1_encoded, " => ", target_id,"=",expected_value, " by ", r)
+                                            break
+                                    self.assertTrue(realises_target)
+
+                            #eprint("-------------------")
+                            #eprint(data_encoded)
+
+                            # 2.1.2) Correctness (no spurious observation)
+                            # -----------------
+                            # No rules generate a unobserved target value from an observed state
                             for r in output:
-                                if r.head_variable == target_id and r.head_value == expected_value and r.matches(s1_encoded):
-                                    realises_target = True
-                                    #eprint(s1_encoded, " => ", target_id,"=",expected_value, " by ", r)
-                                    break
-                            self.assertTrue(realises_target)
+                                for (s1,s2) in data_encoded:
+                                    if r.matches(s1):
+                                        observed = False
+                                        for (s1_,s2_) in data_encoded: # Must be in a target state after s1
+                                            if s1_ == s1 and s2_[r.head_variable] == r.head_value:
+                                                observed = True
+                                                #eprint(r, " => ", s1_, s2_)
+                                                break
+                                        if impossibility_mode:
+                                            self.assertFalse(observed)
+                                        else:
+                                            self.assertTrue(observed)
 
-                    #eprint("-------------------")
-                    #eprint(data_encoded)
+                            # 2.2) minimality
+                            # -----------------
+                            # All rules conditions are necessary, i.e. removing a condition makes realizes unobserved target value from observation
 
-                    # 2.1.2) Correctness (no spurious observation)
-                    # -----------------
-                    # No rules generate a unobserved target value from an observed state
-                    for r in output:
-                        for (s1,s2) in data_encoded:
-                            if r.matches(s1):
-                                observed = False
-                                for (s1_,s2_) in data_encoded: # Must be in a target state after s1
-                                    if s1_ == s1 and s2_[r.head_variable] == r.head_value:
-                                        observed = True
-                                        #eprint(r, " => ", s1_, s2_)
-                                        break
+                            for r in output:
+                                pos, neg = PRIDE.interprete(data_encoded, r.head_variable, r.head_value)
                                 if impossibility_mode:
-                                    self.assertFalse(observed)
-                                else:
-                                    self.assertTrue(observed)
+                                    pos_ = pos
+                                    pos = neg
+                                    neg = pos_
+                                for (var_id, val_id) in r.body:
+                                        r.remove_condition(var_id) # Try remove condition
 
-                    # 2.2) minimality
-                    # -----------------
-                    # All rules conditions are necessary, i.e. removing a condition makes realizes unobserved target value from observation
+                                        conflict = False
+                                        for s in neg:
+                                            if r.matches(s):
+                                                conflict = True
+                                                break
 
-                    for r in output:
-                        pos, neg = PRIDE.interprete(data_encoded, r.head_variable, r.head_value)
-                        if impossibility_mode:
-                            pos_ = pos
-                            pos = neg
-                            neg = pos_
-                        for (var_id, val_id) in r.body:
-                                r.remove_condition(var_id) # Try remove condition
+                                        r.add_condition(var_id,val_id) # Cancel removal
 
-                                conflict = False
-                                for s in neg:
-                                    if r.matches(s):
-                                        conflict = True
-                                        break
+                                        # # DEBUG:
+                                        if not conflict:
+                                            eprint("not minimal "+r.to_string())
 
-                                r.add_condition(var_id,val_id) # Cancel removal
+                                        self.assertTrue(conflict)
 
-                                # # DEBUG:
-                                if not conflict:
-                                    eprint("not minimal "+r.to_string())
-
-                                self.assertTrue(conflict)
-
-                    # TODO: check exceptions and targets to learn mode
+                            # TODO: check exceptions and targets to learn mode
+                            if heuristics is not None:
+                                self.assertRaises(ValueError, PRIDE.fit, dataset, None, impossibility_mode, verbose, heuristics+["bad_heuristic_name"])
 
     def test_interprete(self):
         print(">> PRIDE.interprete(transitions, variable, value)")
@@ -178,14 +190,14 @@ class PRIDE_tests(unittest.TestCase):
         for i in range(self._nb_tests):
 
             # Generate transitions
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
             max_feature_values=self._nb_feature_values, \
             max_target_values=self._nb_target_values)
 
-            # Encode data with StateTransitionsDataset
+            # Encode data with DiscreteStateTransitionsDataset
             data_encoded = []
             for (s1,s2) in dataset.data:
                 s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -230,7 +242,7 @@ class PRIDE_tests(unittest.TestCase):
                         if len([s2 for s2 in S2 if s2[var_id] == val_id]) == 0:
                             self.assertTrue(tuple(s1) in neg)
 
-    def test_fit__targets_to_learn(self):
+    def test_fit_targets_to_learn(self):
         print(">> PRIDE.fit(dataset, targets_to_learn):")
 
         for test_id in range(self._nb_tests):
@@ -239,11 +251,11 @@ class PRIDE_tests(unittest.TestCase):
             #---------------
 
             # Datatset type
-            dataset = "" # not a StateTransitionsDataset
+            dataset = "" # not a DiscreteStateTransitionsDataset
             self.assertRaises(ValueError, PRIDE.fit, dataset, dict())
 
             # targets_to_learn type
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=0, \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -269,7 +281,7 @@ class PRIDE_tests(unittest.TestCase):
 
             # 1) No transitions
             #--------------------
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=0, \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -286,7 +298,7 @@ class PRIDE_tests(unittest.TestCase):
             # ------------------------
 
             # Generate transitions
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -401,7 +413,7 @@ class PRIDE_tests(unittest.TestCase):
         for i in range(self._nb_tests):
 
             # Generate transitions
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -410,7 +422,7 @@ class PRIDE_tests(unittest.TestCase):
 
             #dataset.summary()
 
-            # Encode data with StateTransitionsDataset
+            # Encode data with DiscreteStateTransitionsDataset
             data_encoded = []
             for (s1,s2) in dataset.data:
                 s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -489,7 +501,7 @@ class PRIDE_tests(unittest.TestCase):
 
             for verbose in [0,1]:
                 # Generate transitions
-                dataset = random_StateTransitionsDataset( \
+                dataset = random_DiscreteStateTransitionsDataset( \
                 nb_transitions=random.randint(1, self._nb_transitions), \
                 nb_features=random.randint(1,self._nb_features), \
                 nb_targets=random.randint(1,self._nb_targets), \
@@ -498,7 +510,7 @@ class PRIDE_tests(unittest.TestCase):
 
                 #dataset.summary()
 
-                # Encode data with StateTransitionsDataset
+                # Encode data with DiscreteStateTransitionsDataset
                 data_encoded = []
                 for (s1,s2) in dataset.data:
                     s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -518,74 +530,87 @@ class PRIDE_tests(unittest.TestCase):
                         if len(pos) == 0:
                             continue
 
-                        feature_state_to_match = random.choice([s for s in feature_states])
-                        #eprint("neg: ", neg)
-                        f = io.StringIO()
-                        with contextlib.redirect_stderr(f):
-                            output = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), pos, neg, feature_state_to_match, verbose)
-                        #eprint()
-                        #eprint("rules: ", output)
+                        for feature_states in [pos,neg]:
+                            if(len(feature_states) == 0):
+                                continue
+                            feature_state_to_match = random.choice([s for s in feature_states])
+                            #eprint("neg: ", neg)
+                            f = io.StringIO()
 
-                        # Check no consistent rule exists
-                        if output is None:
+                            # No pos case
+                            with contextlib.redirect_stderr(f):
+                                output = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), [], neg, feature_state_to_match, verbose)
+
+                            with contextlib.redirect_stderr(f):
+                                output = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), pos, neg, feature_state_to_match, verbose)
+                            #eprint()
+                            #eprint("rules: ", output)
+
+                            # Check no consistent rule exists
+                            if output is None:
+                                for s in pos:
+                                    # Most specific rule that match both the pos and request feature state
+                                    r = Rule(var_id, val_id, len(dataset.features))
+                                    for var in range(len(dataset.features)):
+                                        if feature_state_to_match[var] == s[var]:
+                                            r.add_condition(var,s[var])
+                                    # Must match atleast a neg
+                                    if len(neg) > 0:
+                                        cover = False
+                                        for s in neg:
+                                            if r.matches(s):
+                                                cover = True
+                                                break
+
+                                        if not cover:
+                                            eprint(feature_state_to_match)
+                                            eprint(s)
+                                            eprint(r.to_string())
+
+                                        self.assertTrue(cover)
+                                continue
+
+                            # Check head
+                            self.assertEqual(output.head_variable, var_id)
+                            self.assertEqual(output.head_value, val_id)
+
+                            # Cover at least a positive
+                            cover = False
                             for s in pos:
-                                # Most specific rule that match both the pos and request feature state
-                                r = Rule(var_id, val_id, len(dataset.features))
-                                for var in range(len(dataset.features)):
-                                    if feature_state_to_match[var] == s[var]:
-                                        r.add_condition(var,s[var])
-                                # Must match atleast a neg
-                                if len(neg) > 0:
-                                    cover = False
-                                    for s in neg:
-                                        if r.matches(s):
-                                            cover = True
-                                            break
-
-                                    if not cover:
-                                        eprint(feature_state_to_match)
-                                        eprint(s)
-                                        eprint(r.to_string())
-
-                                    self.assertTrue(cover)
-                            continue
-
-                        # Check head
-                        self.assertEqual(output.head_variable, var_id)
-                        self.assertEqual(output.head_value, val_id)
-
-                        # Cover at least a positive
-                        cover = False
-                        for s in pos:
-                            if output.matches(s):
-                                cover = True
-                                break
-
-                        self.assertTrue(cover)
-
-                        # No negative is covered
-                        cover = False
-                        for s in neg:
-                            if output.matches(s):
-                                cover = True
-                                break
-                        self.assertFalse(cover)
-
-                        # Rules is minimal
-                        for (var_id_, val_id_) in output.body:
-                            output.remove_condition(var_id_) # Try remove condition
-
-                            conflict = False
-                            for s in neg:
-                                if output.matches(s): # Cover a negative example
-                                    conflict = True
+                                if output.matches(s):
+                                    cover = True
                                     break
-                            self.assertTrue(conflict)
-                            output.add_condition(var_id_,val_id_) # Cancel removal
+
+                            self.assertTrue(cover)
+
+                            # No negative is covered
+                            cover = False
+                            for s in neg:
+                                if output.matches(s):
+                                    cover = True
+                                    break
+                            self.assertFalse(cover)
+
+                            # Rules is minimal
+                            for (var_id_, val_id_) in output.body:
+                                output.remove_condition(var_id_) # Try remove condition
+
+                                conflict = False
+                                for s in neg:
+                                    if output.matches(s): # Cover a negative example
+                                        conflict = True
+                                        break
+                                self.assertTrue(conflict)
+                                output.add_condition(var_id_,val_id_) # Cancel removal
 
     #------------------
     # Tool functions
     #------------------
+
+    def powerset(iterable):
+        "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+        s = list(iterable)
+        return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
 
 
 if __name__ == '__main__':

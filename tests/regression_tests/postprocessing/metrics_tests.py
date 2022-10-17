@@ -15,13 +15,13 @@ import numpy as np
 import pylfit
 from pylfit.postprocessing import hamming_distance, accuracy_score, explanation_score, accuracy_score_from_predictions, explanation_score_from_predictions
 from pylfit.models import WDMVLP
-from pylfit.datasets import StateTransitionsDataset
+from pylfit.datasets import DiscreteStateTransitionsDataset
 from pylfit.utils import eprint
 
 import pathlib
 sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from tests_generator import random_rule, random_WDMVLP, random_StateTransitionsDataset
+from tests_generator import random_rule, random_WDMVLP, random_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -96,7 +96,7 @@ class metrics_tests(unittest.TestCase):
         (["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        test_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=test_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        test_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=test_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         train_data = [ \
         (["0","0","0"],["0","0","1"]), \
@@ -109,7 +109,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
@@ -128,7 +128,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
@@ -147,7 +147,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
@@ -163,7 +163,7 @@ class metrics_tests(unittest.TestCase):
             max_target_values = random.randint(1,self._nb_values)
             nb_transitions = random.randint(2,self._nb_transitions)
 
-            dataset = random_StateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
+            dataset = random_DiscreteStateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
 
             # Empty program
             model = WDMVLP(dataset.features, dataset.targets)
@@ -173,14 +173,14 @@ class metrics_tests(unittest.TestCase):
             # Empty rule program
             model = WDMVLP(dataset.features, dataset.targets)
             model.compile(algorithm="gula")
-            model.fit(StateTransitionsDataset([], dataset.features, dataset.targets))
+            model.fit(DiscreteStateTransitionsDataset([], dataset.features, dataset.targets))
             self.assertEqual(accuracy_score(model=model, dataset=dataset), 0.5)
 
             # Train != test
             train_data = dataset.data[0:int(0.5*len(dataset.data))]
             test_data = dataset.data[int(0.5*len(dataset.data)):]
-            train_dataset = StateTransitionsDataset(train_data, dataset.features, dataset.targets)
-            test_dataset = StateTransitionsDataset(test_data, dataset.features, dataset.targets)
+            train_dataset = DiscreteStateTransitionsDataset(train_data, dataset.features, dataset.targets)
+            test_dataset = DiscreteStateTransitionsDataset(test_data, dataset.features, dataset.targets)
 
             model = WDMVLP(train_dataset.features, train_dataset.targets)
             model.compile(algorithm="gula")
@@ -237,7 +237,7 @@ class metrics_tests(unittest.TestCase):
             self.assertEqual(accuracy_score(model=model,dataset=test_dataset), accuracy)
 
             # Exception
-            self.assertRaises(ValueError, accuracy_score, model, StateTransitionsDataset([],dataset.features, dataset.targets))
+            self.assertRaises(ValueError, accuracy_score, model, DiscreteStateTransitionsDataset([],dataset.features, dataset.targets))
 
     def test_accuracy_score_from_predictions(self):
         print(">> pylfit.postprocessing.accuracy_score_from_predictions(predictions, dataset)")
@@ -254,7 +254,7 @@ class metrics_tests(unittest.TestCase):
         (["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        test_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=test_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        test_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=test_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         train_data = [ \
         (["0","0","0"],["0","0","1"]), \
@@ -267,7 +267,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
@@ -290,7 +290,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
@@ -313,7 +313,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
 
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
@@ -333,7 +333,7 @@ class metrics_tests(unittest.TestCase):
             max_target_values = random.randint(1,self._nb_values)
             nb_transitions = random.randint(2,self._nb_transitions)
 
-            dataset = random_StateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
+            dataset = random_DiscreteStateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
 
             # Empty program
             model = WDMVLP(dataset.features, dataset.targets)
@@ -348,14 +348,14 @@ class metrics_tests(unittest.TestCase):
             # Empty rule program
             model = WDMVLP(dataset.features, dataset.targets)
             model.compile(algorithm="gula")
-            model.fit(StateTransitionsDataset([], dataset.features, dataset.targets))
+            model.fit(DiscreteStateTransitionsDataset([], dataset.features, dataset.targets))
             self.assertEqual(accuracy_score(model=model, dataset=dataset), 0.5)
 
             # Train != test
             train_data = dataset.data[0:int(0.5*len(dataset.data))]
             test_data = dataset.data[int(0.5*len(dataset.data)):]
-            train_dataset = StateTransitionsDataset(train_data, dataset.features, dataset.targets)
-            test_dataset = StateTransitionsDataset(test_data, dataset.features, dataset.targets)
+            train_dataset = DiscreteStateTransitionsDataset(train_data, dataset.features, dataset.targets)
+            test_dataset = DiscreteStateTransitionsDataset(test_data, dataset.features, dataset.targets)
 
             model = WDMVLP(train_dataset.features, train_dataset.targets)
             model.compile(algorithm="gula")
@@ -422,11 +422,11 @@ class metrics_tests(unittest.TestCase):
             # Exception
 
              # empty dataset
-            self.assertRaises(ValueError, accuracy_score_from_predictions, predictions, StateTransitionsDataset([],dataset.features, dataset.targets))
+            self.assertRaises(ValueError, accuracy_score_from_predictions, predictions, DiscreteStateTransitionsDataset([],dataset.features, dataset.targets))
 
             # Missing init state in dataset
             remove_s1, s2 = random.choice(test_dataset.data)
-            self.assertRaises(ValueError, accuracy_score_from_predictions, predictions, StateTransitionsDataset([(s1,s2) for (s1,s2) in test_dataset.data if list(s1) != list(remove_s1)], dataset.features, dataset.targets))
+            self.assertRaises(ValueError, accuracy_score_from_predictions, predictions, DiscreteStateTransitionsDataset([(s1,s2) for (s1,s2) in test_dataset.data if list(s1) != list(remove_s1)], dataset.features, dataset.targets))
 
             # Missing init state in predictions
             remove_s1 = random.choice(list(predictions.keys()))
@@ -455,7 +455,7 @@ class metrics_tests(unittest.TestCase):
         (["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        dataset_perfect = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        dataset_perfect = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         optimal_model = pylfit.models.WDMVLP(features=dataset_perfect.features, targets=dataset_perfect.targets)
         optimal_model.compile(algorithm="gula") # model.compile(algorithm="pride")
         optimal_model.fit(dataset=dataset_perfect)
@@ -471,7 +471,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
         model.fit(dataset=train_dataset)
@@ -489,7 +489,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
         model.fit(dataset=train_dataset)
@@ -507,7 +507,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
         model.fit(dataset=train_dataset)
@@ -522,7 +522,7 @@ class metrics_tests(unittest.TestCase):
             max_target_values = random.randint(1,self._nb_values)
             nb_transitions = random.randint(2,self._nb_transitions)
 
-            dataset = random_StateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
+            dataset = random_DiscreteStateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
 
             optimal_model = WDMVLP(dataset.features, dataset.targets)
             optimal_model.compile(algorithm="gula")
@@ -536,14 +536,14 @@ class metrics_tests(unittest.TestCase):
             # Empty rule program
             model = WDMVLP(dataset.features, dataset.targets)
             model.compile(algorithm="gula")
-            model.fit(StateTransitionsDataset([], dataset.features, dataset.targets))
+            model.fit(DiscreteStateTransitionsDataset([], dataset.features, dataset.targets))
             self.assertEqual(explanation_score(model=model, expected_model=optimal_model, dataset=dataset), 0.0)
 
             # Train != test
             train_data = dataset.data[0:int(0.5*len(dataset.data))]
             test_data = dataset.data[int(0.5*len(dataset.data)):]
-            train_dataset = StateTransitionsDataset(train_data, dataset.features, dataset.targets)
-            test_dataset = StateTransitionsDataset(test_data, dataset.features, dataset.targets)
+            train_dataset = DiscreteStateTransitionsDataset(train_data, dataset.features, dataset.targets)
+            test_dataset = DiscreteStateTransitionsDataset(test_data, dataset.features, dataset.targets)
 
             model = WDMVLP(train_dataset.features, train_dataset.targets)
             model.compile(algorithm="gula")
@@ -553,7 +553,7 @@ class metrics_tests(unittest.TestCase):
             self.assertEqual(explanation_score(model=model, expected_model=model, dataset=train_dataset), 1.0)
 
             # Exception
-            self.assertRaises(ValueError, explanation_score, model, optimal_model, StateTransitionsDataset([], dataset.features, dataset.targets))
+            self.assertRaises(ValueError, explanation_score, model, optimal_model, DiscreteStateTransitionsDataset([], dataset.features, dataset.targets))
 
             # train != test
             grouped_transitions = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in test_dataset.data if tuple(s1) == tuple(s1_)) for s1,s2 in test_dataset.data}
@@ -651,7 +651,7 @@ class metrics_tests(unittest.TestCase):
         (["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        dataset_perfect = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        dataset_perfect = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         optimal_model = pylfit.models.WDMVLP(features=dataset_perfect.features, targets=dataset_perfect.targets)
         optimal_model.compile(algorithm="gula") # model.compile(algorithm="pride")
         optimal_model.fit(dataset=dataset_perfect)
@@ -667,7 +667,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
         model.fit(dataset=train_dataset)
@@ -688,7 +688,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
         model.fit(dataset=train_dataset)
@@ -709,7 +709,7 @@ class metrics_tests(unittest.TestCase):
         #(["0","1","1"],["1","0","1"]), \
         (["1","1","1"],["1","1","0"])]
 
-        train_dataset = pylfit.preprocessing.transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+        train_dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=train_data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
         model = pylfit.models.WDMVLP(features=train_dataset.features, targets=train_dataset.targets)
         model.compile(algorithm="gula")
         model.fit(dataset=train_dataset)
@@ -737,7 +737,7 @@ class metrics_tests(unittest.TestCase):
             max_target_values = random.randint(1,self._nb_values)
             nb_transitions = random.randint(2,self._nb_transitions)
 
-            dataset = random_StateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
+            dataset = random_DiscreteStateTransitionsDataset(nb_transitions, nb_features, nb_targets, max_feature_values, max_target_values)
 
             optimal_model = WDMVLP(dataset.features, dataset.targets)
             optimal_model.compile(algorithm="gula")
@@ -754,7 +754,7 @@ class metrics_tests(unittest.TestCase):
             # Empty rule program
             model = WDMVLP(dataset.features, dataset.targets)
             model.compile(algorithm="gula")
-            model.fit(StateTransitionsDataset([], dataset.features, dataset.targets))
+            model.fit(DiscreteStateTransitionsDataset([], dataset.features, dataset.targets))
 
             init_states = [list(s) for s in set(tuple(s1) for s1,s2 in dataset.data)]
             predictions = model.predict(feature_states=init_states, raw_rules=True)
@@ -764,8 +764,8 @@ class metrics_tests(unittest.TestCase):
             # Train != test
             train_data = dataset.data[0:int(0.5*len(dataset.data))]
             test_data = dataset.data[int(0.5*len(dataset.data)):]
-            train_dataset = StateTransitionsDataset(train_data, dataset.features, dataset.targets)
-            test_dataset = StateTransitionsDataset(test_data, dataset.features, dataset.targets)
+            train_dataset = DiscreteStateTransitionsDataset(train_data, dataset.features, dataset.targets)
+            test_dataset = DiscreteStateTransitionsDataset(test_data, dataset.features, dataset.targets)
 
             model = WDMVLP(train_dataset.features, train_dataset.targets)
             model.compile(algorithm="gula")
@@ -780,14 +780,14 @@ class metrics_tests(unittest.TestCase):
             # Exception
 
             # Empty dataset
-            self.assertRaises(ValueError, explanation_score_from_predictions, predictions, optimal_model, StateTransitionsDataset([], dataset.features, dataset.targets))
+            self.assertRaises(ValueError, explanation_score_from_predictions, predictions, optimal_model, DiscreteStateTransitionsDataset([], dataset.features, dataset.targets))
 
             init_states = [list(s) for s in set(tuple(s1) for s1,s2 in test_dataset.data)]
             predictions = model.predict(feature_states=init_states, raw_rules=True)
 
             # Missing init state in dataset
             remove_s1, s2 = random.choice(test_dataset.data)
-            self.assertRaises(ValueError, explanation_score_from_predictions, predictions, optimal_model, StateTransitionsDataset([(s1,s2) for (s1,s2) in test_dataset.data if list(s1) != list(remove_s1)], dataset.features, dataset.targets))
+            self.assertRaises(ValueError, explanation_score_from_predictions, predictions, optimal_model, DiscreteStateTransitionsDataset([(s1,s2) for (s1,s2) in test_dataset.data if list(s1) != list(remove_s1)], dataset.features, dataset.targets))
 
             # Missing init state in predictions
             remove_s1 = random.choice(list(predictions.keys()))

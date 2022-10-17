@@ -23,14 +23,14 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_StateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms import PRIDE
 from pylfit.objects import Rule
 
-from pylfit.datasets import StateTransitionsDataset
-from pylfit.preprocessing import transitions_dataset_from_csv
+from pylfit.datasets import DiscreteStateTransitionsDataset
+from pylfit.preprocessing import discrete_state_transitions_dataset_from_csv
 
 from pylfit.models import DMVLP
 
@@ -54,7 +54,7 @@ class PRIDE_benchmark_tests(unittest.TestCase):
         features_col_header = ["p_t_1","q_t_1","r_t_1"]
         targets_col_header = ["p_t","q_t","r_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -77,7 +77,7 @@ class PRIDE_benchmark_tests(unittest.TestCase):
         features_col_header = ["CycD_t_1","CycE_t_1","Rb_t_1","E2F_t_1","CycA_t_1","p27_t_1","Cdc20_t_1","UbcH10_t_1","Cdh1_t_1","CycB_t_1"]
         targets_col_header = ["CycD_t","CycE_t","Rb_t","E2F_t","CycA_t","p27_t","Cdc20_t","UbcH10_t","Cdh1_t","CycB_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -140,7 +140,7 @@ class PRIDE_benchmark_tests(unittest.TestCase):
         features_col_header = ["Start_t_1","SK_t_1","Ste9_t_1","Cdc2/Cdc13_t_1","Rum1_t_1","PP_t_1","Cdc25_t_1","Slp1_t_1","Wee1/Mik1_t_1","Cdc2/Cdc13*_t_1"]
         targets_col_header = ["Start_t","SK_t","Ste9_t","Cdc2/Cdc13_t","Rum1_t","PP_t","Cdc25_t","Slp1_t","Wee1/Mik1_t","Cdc2/Cdc13*_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -222,7 +222,7 @@ class PRIDE_benchmark_tests(unittest.TestCase):
         features_col_header = ["size_t_1","Cln3_t_1","SBF_t_1","MBF_t_1","Cln1_2_t_1","Sic1_t_1","Cln5_6_t_1","Cdh1_t_1","Clb1_2_t_1","Mcm1/SFF_t_1","Cdc20&Cdc14_t_1","Swi5_t_1"]
         targets_col_header = ["size_t","Cln3_t","SBF_t","MBF_t","Cln1_2_t","Sic1_t","Cln5_6_t","Cdh1_t","Clb1_2_t","Mcm1/SFF_t","Cdc20&Cdc14_t","Swi5_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
 
         #Sic1_t(1) :- Cln1_2_t_1(0), Clb1_2_t_1(0), Cdc20&Cdc14_t_1(1), Swi5_t_1(1).
@@ -389,7 +389,7 @@ class PRIDE_benchmark_tests(unittest.TestCase):
         features_col_header = ["AP3_t_1","UFO_t_1","FUL_t_1","FT_t_1","AP1_t_1","EMF1_t_1","LFY_t_1","AP2_t_1","WUS_t_1","AG_t_1","LUG_t_1","CLF_t_1","TFL1_t_1","PI_t_1","SEP_t_1"]
         targets_col_header = ["AP3_t","UFO_t","FUL_t","FT_t","AP1_t","EMF1_t","LFY_t","AP2_t","WUS_t","AG_t","LUG_t","CLF_t","TFL1_t","PI_t","SEP_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -497,19 +497,19 @@ class PRIDE_benchmark_tests(unittest.TestCase):
             for s2 in prediction[tuple(s1)]:
                 predicted.add( (tuple(s1), tuple(s2)) )
 
-        eprint()
         done = 0
         for s1,s2 in expected:
             done += 1
-            eprint("\rChecking transitions ",done,"/",len(expected),end='')
+            eprint("\r.>>> Checking transitions ",done,"/",len(expected),end='')
             self.assertTrue((s1,s2) in predicted)
+        eprint()
 
         done = 0
         for s1,s2 in predicted:
             done += 1
-            eprint("\rChecking transitions ",done,"/",len(predicted),end='')
+            eprint("\r.>>> Checking transitions ",done,"/",len(predicted),end='')
             self.assertTrue((s1,s2) in expected)
-
+        eprint()
 
 if __name__ == '__main__':
     """ Main """

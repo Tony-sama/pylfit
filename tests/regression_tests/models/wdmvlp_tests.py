@@ -38,7 +38,7 @@ from pylfit.datasets import Dataset
 import pathlib
 sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from tests_generator import random_WDMVLP, random_StateTransitionsDataset
+from tests_generator import random_WDMVLP, random_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -156,7 +156,7 @@ class WDMVLP_tests(unittest.TestCase):
 
         for test in range(0,self._nb_tests):
 
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -218,7 +218,7 @@ class WDMVLP_tests(unittest.TestCase):
 
         for test in range(0,self._nb_tests):
 
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -237,7 +237,7 @@ class WDMVLP_tests(unittest.TestCase):
                     original_rules = model.rules.copy()
                     original_unlikeliness_rules = model.unlikeliness_rules.copy()
 
-                    # Encode data with StateTransitionsDataset
+                    # Encode data with DiscreteStateTransitionsDataset
                     data_encoded = []
                     for (s1,s2) in dataset.data:
                         s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
@@ -386,7 +386,7 @@ class WDMVLP_tests(unittest.TestCase):
 
         for test in range(0,self._nb_tests):
 
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \

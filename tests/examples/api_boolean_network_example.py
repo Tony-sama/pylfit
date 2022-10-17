@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     print(len(transitions))
 
-    dataset = pylfit.preprocessing.transitions_dataset_from_array(
+    dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(
     data=transitions,
     feature_names=[var for var,vals in model.features],
     target_names=[var for var,vals in model.targets])

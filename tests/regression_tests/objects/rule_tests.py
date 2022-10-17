@@ -197,6 +197,7 @@ class Rule_tests(unittest.TestCase):
             self.assertEqual(r.to_string(),string)
             self.assertEqual(r.to_string(), r.__str__())
             self.assertEqual(r.to_string(), r.__repr__())
+            self.assertEqual(r.__hash__(),hash(r.to_string()))
 
     def test_logic_form(self):
         print(">> Rule.logic_form(self, features, targets)")
@@ -368,6 +369,10 @@ class Rule_tests(unittest.TestCase):
                         exist_difference = True
                         break
                 self.assertTrue(exist_difference)
+
+#--------------
+# Operators
+#--------------
 
     def test___eq__(self):
         print(">> Rule.__eq__(self, other)")

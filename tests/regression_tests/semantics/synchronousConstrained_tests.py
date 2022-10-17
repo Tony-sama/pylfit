@@ -24,7 +24,7 @@ from pylfit.semantics import SynchronousConstrained, Synchronous
 from pylfit.algorithms import Algorithm
 from pylfit.models import CDMVLP
 
-from tests_generator import random_CDMVLP, random_StateTransitionsDataset
+from tests_generator import random_CDMVLP, random_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -49,7 +49,7 @@ class SynchronousConstrained_tests(unittest.TestCase):
     #------------------
 
     def test_next(self):
-        print(">> pylfit.semantics.SynchronousConstrained.next(feature_state, targets, rules)")
+        print(">> pylfit.semantics.SynchronousConstrained.next(feature_state, targets, rules, constraints)")
 
         # Unit test
         data = [ \
@@ -65,7 +65,7 @@ class SynchronousConstrained_tests(unittest.TestCase):
         feature_names=["p_t-1","q_t-1","r_t-1"]
         target_names=["p_t","q_t","r_t"]
 
-        dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=feature_names, target_names=target_names)
+        dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=feature_names, target_names=target_names)
 
         model = CDMVLP(features=dataset.features, targets=dataset.targets)
         model.compile(algorithm="synchronizer")

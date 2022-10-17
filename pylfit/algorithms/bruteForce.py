@@ -3,11 +3,12 @@
 # @created: 2021/05/10
 # @updated: 2021/06/15
 #
-# @desc: simple brute force implementation, enumerate of all rules and keep the non-dominated consistent ones
+# @desc: simple brute force implementation, enumerates all rules and keep the non-dominated consistent ones
 #   - INPUT: a set of pairs of discrete multi-valued states
 #   - OUTPUT: the optimal logic program that realizes the input
 #   - THEORY:
-#       - MLJ 2020: TODO
+#       - MLJ 2021: Learning any memory-less discrete semantics for dynamical systems represented by logic programs
+#           https://hal.archives-ouvertes.fr/hal-02925942/
 #   - COMPLEXITY:
 #       - Variables: exponential
 #       - Values: exponential
@@ -18,7 +19,7 @@
 from ..utils import eprint
 from ..objects.rule import Rule
 from ..algorithms.algorithm import Algorithm
-from ..datasets import StateTransitionsDataset
+from ..datasets import DiscreteStateTransitionsDataset
 
 import csv
 import numpy as np
@@ -42,7 +43,7 @@ class BruteForce (Algorithm):
         Preprocess transitions and learn rules for all given features/targets variables/values.
 
         Args:
-            dataset: pylfit.datasets.StateTransitionsDataset
+            dataset: pylfit.datasets.DiscreteStateTransitionsDataset
                 state transitions of a the system
 
         Returns:
@@ -55,8 +56,8 @@ class BruteForce (Algorithm):
         #eprint("Start GULA learning...")
 
         # Parameters checking
-        if not isinstance(dataset, StateTransitionsDataset):
-            raise ValueError('Dataset type not supported, BruteForce expect ' + str(StateTransitionsDataset.__name__))
+        if not isinstance(dataset, DiscreteStateTransitionsDataset):
+            raise ValueError('Dataset type not supported, BruteForce expect ' + str(DiscreteStateTransitionsDataset.__name__))
 
         feature_domains = dataset.features
         target_domains = dataset.targets

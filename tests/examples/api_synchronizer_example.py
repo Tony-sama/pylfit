@@ -8,7 +8,6 @@
 
 import pylfit
 
-ALGORITHM = "synchronizer" # "gula"
 
 # 1: Main
 #------------
@@ -25,6 +24,7 @@ if __name__ == '__main__':
     data = [ \
     (["0","0","0"],["0","0","1"]), \
     (["0","0","0"],["1","0","0"]), \
+    (["0","0","0"],["0","0","1"]), \
     (["1","0","0"],["0","0","0"]), \
     (["0","1","0"],["1","0","1"]), \
     (["0","0","1"],["0","0","1"]), \
@@ -33,14 +33,14 @@ if __name__ == '__main__':
     (["0","1","1"],["1","0","1"]), \
     (["1","1","1"],["1","1","0"])]
 
-    print("Convert array data as a StateTransitionsDataset using pylfit.preprocessing")
-    dataset = pylfit.preprocessing.transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
+    print("Convert array data as a DiscreteStateTransitionsDataset using pylfit.preprocessing")
+    dataset = pylfit.preprocessing.discrete_state_transitions_dataset_from_array(data=data, feature_names=["p_t_1","q_t_1","r_t_1"], target_names=["p_t","q_t","r_t"])
     dataset.summary()
     print()
 
     print("Initialize a CDMVLP with the dataset variables and set Synchronizer as learning algorithm")
     model = pylfit.models.CDMVLP(features=dataset.features, targets=dataset.targets)
-    model.compile(algorithm=ALGORITHM)
+    model.compile(algorithm="synchronizer")
     model.summary()
     print()
 
@@ -53,20 +53,20 @@ if __name__ == '__main__':
     state = ['0','0','0']
     print("Predict from",state,": ", end='')
     prediction = model.predict([state])
-    print(prediction)
+    print([s for s in prediction[tuple(state)]])
 
-    state = ['0','0','0']
+    state = ['1','1','1']
     print("Predict from",state,": ", end='')
     prediction = model.predict([state])
-    print(prediction)
+    print([s for s in prediction[tuple(state)]])
 
     print("Check model dynamics: ")
     errors = 0
     expected = set((tuple(s1),tuple(s2)) for s1,s2 in dataset.data)
     predicted = set()
 
-
-    predicted = [(tuple(s1), tuple(s2)) for s1,S2 in model.predict(model.feature_states()) for s2 in S2]
+    predicted = [(tuple(s1), tuple(s2)) for s1, S2 in model.predict(model.feature_states()).items() for s2, rules in S2.items()]
+    print(predicted)
 
     print()
     done = 0

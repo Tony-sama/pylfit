@@ -36,7 +36,7 @@ from pylfit.datasets import Dataset
 import pathlib
 sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from tests_generator import random_CDMVLP, random_StateTransitionsDataset
+from tests_generator import random_CDMVLP, random_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -61,7 +61,7 @@ class CDMVLP_tests(unittest.TestCase):
     def test_constructor(self):
         print(">> CDMVLP(features, targets, rules)")
         for i in range(self._nb_tests):
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -115,12 +115,43 @@ class CDMVLP_tests(unittest.TestCase):
             targets = [("x0", ["0","1"]), ("x1", [0,"1"]), ("x2", ["0","1"])] # domain values are not string
             self.assertRaises(ValueError, CDMVLP, features, targets)
 
+    def test_copy(self):
+        print(">> CDMVLP.copy()")
+
+        features = [("x0", ["0","1"]), ("x1", ["0","1"]), ("x2", ["0","1"])]
+        targets = [("y0", ["0","1"]), ("y1", ["0","1"]), ("y2", ["0","1"])]
+        model = CDMVLP(features=features, targets=targets)
+
+        copy = model.copy()
+
+        self.assertEqual(model.features, copy.features)
+        self.assertEqual(model.targets, copy.targets)
+        self.assertEqual(model.rules, copy.rules)
+        self.assertEqual(model.algorithm, copy.algorithm)
+
+        for i in range(self._nb_tests):
+            for algorithm in self._SUPPORTED_ALGORITHMS:
+                model = random_CDMVLP( \
+                nb_features=random.randint(1,self._nb_features), \
+                nb_targets=random.randint(1,self._nb_targets), \
+                max_feature_values=self._nb_feature_values, \
+                max_target_values=self._nb_target_values, \
+                algorithm=algorithm)
+
+                copy = model.copy()
+
+                self.assertEqual(model.features, copy.features)
+                self.assertEqual(model.targets, copy.targets)
+                self.assertEqual(model.rules, copy.rules)
+                self.assertEqual(model.constraints, copy.constraints)
+                self.assertEqual(model.algorithm, copy.algorithm)
+
     def test_compile(self):
         print(">> CDMVLP.compile(algorithm)")
 
         for i in range(self._nb_tests):
             for algorithm in self._SUPPORTED_ALGORITHMS:
-                dataset = random_StateTransitionsDataset( \
+                dataset = random_DiscreteStateTransitionsDataset( \
                 nb_transitions=random.randint(1, self._nb_transitions), \
                 nb_features=random.randint(1,self._nb_features), \
                 nb_targets=random.randint(1,self._nb_targets), \
@@ -150,7 +181,7 @@ class CDMVLP_tests(unittest.TestCase):
     def test_fit(self):
         print(">> CDMVLP.fit(dataset)")
         for i in range(self._nb_tests):
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -203,7 +234,7 @@ class CDMVLP_tests(unittest.TestCase):
         print(">> CDMVLP.predict()")
         for i in range(self._nb_tests):
 
-            dataset = random_StateTransitionsDataset( \
+            dataset = random_DiscreteStateTransitionsDataset( \
             nb_transitions=random.randint(1, self._nb_transitions), \
             nb_features=random.randint(1,self._nb_features), \
             nb_targets=random.randint(1,self._nb_targets), \
@@ -229,17 +260,17 @@ class CDMVLP_tests(unittest.TestCase):
 
                     target_states = SynchronousConstrained.next(feature_state_encoded, model.targets, model.rules, model.constraints)
                     output = []
-                    for s in target_states:
+                    for s2, rules in target_states.items():
                         target_state = []
-                        for var_id, val_id in enumerate(s):
+                        for var_id, val_id in enumerate(s2):
                             #eprint(var_id, val_id)
                             if val_id == -1:
                                 target_state.append("?")
                             else:
                                 target_state.append(model.targets[var_id][1][val_id])
-                        output.append(target_state)
-                    self.assertEqual(prediction[state_id][0], list(s1))
-                    self.assertEqual(prediction[state_id][1], output)
+                        output.append(tuple(target_state))
+
+                    self.assertEqual([s2 for s2 in prediction[s1]], output)
 
                 # Force missing value
                 model.rules = [r for r in model.rules if r.head_variable != random.randint(0,len(model.targets))]
@@ -255,17 +286,17 @@ class CDMVLP_tests(unittest.TestCase):
 
                     target_states = SynchronousConstrained.next(feature_state_encoded, model.targets, model.rules, model.constraints)
                     output = []
-                    for s in target_states:
+                    for s2, rules in target_states.items():
                         target_state = []
-                        for var_id, val_id in enumerate(s):
+                        for var_id, val_id in enumerate(s2):
                             #eprint(var_id, val_id)
                             if val_id == -1:
                                 target_state.append("?")
                             else:
                                 target_state.append(model.targets[var_id][1][val_id])
-                        output.append(target_state)
+                        output.append(tuple(target_state))
 
-                    self.assertEqual(prediction[state_id][1], output)
+                    self.assertEqual([s2 for s2 in prediction[s1]], output)
 
                 # Exceptions:
                 self.assertRaises(TypeError, model.predict, "") # Feature_states bad format: is not a list

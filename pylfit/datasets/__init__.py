@@ -1,2 +1,3 @@
 from .dataset import Dataset
-from .stateTransitionsDataset import StateTransitionsDataset
+from .discreteStateTransitionsDataset import DiscreteStateTransitionsDataset
+from .continuousStateTransitionsDataset import ContinuousStateTransitionsDataset

@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/03/25
-# @updated: 2021/06/15
+# @updated: 2022/10/17
 #
 # @desc: PyLFIT unit test script
 #
@@ -9,7 +9,7 @@
 
 import unittest
 import os
-
+import random
 # Core
 #------
 
@@ -17,9 +17,8 @@ import os
 from objects.rule_tests import Rule_tests
 #from objects.logicProgram_tests import LogicProgramTest
 
-#from objects.continuum_tests import ContinuumTest
-#from objects.continuumRule_tests import ContinuumRuleTest
-#from objects.continuumLogicProgram_tests import ContinuumLogicProgramTest
+from objects.continuum_tests import ContinuumTest
+from objects.continuumRule_tests import ContinuumRuleTest
 
 # Semantics
 from semantics.semantics_tests import Semantics_tests
@@ -35,22 +34,24 @@ from algorithms.pride_tests import PRIDE_tests
 from algorithms.bruteForce_tests import BruteForce_tests
 #from algorithms.lfkt_tests import LFkTTest
 #from algorithms.lust_tests import LUSTTest
-#from algorithms.acedia_tests import ACEDIATest
+from algorithms.acedia_tests import ACEDIATest
 from algorithms.synchronizer_tests import Synchronizer_tests
-#from algorithms.probabilizer_tests import ProbabilizerTest
+from algorithms.probalizer_tests import ProbalizerTest
 
 # Benchmarks
 from algorithms.gula_benchmark_tests import GULA_benchmark_tests
 from algorithms.pride_benchmark_tests import PRIDE_benchmark_tests
 #from algorithms.bruteForce_benchmark_tests import BruteForce_benchmark_tests
 from algorithms.synchronizer_benchmark_tests import Synchronizer_benchmark_tests
+from algorithms.acedia_benchmark_tests import ACEDIA_benchmark_tests
 
 # Api
 #-----
 
 # Datasets
 from datasets.dataset_tests import Dataset_tests
-from datasets.stateTransitionsDataset_tests import StateTransitionsDataset_tests
+from datasets.discreteStateTransitionsDataset_tests import DiscreteStateTransitionsDataset_tests
+from datasets.continuousStateTransitionsDataset_tests import ContinuousStateTransitionsDataset_tests
 
 # Preprocessing
 from preprocessing.tabular_dataset_tests import tabular_dataset_tests
@@ -61,6 +62,8 @@ from models.model_tests import Model_tests
 from models.dmvlp_tests import DMVLP_tests
 from models.cdmvlp_tests import CDMVLP_tests
 from models.wdmvlp_tests import WDMVLP_tests
+from models.pdmvlp_tests import PDMVLP_tests
+from models.clp_tests import CLP_tests
 
 # postprocessing
 from postprocessing.metrics_tests import metrics_tests
@@ -69,6 +72,8 @@ from postprocessing.metrics_tests import metrics_tests
 
 if __name__ == '__main__':
     """ Main """
+
+    random.seed(0)
 
     current_directory = os.getcwd()
     tmp_directory = os.path.join(current_directory, r'tmp')
