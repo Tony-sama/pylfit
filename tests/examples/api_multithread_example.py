@@ -110,6 +110,6 @@ if __name__ == '__main__':
 
 
     # Fit the DMVLP on the dataset
-    # optional targets: model.fit(dataset=dataset, targets_to_learn={p_t:["1"], r_t:["0"]})
+    # optional targets: model.fit(dataset=dataset, targets_to_learn={'p_t':["1"], 'r_t':["0"]})
     #model.fit(dataset=dataset, targets_to_learn=None)
     #model.summary()
