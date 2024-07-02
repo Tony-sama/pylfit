@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2022/08/24
-# @updated: 2022/08/24
+# @updated: 2023/12/27
 #
 # @desc: Dataset container class for contiuous state transitions data
 #   - Features/target variables labels and continuum domain
@@ -16,7 +16,6 @@ from ..datasets import Dataset
 from ..objects import Continuum
 
 import numpy
-import pandas
 import csv
 import collections
 
@@ -132,7 +131,7 @@ class ContinuousStateTransitionsDataset(Dataset):
             path_to_file: String.
                 Path to the file.
         """
-        with open(path_to_file, mode='w') as output_file:
+        with open(path_to_file, mode='w', newline='') as output_file:
             output_writer = csv.writer(output_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
             output_writer.writerow([var for var,vals in self.features]+[var for var,vals in self.targets])
@@ -179,8 +178,6 @@ class ContinuousStateTransitionsDataset(Dataset):
                 raise TypeError(msg)
             feature_state = transition[0]
             target_state = transition[1]
-            #if not isinstance(feature_state, numpy.ndarray) or not isinstance(target_state, numpy.ndarray): # States must be ndarray
-            #    raise ValueError(msg)
             if not all(isinstance(val, (float,int)) for val in feature_state) or not all(isinstance(val, (float,int)) for val in target_state): # Values must be float or int
                 raise ValueError(msg)
 

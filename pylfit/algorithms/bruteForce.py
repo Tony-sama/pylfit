@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/05/10
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: simple brute force implementation, enumerates all rules and keep the non-dominated consistent ones
 #   - INPUT: a set of pairs of discrete multi-valued states
@@ -17,13 +17,12 @@
 #-----------------------
 
 from ..utils import eprint
+from ..objects.legacyAtom import LegacyAtom
 from ..objects.rule import Rule
 from ..algorithms.algorithm import Algorithm
 from ..datasets import DiscreteStateTransitionsDataset
 
-import csv
 import numpy as np
-
 import itertools
 
 class BruteForce (Algorithm):
@@ -34,7 +33,7 @@ class BruteForce (Algorithm):
         - discrete
         - synchronous/asynchronous/general/other semantic
     INPUT: a set of pairs of discrete states
-    OUTPUT: a logic program
+    OUTPUT: a list of discrete rules
     """
 
     @staticmethod
@@ -45,6 +44,8 @@ class BruteForce (Algorithm):
         Args:
             dataset: pylfit.datasets.DiscreteStateTransitionsDataset
                 state transitions of a the system
+            impossibility_mode: Boolean
+            verbose: int
 
         Returns:
             list of pylfit.objects.Rule
@@ -63,71 +64,63 @@ class BruteForce (Algorithm):
         target_domains = dataset.targets
         rules = []
 
-        #if conclusion_values == None:
-        #    conclusion_values = values
-
-        # Replace state variable value (string) by their domain id (int)
-        encoded_data = Algorithm.encode_transitions_set(dataset.data, dataset.features, dataset.targets)
-        #eprint(encoded_data)
-
-        #eprint(transitions)
         if verbose > 0:
             eprint("\nConverting transitions to nparray...")
-        #processed_transitions = np.array([tuple(s1)+tuple(s2) for s1,s2 in encoded_data])
-        processed_transitions = np.array([np.concatenate( (s1, s2), axis=None) for s1,s2 in encoded_data])
+        processed_transitions = np.array([np.concatenate( (s1, s2), axis=None) for s1,s2 in dataset.data])
 
         #exit()
 
         if len(processed_transitions) > 0:
-            #eprint("flattened: ", processed_transitions)
             if verbose > 0:
                 eprint("Sorting transitions...")
             processed_transitions = processed_transitions[np.lexsort(tuple([processed_transitions[:,col] for col in reversed(range(0,len(feature_domains)))]))]
-            #for i in range(0,len(variables)):
-            #processed_transitions = processed_transitions[np.argsort(processed_transitions[:,i])]
-            #eprint("sorted: ", processed_transitions)
 
             if verbose > 0:
                 eprint("Grouping transitions by initial state...")
-            #processed_transitions = np.array([ (row[:len(variables)], row[len(variables):]) for row in processed_transitions])
 
             processed_transitions_ = []
             s1 = processed_transitions[0][:len(feature_domains)]
             S2 = []
             for row in processed_transitions:
                 if not np.array_equal(row[:len(feature_domains)], s1): # New initial state
-                    #eprint("new state: ", s1)
                     processed_transitions_.append((s1,S2))
                     s1 = row[:len(feature_domains)]
                     S2 = []
-
-                #eprint("adding ", row[len(feature_domains):], " to ", s1)
                 S2.append(row[len(feature_domains):]) # Add new next state
 
             # Last state
             processed_transitions_.append((s1,S2))
-
             processed_transitions = processed_transitions_
 
-        #eprint(processed_transitions)
-
-        # Learn rules for each observed variable/value
-        #for var in range(0, len(target_domains)):
-        #    for val in range(0, len(target_domains[var][1])):
-        #eprint(targets_to_learn)
         for var_id, (var_name, var_domain) in enumerate(dataset.targets):
-            #eprint(var_id, (var_name, var_domain))
             for val_id, val_name in enumerate(var_domain):
-                #eprint(val_id, val_name)
+                head = LegacyAtom(var_name, set(var_domain), val_name, var_id)
+                positives, negatives = BruteForce.interprete(processed_transitions, head)
+
+                # Remove potential false negatives
+                if dataset.has_unknown_values():
+                    certain_negatives = []
+                    for neg in negatives:
+                        uncertain_negative = False
+                        for pos in positives:
+                            possible_same_state = True
+                            for i in range(len(pos)):
+                                if neg[i] != pos[i] and pos[i] != dataset._UNKNOWN_VALUE and neg[i] != dataset._UNKNOWN_VALUE: # explicit difference
+                                    possible_same_state = False
+                                    break
+                            if possible_same_state:
+                                uncertain_negative = True
+                                break
+                        if not uncertain_negative:
+                            certain_negatives.append(neg)
+
+                    negatives = certain_negatives
 
                 if impossibility_mode:
-                    negatives, positives = BruteForce.interprete(processed_transitions, var_id, val_id)#, partial_heuristic)
-                    rules += BruteForce.fit_var_val(feature_domains, var_id, val_id, positives, negatives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
-                else:
-                    negatives, positives = BruteForce.interprete(processed_transitions, var_id, val_id)#, partial_heuristic)
-                    rules += BruteForce.fit_var_val(feature_domains, var_id, val_id, negatives, positives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
-                # DBG
-                #eprint(negatives)
+                    negatives = positives.copy()
+                
+                rules += BruteForce.fit_var_val(head, dataset.features_void_atoms, negatives, verbose)
+                
                 if verbose > 0:
                     eprint("\nStart learning of var=", var_id+1,"/", len(target_domains), ", val=", val_id+1, "/", len(target_domains[var_id][1]))
 
@@ -135,67 +128,71 @@ class BruteForce (Algorithm):
 
 
     @staticmethod
-    def interprete(transitions, variable, value): #, partial_heuristic=False):
+    def interprete(transitions, head):
         """
         Split transition into positive/negatives states for the given variable/value
 
         Args:
-            transitions: list of tuple (tuple of int, list of tuple of int)
-                state transitions grouped by intiial state
-            variable: int
-                variable id
-            value: int
-                variable value id
+            transitions: list of tuple (tuple of string, list of tuple of string)
+                state transitions grouped by initial state
+            head: pylfit.objects.LegacyAtom
+                target atom
+        Returns:
+            positives: list of tuple of string
+            negatives: list of tuple of string
         """
-        # DBG
-        #eprint("Interpreting transitions to:",variable,"=",value)
-        #positives = [t1 for t1,t2 in transitions if t2[variable] == value]
-        #negatives = [t1 for t1,t2 in transitions if t1 not in positives]
 
         positives = []
-
         negatives = []
+
         for s1, S2 in transitions:
             negative = True
             for s2 in S2:
-                if s2[variable] == value:
+                if head.matches(s2) or s2[head.state_position] == LegacyAtom._UNKNOWN_VALUE:
+                    positives.append(s1)
                     negative = False
                     break
             if negative:
                 negatives.append(s1)
-            else:
-                positives.append(s1)
-
-        return negatives, positives
+                
+        return positives, negatives
 
 
     @staticmethod
-    def fit_var_val(feature_domains, variable, value, negatives, positives=None, verbose=0): #variables, values, variable, value, negatives, program=None):#, partial_heuristic=False):
+    def fit_var_val(head, features_void_atoms, negatives, verbose=0):
         """
         Learn minimal rules that explain positive examples while consistent with negatives examples
 
         Args:
-            feature_domains: list of (name, list of int)
-                Features variables
-            variable: int
-                variable id
-            value: int
-                variable value id
+            head: pylfit.objects.LegacyAtom
+                target atom
+            features_void_atoms: dict of (string, LegacyAtom)
+                Features variables void atoms
             negatives: list of (list of int)
                 States of the system where the variable cannot take this value in the next state
-            positives: list of (list of int)
-                States of the system where the variable can take this value in the next state
-                Optional, if given rule will be enforced to matches alteast one of those states
+            verbose: int
         """
 
         # 0) Generate all possible rules
         #---------------------------------
         if verbose > 0:
             eprint("Generating all rules...")
-        domains = [[(var_id,-1)]+[(var_id,val_id) for val_id, val in enumerate(vals)] for var_id,(var,vals) in enumerate(feature_domains)]
-        all_rules = [Rule(variable, value, len(feature_domains), [(var,val) for var,val in combination if val > -1]) for combination in list(itertools.product(*domains))]
+        conditions = []
+        for (key,atom) in features_void_atoms.items():
+            condition = [None]
+            for val in atom.domain:
+                a = atom.copy()
+                a.value = val
+                condition.append(a)
+            conditions.append(condition)
 
-        #eprint(all_rules)
+        all_rules = []
+        for combination in list(itertools.product(*conditions)):
+            rule = Rule(head)
+            for atom in combination:
+                if atom is not None:
+                    rule.add_condition(atom)
+            all_rules.append(rule)
 
         # 1) Remove unconsistent rules
         #---------------------------------
@@ -211,8 +208,6 @@ class BruteForce (Algorithm):
             if consistent:
                 consistent_rules.append(rule)
 
-        #eprint(consistent_rules)
-
         # 2) Remove dominated rules
         #---------------------------
         if verbose > 0:
@@ -226,7 +221,5 @@ class BruteForce (Algorithm):
                     break
             if not dominated:
                 minimal_rules.append(rule)
-
-        #eprint(minimal_rules)
 
         return minimal_rules

@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/23
-# @updated: 2019/05/02
+# @updated: 2023/12/26
 #
 # @desc: PyLFIT unit test script
 #
@@ -10,12 +10,18 @@
 import unittest
 import random
 import os
+import sys
+import pathlib
+sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from pylfit.utils import eprint, load_tabular_data_from_csv
+from pylfit.utils import eprint
 from pylfit.algorithms.lust import LUST
 from pylfit.objects.rule import Rule
-from pylfit.objects.logicProgram import LogicProgram
 from pylfit.semantics.synchronous import Synchronous
+from pylfit.datasets.discreteStateTransitionsDataset import DiscreteStateTransitionsDataset
+from pylfit.models.dmvlp import DMVLP
+
+from tests_generator import random_DiscreteStateTransitionsDataset, random_DMVLP
 
 #random.seed(0)
 
@@ -24,19 +30,23 @@ class LUSTTest(unittest.TestCase):
         Unit test of class LUST from lust.py
     """
 
-    __nb_unit_test = 100
+    _nb_unit_test = 100
 
-    __nb_features = 4
+    _nb_transitions = 100
 
-    __nb_targets = 3
+    _nb_features = 4
 
-    __nb_values = 2
+    _nb_targets = 3
 
-    __max_programs = 5
+    _nb_feature_values = 3
 
-    __body_size = 10
+    _nb_target_values = 3
 
-    __tmp_file_path = "tmp/unit_test_lust.tmp"
+    _max_programs = 5
+
+    _body_size = 10
+
+    _tmp_file_path = "tmp/unit_test_lust.tmp"
 
     #------------------
     # Test functions
@@ -46,109 +56,96 @@ class LUSTTest(unittest.TestCase):
         print(">> LUST.fit(data, features, targets)")
 
         # No transitions
-        p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
-        p_ = LUST.fit([], p.get_features(), p.get_targets())
-        self.assertEqual(len(p_),1)
-        p_ = p_[0]
-        self.assertEqual(p_.get_features(),p.get_features())
-        self.assertEqual(p_.get_targets(),p.get_targets())
-        self.assertEqual(p_.get_rules(),[])
+        #p = self.random_program(self._nb_features, self._nb_targets, self._nb_values, self._body_size)
+        dataset = random_DiscreteStateTransitionsDataset( \
+                            nb_transitions=0, \
+                            nb_features=random.randint(1,self._nb_features), \
+                            nb_targets=random.randint(1,self._nb_targets), \
+                            max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
+        p = LUST.fit(dataset)
+        self.assertEqual(len(p),1)
 
-        for i in range(self.__nb_unit_test):
-            #eprint("test: ", i, "/", self.__nb_unit_test)
+        for i in range(self._nb_unit_test):
+            #eprint("test: ", i, "/", self._nb_unit_test)
 
-            nb_programs = random.randint(1,self.__max_programs)
-            transitions = []
+            dataset = random_DiscreteStateTransitionsDataset( \
+                            nb_transitions=self._nb_transitions, \
+                            nb_features=random.randint(1,self._nb_features), \
+                            nb_targets=random.randint(1,self._nb_targets), \
+                            max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
 
-            p_ = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
-            features = p_.get_features()
-            targets = p.get_targets()
-
-            for j in range(nb_programs):
-                # Generate transitions
-                min_body_size = 0
-                max_body_size = random.randint(min_body_size, len(features))
-
-                p = LogicProgram.random(features, targets, min_body_size, max_body_size)
-                transitions += Synchronous.transitions(p)
-
-                #eprint(p.logic_form())
-            #eprint(transitions)
-            t = LUST.encode_transitions_set(transitions, p.get_features(), p.get_targets())
-
-            P = LUST.fit(t, features, targets)
-            #rules = p_.get_rules()
+            rules_set = LUST.fit(dataset)
 
             # Generate transitions
             predictions = []
-            for p in P:
-                #eprint(p.logic_form())
-                predictions += Synchronous.transitions(p)
+            for rules in rules_set:
+                p = DMVLP(dataset.features,dataset.targets,rules)
+                predictions += [(tuple(s1),tuple(s2)) for (s1,S) in p.predict([s for s,_ in dataset.data]).items() for s2 in S]
 
             # Remove incomplete states
-            #predictions = [ [s1,s2] for s1,s2 in predictions if -1 not in s2 ]
+            #predictions = [ (s1,s2) for s1,s2 in predictions if -1 not in s2 ]
 
             #eprint("Expected: ", transitions)
             #eprint("Predicted: ", predictions)
+            dataset_data = [(tuple(s1),tuple(s2)) for (s1,s2) in dataset.data]
 
             # All original transitions are predicted
-            for s1, s2 in transitions:
-                self.assertTrue([s1,s2] in predictions)
+            for s1, s2 in dataset_data:
+                self.assertTrue((s1,s2) in predictions)
 
             # All predictions are in original transitions
             for s1, s2 in predictions:
-                #eprint(s1,s2)
-                self.assertTrue([s1,s2] in transitions)
+                if (s1,s2) not in dataset_data:
+                    eprint(s1,s2)
+                    eprint(dataset_data)
+                self.assertTrue((s1,s2) in dataset_data)
 
             #sys.exit()
 
     def test_interprete(self):
-        print(">> LUST.interprete(variables, values, transitions)")
+        print(">> LUST.interprete(dataset)")
 
-        for i in range(self.__nb_unit_test):
-            #eprint("test: ", i, "/", self.__nb_unit_test)
+        for i in range(self._nb_unit_test):
+            #eprint("test: ", i, "/", self._nb_unit_test)
 
             # No transitions
-            p_ = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
-            features = p_.get_features()
-            targets = p_.get_targets()
+            dataset = random_DiscreteStateTransitionsDataset( \
+                            nb_transitions=0, \
+                            nb_features=random.randint(1,self._nb_features), \
+                            nb_targets=random.randint(1,self._nb_targets), \
+                            max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
+            features = dataset.features
+            targets = dataset.targets
 
-            min_body_size = 0
-            max_body_size = random.randint(min_body_size, len(features))
-            p = LogicProgram.random(features, targets, min_body_size, max_body_size)
+            p = random_DMVLP(self._nb_features, self._nb_targets, self._nb_feature_values, self._nb_target_values, "gula")
 
-            DC, DS = LUST.interprete([])
-            self.assertEqual(DC,[])
+            DC, DS = LUST.interprete(dataset)
+            self.assertEqual(DC.data,[])
             self.assertEqual(DS,[])
 
             # Regular case
-            nb_programs = random.randint(1,self.__max_programs)
-            transitions = []
+            dataset = random_DiscreteStateTransitionsDataset( \
+                            nb_transitions=self._nb_transitions, \
+                            nb_features=random.randint(1,self._nb_features), \
+                            nb_targets=random.randint(1,self._nb_targets), \
+                            max_feature_values=self._nb_feature_values, max_target_values=self._nb_target_values)
 
-            for j in range(nb_programs):
-                # Generate transitions
-                min_body_size = 0
-                max_body_size = random.randint(min_body_size, len(features))
-
-                p = LogicProgram.random(features, targets, min_body_size, max_body_size)
-                transitions += Synchronous.transitions(p)
-
-                #eprint(p.logic_form())
-            #eprint(transitions)
-
-            DC, DS = LUST.interprete(transitions)
+            DC, DS = LUST.interprete(dataset)
             D = []
             ND = []
 
-            for s1, s2 in transitions:
+            DC_data = [(tuple(s1),tuple(s2)) for (s1,s2) in DC.data]
+            DS_data = [[(tuple(s1),tuple(s2)) for (s1,s2) in s.data] for s in DS]
+
+            for s1, s2 in dataset.data:
                 deterministic = True
-                for s3, s4 in transitions:
-                    if s1 == s3 and s2 != s4:
-                        ND.append( [s1,s2] )
+                for s3, s4 in dataset.data:
+                    if tuple(s1) == tuple(s3) and tuple(s2) != tuple(s4):
+                        ND.append( (tuple(s1),tuple(s2)) )
                         deterministic = False
                         break
                 if deterministic:
-                    D.append( [s1,s2] )
+                    D.append( (tuple(s1),tuple(s2)) )
 
             #eprint("DC: ",DC)
             #eprint("DS: ",DS)
@@ -157,16 +154,16 @@ class LUSTTest(unittest.TestCase):
 
             # All deterministic are only in DC
             for s1, s2 in D:
-                self.assertTrue([s1,s2] in DC)
-                for s in DS:
-                    self.assertTrue([s1,s2] not in s)
+                self.assertTrue((s1,s2) in DC_data)
+                for s in DS_data:
+                    self.assertTrue((s1,s2) not in s)
 
             # All DC are deterministic
-            for s1, s2 in DC:
-                self.assertTrue([s1,s2] in D)
+            for s1, s2 in DC_data:
+                self.assertTrue((s1,s2) in D)
 
             # All non deterministic sets are set
-            for s in DS:
+            for s in DS_data:
                 for s1, s2 in s:
                     occ = 0
                     for s3, s4 in s:
@@ -174,9 +171,9 @@ class LUSTTest(unittest.TestCase):
                             occ += 1
                     self.assertEqual(occ,1)
 
-            # All input origin state appears in each DS TODO
+            # All input origin state appears in each DS
             for s1, s2 in ND:
-                for s in DS:
+                for s in DS_data:
                     occurs = False
                     for s3, s4 in s:
                         if s1 == s3:
@@ -184,7 +181,7 @@ class LUSTTest(unittest.TestCase):
                     self.assertTrue(occurs)
 
             # All DS are deterministic
-            for s in DS:
+            for s in DS_data:
                 for s1, s2 in s:
                     for s3, s4 in s:
                         if s1 == s3:
@@ -193,33 +190,6 @@ class LUSTTest(unittest.TestCase):
     #------------------
     # Tool functions
     #------------------
-
-    def random_rule(self, features, targets, body_size):
-        head_var = random.randint(0,len(targets)-1)
-        head_val = random.randint(0,len(targets[head_var][1])-1)
-        body = []
-        conditions = []
-
-        for j in range(0, random.randint(0,body_size)):
-            var = random.randint(0,len(features)-1)
-            val = random.randint(0,len(features[var][1])-1)
-            if var not in conditions:
-                body.append( (var, val) )
-                conditions.append(var)
-
-        return  Rule(head_var,head_val,len(features),body)
-
-
-    def random_program(self, nb_features, nb_targets, nb_values, body_size):
-        features = [("x"+str(i), ["val_"+str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
-        targets = [("y"+str(i), ["val_"+str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
-        rules = []
-
-        for j in range(random.randint(0,100)):
-            r = self.random_rule(features, targets, body_size)
-            rules.append(r)
-
-        return LogicProgram(features, targets, rules)
 
 
 if __name__ == '__main__':

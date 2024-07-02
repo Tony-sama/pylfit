@@ -9,14 +9,19 @@
 
 import unittest
 import random
-import os
 import itertools
+import sys
+import pathlib
+sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
-from pylfit.utils import eprint, load_tabular_data_from_csv
+from pylfit.utils import eprint
 from pylfit.algorithms.lfkt import LFkT
+from pylfit.models.dmvlp import DMVLP
+from pylfit.objects.legacyAtom import LegacyAtom
 from pylfit.objects.rule import Rule
-from pylfit.objects.logicProgram import LogicProgram
 from pylfit.semantics.synchronous import Synchronous
+
+from tests_generator import random_symmetric_DiscreteStateTransitionsDataset
 
 random.seed(0)
 
@@ -26,19 +31,23 @@ class LFkTTest(unittest.TestCase):
         Unit test of class LFkT from lfkt.py
     """
 
-    __nb_unit_test = 10
+    _nb_unit_test = 100
 
-    __nb_features = 3
+    _nb_transitions = 100
 
-    __nb_targets = 3
+    _nb_features = 3
 
-    __nb_values = 2
+    _nb_targets = 3
 
-    __max_delay = 3
+    _nb_feature_values = 2
 
-    __body_size = 10
+    _nb_target_values = 2
 
-    __tmp_file_path = "tmp/unit_test_lfkt.tmp"
+    _max_delay = 4
+
+    _body_size = 10
+
+    _tmp_file_path = "tmp/unit_test_lfkt.tmp"
 
     #------------------
     # Test functions
@@ -48,73 +57,71 @@ class LFkTTest(unittest.TestCase):
         print(">> LFkT.fit(variables, values, time_series)")
 
         # No transitions
-        p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+        dataset = random_symmetric_DiscreteStateTransitionsDataset( \
+                            nb_transitions=0, \
+                            nb_variables=random.randint(1,self._nb_features), \
+                            max_variable_values=self._nb_feature_values)
 
-        min_body_size = 0
-        max_body_size = random.randint(min_body_size, len(p.get_features()))
-        delay_original = random.randint(2, self.__max_delay)
+        rules = LFkT.fit([],dataset.features, dataset.targets)
+        #print(rules)
+        self.assertEqual(len(rules),len([(var,val) for var,vals in dataset.targets for val in vals]))
 
-        features = []
-        targets = p.get_targets()
-
-        for d in range(1,delay_original+1):
-            features += [(var+"_"+str(d), vals) for var,vals in p.get_features()]
-
-        p = LogicProgram.random(features, targets, min_body_size, max_body_size)
-        p_ = LFkT.fit([], p.get_features(), p.get_targets())
-        self.assertEqual(p_.get_features(),p.get_features())
-        self.assertEqual(p_.get_targets(),p.get_targets())
-        self.assertEqual(p_.get_rules(),[])
-
-        for i in range(self.__nb_unit_test):
-            #eprint("\rTest ", i+1, "/", self.__nb_unit_test, end='')
+        for i in range(self._nb_unit_test):
+            #eprint("\rTest ", i+1, "/", self._nb_unit_test, end='')
 
             # Generate transitions
-            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            dataset = random_symmetric_DiscreteStateTransitionsDataset( \
+                            nb_transitions=self._nb_transitions, \
+                            nb_variables=random.randint(1,self._nb_features), \
+                            max_variable_values=self._nb_feature_values)
 
             min_body_size = 0
-            max_body_size = random.randint(min_body_size, len(p.get_features()))
-            delay_original = random.randint(2, self.__max_delay)
+            max_body_size = random.randint(min_body_size, len(dataset.features))
+            delay_original = random.randint(1, self._max_delay)
 
-            features = []
-            targets = p.get_features()
+            features = [[var[:-4],vals] for var,vals in dataset.features]
+            targets = dataset.targets
 
-            for d in range(0, delay_original):
-                features += [(var+"_t-"+str(d+1), vals) for var,vals in p.get_features()]
+            p = DMVLP(dataset.features, dataset.targets)
+            p.compile(algorithm="gula")
+            p.fit(dataset=dataset)
 
-            p = LogicProgram.random(features, targets, min_body_size, max_body_size)
-
-            cut = len(targets)
-            time_series = [[list(s[cut*(d-1):cut*d]) for d in range(1,delay_original+1)] for s in p.feature_states()]
+            #eprint("Generating series...")
+            time_series = [[s] for s in p.feature_states()]
 
             #eprint(delay_original)
             #eprint(p)
-            #eprint(p.states())
+            #eprint(p.feature_states())
             #eprint(time_series)
             #exit()
 
             time_serie_size = delay_original + 2
 
             for serie in time_series:
+                #eprint(">",serie)
                 while len(serie) < time_serie_size:
                     serie_end = serie[-delay_original:]
-                    #eprint(serie_end)
                     serie_end = list(itertools.chain.from_iterable(serie_end))
-                    serie.append(Synchronous.next(p, serie_end)[0])
+                    #eprint(serie_end)
+                    serie.append(list(Synchronous.next(serie_end, targets, p.rules).items())[0][0])
+                    #eprint(serie)
 
             #eprint(p.logic_form())
             #for s in time_series:
             #    eprint(s)
 
-            p_ = LFkT.fit(time_series, targets, targets)
-            rules = p_.get_rules()
+            rules = LFkT.fit(time_series, features, targets)
+            #eprint()
+            #eprint(features)
+            #eprint(targets)
 
             #eprint(p_.logic_form())
 
-            for variable in range(len(targets)):
-                for value in range(len(targets[variable][1])):
+            for var_id, (var,vals) in enumerate(targets):
+                for val in vals:
                     #eprint("var="+str(variable)+", val="+str(value))
-                    pos, neg, delay = LFkT.interprete(time_series, targets, targets, variable, value)
+                    head = LegacyAtom(var, set(vals), val, var_id)
+                    pos, neg, delay = LFkT.interprete(time_series, head)
 
                     #eprint("pos: ", pos)
 
@@ -122,13 +129,13 @@ class LFkTTest(unittest.TestCase):
                     for s in pos:
                         cover = False
                         for r in rules:
-                            if r.get_head_variable() == variable \
-                               and r.get_head_value() == value \
-                               and r.matches(s):
+                            if r.head.variable == var and r.head.value == val and r.matches(s):
                                 cover = True
-                        #if not cover:
-                        #    eprint(p_)
-                        #    eprint(s)
+                                break
+                        if not cover:
+                            print(features)
+                            eprint(s)
+                            eprint(rules)
                         self.assertTrue(cover) # One rule cover the example
 
                     #eprint("neg: ", neg)
@@ -137,21 +144,23 @@ class LFkTTest(unittest.TestCase):
                     for s in neg:
                         cover = False
                         for r in rules:
-                            if r.get_head_variable() == variable \
-                               and r.get_head_value() == value \
-                               and r.matches(s):
+                            if r.head.variable == var and r.head.value == val and r.matches(s):
                                 cover = True
+                                print(s)
+                                print(r)
+                                break
                         self.assertFalse(cover) # no rule covers the example
 
                     # All rules are minimals
                     for r in rules:
-                        if r.get_head_variable() == variable and r.get_head_value() == value:
-                            for (var,val) in r.get_body():
-                                r.remove_condition(var) # Try remove condition
+                        if r.head.variable == var and r.head.value == val:
+                            for var_ in r.body:
+                                r_ = r.copy()
+                                r_.remove_condition(var_) # Try remove condition
 
                                 conflict = False
                                 for s in neg:
-                                    if r.matches(s): # Cover a negative example
+                                    if r_.matches(s): # Cover a negative example
                                         conflict = True
                                         break
 
@@ -161,52 +170,59 @@ class LFkTTest(unittest.TestCase):
                                     eprint(neg)
 
                                 self.assertTrue(conflict)
-                                r.add_condition(var,val) # Cancel removal
         #eprint()
 
     def test_interprete(self):
         print(">> LFkT.interprete(transitions, variable, value)")
 
-        for i in range(self.__nb_unit_test):
-            #eprint("Start test ", i, "/", self.__nb_unit_test)
+        for i in range(self._nb_unit_test):
+            #eprint("Start test ", i, "/", self._nb_unit_test)
             # Generate transitions
-            p = self.random_program(self.__nb_features, self.__nb_targets, self.__nb_values, self.__body_size)
+            dataset = random_symmetric_DiscreteStateTransitionsDataset( \
+                            nb_transitions=self._nb_transitions, \
+                            nb_variables=random.randint(1,self._nb_features), \
+                            max_variable_values=self._nb_feature_values)
 
             min_body_size = 0
-            max_body_size = random.randint(min_body_size, len(p.get_features()))
-            delay_original = random.randint(1, self.__max_delay)
+            max_body_size = random.randint(min_body_size, len(dataset.features))
+            delay_original = random.randint(1, self._max_delay)
 
             features = []
-            targets = p.get_features()
+            targets = dataset.targets
 
             for d in range(0, delay_original):
-                features += [(var+"_t-"+str(d+1), vals) for var,vals in p.get_features()]
+                features += [(var+"_t-"+str(d+1), vals) for var,vals in dataset.features]
 
-            p = LogicProgram.random(features, targets, min_body_size, max_body_size)
+            p = DMVLP(dataset.features, dataset.targets)
+            p.compile(algorithm="gula")
+            p.fit(dataset=dataset)
+
             #eprint("Generating series...")
-            cut = len(targets)
-            time_series = [[list(s[cut*(d-1):cut*d]) for d in range(1,delay_original+1)] for s in p.feature_states()]
+            time_series = [[s] for s in p.feature_states()]
 
             #eprint(delay_original)
             #eprint(p)
-            #eprint(p.states())
+            #eprint(p.feature_states())
             #eprint(time_series)
             #exit()
 
             time_serie_size = delay_original + 2
 
             for serie in time_series:
+                #eprint(">",serie)
                 while len(serie) < time_serie_size:
                     serie_end = serie[-delay_original:]
-                    #eprint(serie_end)
                     serie_end = list(itertools.chain.from_iterable(serie_end))
-                    serie.append(Synchronous.next(p, serie_end)[0])
+                    #eprint(serie_end)
+                    serie.append(list(Synchronous.next(serie_end, targets, p.rules).items())[0][0])
+                    #eprint(serie)
 
             var = random.randint(0, len(targets)-1)
-            val = random.randint(0, len(targets[var])-1)
+            val = random.randint(0, len(targets[var][1])-1)
 
             #eprint("interpreting...")
-            pos, neg, delay = LFkT.interprete(time_series, targets, targets, var, val)
+            head = LegacyAtom(targets[var][0], set(targets[var][1]), targets[var][1][val], var)
+            pos, neg, delay = LFkT.interprete(time_series, head)
 
             # DBG
             #eprint("variables: ", variables)
@@ -231,7 +247,7 @@ class LFkTTest(unittest.TestCase):
                         #eprint(s)
                         s2 = serie[id+delay]
                         if s1 == s:
-                            self.assertEqual(s2[var], val)
+                            self.assertEqual(s2[var], targets[var][1][val])
                             break
             # All neg are valid
             for s in neg:
@@ -242,7 +258,7 @@ class LFkTTest(unittest.TestCase):
                         s1 = [y for x in s1 for y in x]
                         s2 = serie[id+delay]
                         if s1 == s:
-                            self.assertTrue(s2[var] != val)
+                            self.assertTrue(s2[var] != targets[var][1][val])
                             break
 
             # All transitions are interpreted
@@ -259,7 +275,7 @@ class LFkTTest(unittest.TestCase):
                     #eprint("s1: ", s1, ", s2: ", s2)
                     #eprint("pos: ", pos)
                     #eprint("neg: ", neg)
-                    if s2[var] == val:
+                    if s2[var] == targets[var][1][val]:
                         self.assertTrue(s1 in pos)
                         self.assertFalse(s1 in neg)
                     else:
@@ -295,38 +311,11 @@ class LFkTTest(unittest.TestCase):
                                 self.assertTrue(local_delay <= delay)
             self.assertEqual(delay, global_delay)
 
-            #eprint("FINISHED ", i, "/", self.__nb_unit_test)
+            #eprint("FINISHED ", i, "/", self._nb_unit_test)
 
     #------------------
     # Tool functions
     #------------------
-
-    def random_rule(self, features, targets, body_size):
-        head_var = random.randint(0,len(targets)-1)
-        head_val = random.randint(0,len(targets[head_var][1])-1)
-        body = []
-        conditions = []
-
-        for j in range(0, random.randint(0,body_size)):
-            var = random.randint(0,len(features)-1)
-            val = random.randint(0,len(features[var][1])-1)
-            if var not in conditions:
-                body.append( (var, val) )
-                conditions.append(var)
-
-        return  Rule(head_var,head_val,len(features),body)
-
-
-    def random_program(self, nb_features, nb_targets, nb_values, body_size):
-        features = [("x"+str(i), ["val_"+str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_features))]
-        targets = [("y"+str(i), ["val_"+str(val) for val in range(0,random.randint(2,nb_values))]) for i in range(random.randint(1,nb_targets))]
-        rules = []
-
-        for j in range(random.randint(0,100)):
-            r = self.random_rule(features, targets, body_size)
-            rules.append(r)
-
-        return LogicProgram(features, targets, rules)
 
 
 if __name__ == '__main__':

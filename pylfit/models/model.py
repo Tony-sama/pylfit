@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/14
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: class Model python source code file
 #-------------------------------------------------------------------------------
@@ -9,7 +9,6 @@
 from ..utils import eprint
 
 from ..datasets import Dataset
-from ..algorithms import Algorithm
 
 import abc
 

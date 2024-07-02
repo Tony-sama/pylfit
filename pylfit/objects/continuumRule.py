@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/26
-# @updated: 2022/08/31
+# @updated: 2023/12/27
 #
 # @desc: Class ContinuumRule python source code file
 #-------------------------------------------------------------------------------
@@ -71,7 +71,6 @@ class ContinuumRule:
             Rule
                 The rule represented by the string w.r.t features/targets
         """
-        #eprint(string_format)
         tokens = string_format.split(":-")
 
         head_string = tokens[0].split('(')
@@ -234,7 +233,8 @@ class ContinuumRule:
         using given variables labels
 
         Args:
-            TODO
+            features: list of pair (string, continuum)
+            targets: list of pair (string, continuum)
 
         Returns:
             String

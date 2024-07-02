@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/02
-# @updated: 2021/06/15
+# @updated: 2023/12/13
 #
 # @desc: PRIDE regression test script
 # Tests algorithm methods on random dataset
@@ -469,20 +469,17 @@ class PRIDE_benchmark_tests(unittest.TestCase):
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule, dataset.features, dataset.targets))
+            expected_rules.append(Rule.from_string(string_rule).to_string())
 
         #eprint(expected_rules)
 
         output = PRIDE.fit(dataset)
+        output_str = [r.to_string() for r in output]
 
         #eprint(output)
+        #eprint(len(output))
 
-        #for r in expected_rules:
-        #    if r not in output:
-        #        eprint("Missing rule: ", r)
-        #    self.assertTrue(r in output)
-
-        for r in output:
+        for r in output_str:
             if r not in expected_rules:
                 eprint("Additional rule: ", r)
             self.assertTrue(r in expected_rules)

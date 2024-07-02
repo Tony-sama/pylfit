@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/03/03
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: pylfit tabular dataset utility functions
 #-------------------------------------------------------------------------------
@@ -15,7 +15,7 @@ from ..objects import Continuum
 import pandas
 import numpy
 
-def discrete_state_transitions_dataset_from_csv(path, feature_names, target_names):
+def discrete_state_transitions_dataset_from_csv(path, feature_names, target_names, unknown_values=[DiscreteStateTransitionsDataset._UNKNOWN_VALUE]):
     """ Load tabular data from a csv file into a list of pair of feature/target state
 
     Each line of the file must gives a value for each feature/target variables given in parameter
@@ -27,16 +27,47 @@ def discrete_state_transitions_dataset_from_csv(path, feature_names, target_name
             Header label of the feature variables columns
         target_names: list of String
             Header label of the target variables columns
+        unknown_values: list of string
+            List of value representing unknown value.
 
     Returns:
         DiscreteStateTransitionsDataset
             A pylfit dataset api encoding of the state transitions, ready to be used with pylfit model api.
     """
+    # Check path
+    if not isinstance(path,str):
+        raise TypeError("Argument path must be a string.")
+
+    # Check feature_names type
+    if feature_names is not None:
+        if not isinstance(feature_names, (list)):
+            raise TypeError("Argument feature_names must be a list.")
+        if not all(isinstance(i, str) for i in feature_names):
+            raise ValueError("Argument feature_names must only contains String.")
+
+    # Check target_names type
+    if target_names is not None:
+        if not isinstance(target_names, (list)):
+            raise TypeError("Argument target_names must be a list.")
+        if not all(isinstance(i, str) for i in target_names):
+            raise ValueError("Argument target_names must only contains String.")
+        
+    # Check unknown_values type
+    #if unknown_values is not None:
+    if not isinstance(unknown_values, list):
+        raise TypeError("Argument unknown_values must be a list")
+    #if not all(isinstance(i, str) for i in unknown_values):
+    #   raise TypeError("Argument unknown_values must be a list of string")
+
     df = pandas.read_csv(path)
 
-    feature_domains = [(var, [str(i) for i in df[var].unique()]) for var in feature_names]
-    target_domains = [(var, [str(i) for i in df[var].unique()]) for var in target_names]
-    data = [(numpy.array([str(i) for i in x]), numpy.array([str(i) for i in y])) for x, y in zip(df[feature_names].values, df[target_names].values)]
+    if unknown_values is None:
+        unknown_values = []
+
+    feature_domains = [(var, [str(i) for i in df[var].unique() if i not in unknown_values]) for var in feature_names]
+    target_domains = [(var, [str(i) for i in df[var].unique() if i not in unknown_values]) for var in target_names]
+    data = [(numpy.array([DiscreteStateTransitionsDataset._UNKNOWN_VALUE if i in unknown_values else str(i) for i in x]),
+             numpy.array([DiscreteStateTransitionsDataset._UNKNOWN_VALUE if i in unknown_values else str(i) for i in y])) for x, y in zip(df[feature_names].values, df[target_names].values)]
 
     # Order domains alphabetically
     for var_id, (var, domain) in enumerate(feature_domains):
@@ -48,7 +79,7 @@ def discrete_state_transitions_dataset_from_csv(path, feature_names, target_name
 
     return dataset
 
-def discrete_state_transitions_dataset_from_array(data, feature_domains=None, target_domains=None, feature_names=None, target_names=None):
+def discrete_state_transitions_dataset_from_array(data, feature_domains=None, target_domains=None, feature_names=None, target_names=None, unknown_values=[DiscreteStateTransitionsDataset._UNKNOWN_VALUE]):
     """ Create a DiscreteStateTransitionsDataset from given data according to variables domains if given or variable names if given.
 
     Feature/target variables names are automatically generated if not given:
@@ -69,6 +100,8 @@ def discrete_state_transitions_dataset_from_array(data, feature_domains=None, ta
         target_names: list of String
             Names of the target variables (optional).
             Should not be given if target_domains is given.
+        unknown_values: list of string
+            List of value representing unknown value.
     Returns:
         DiscreteStateTransitionsDataset.
             A pylfit dataset api encoding of the state transitions, ready to be used with pylfit model api.
@@ -141,7 +174,14 @@ def discrete_state_transitions_dataset_from_array(data, feature_domains=None, ta
             raise TypeError("Argument target_names must be a list.")
         if not all(isinstance(i, str) for i in target_names):
             raise ValueError("Argument target_names must only contains String.")
-
+        
+    # Check unknown_values type
+    #if unknown_values is not None:
+    if not isinstance(unknown_values, list):
+        raise TypeError("Argument unknown_values must be a list")
+    #if not all(isinstance(i, str) for i in unknown_values):
+    #    raise TypeError("Argument unknown_values must be a list of string")
+        
     # Empty dataset
     if len(data) == 0:
         if feature_domains is None:
@@ -178,18 +218,23 @@ def discrete_state_transitions_dataset_from_array(data, feature_domains=None, ta
         raise ValueError("Size of argument target_domains and target_names must be same as argument data target states size.")
 
     # Convert data format to DiscreteStateTransitionsDataset format
-    data_encoded = [(numpy.array([str(i) for i in x]), numpy.array([str(i) for i in y])) for x, y in data]
+    data_encoded = [(numpy.array([DiscreteStateTransitionsDataset._UNKNOWN_VALUE if i in unknown_values else str(i) for i in x]),
+                     numpy.array([DiscreteStateTransitionsDataset._UNKNOWN_VALUE if i in unknown_values else str(i) for i in y])) for x, y in data]
+
+    # Initialize unknown values
+    if unknown_values is None:
+        unknown_values = []
 
     # Extract feature/target variables domain from data
     feature_domains = feature_domains.copy()
     target_domains = target_domains.copy()
     for (s1, s2) in data_encoded:
         for var_id, value in enumerate(s1):
-            if value not in feature_domains[var_id][1]:
+            if value not in unknown_values and value not in feature_domains[var_id][1]:
                 feature_domains[var_id][1].append(value)
 
         for var_id, value in enumerate(s2):
-            if value not in target_domains[var_id][1]:
+            if value not in unknown_values and value not in target_domains[var_id][1]:
                 target_domains[var_id][1].append(value)
 
     # Order domains alphabetically

@@ -42,7 +42,7 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 from tests_generator import random_PDMVLP, random_DiscreteStateTransitionsDataset, random_symmetric_DiscreteStateTransitionsDataset
 
-random.seed(0)
+#random.seed(0)
 
 class PDMVLP_tests(unittest.TestCase):
     """
@@ -257,23 +257,10 @@ class PDMVLP_tests(unittest.TestCase):
                 prediction = model.predict(feature_states)
 
                 for state_id, s1 in enumerate(feature_states):
-                    feature_state_encoded = []
-                    for var_id, val in enumerate(s1):
-                        val_id = model.features[var_id][1].index(str(val))
-                        feature_state_encoded.append(val_id)
-
-                    #eprint(feature_state_encoded)
-
-                    target_states = SynchronousConstrained.next(feature_state_encoded, model.targets, model.rules, model.constraints)
+                    target_states = SynchronousConstrained.next(s1, model.targets, model.rules, model.constraints)
                     output = dict()
                     for s, rules in target_states.items():
-                        target_state = []
-                        for var_id, val_id in enumerate(s):
-                            #eprint(var_id, val_id)
-                            if val_id == -1:
-                                target_state.append("?")
-                            else:
-                                target_state.append(model.targets[var_id][1][val_id])
+                        target_state = list(s)
 
                         # proba of target state
                         if algorithm == "synchronizer":
@@ -307,11 +294,6 @@ class PDMVLP_tests(unittest.TestCase):
 
                 feature_states[state_id].extend(["0" for i in range(random.randint(1,10))])
                 self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features >
-                feature_states[state_id] = original.copy()
-
-                var_id = random.randint(0,len(dataset.features)-1)
-                feature_states[state_id][var_id] = "bad_value"
-                self.assertRaises(ValueError, model.predict, feature_states) # Feature_states bad format: value out of domain
                 feature_states[state_id] = original.copy()
 
 '''

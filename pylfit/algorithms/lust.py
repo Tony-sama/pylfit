@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/23
-# @updated: 2019/05/03
+# @updated: 2023/12/27
 #
 # @desc: simple LUST implementation, for Learning from Uncertain States Transitions.
 #   - INPUT: a set of pairs of discrete multi-valued states
@@ -20,11 +20,8 @@
 #-----------------------
 
 from ..utils import eprint
-from ..objects.rule import Rule
-from ..objects.logicProgram import LogicProgram
 from ..algorithms.gula import GULA
 from ..algorithms.algorithm import Algorithm
-import csv
 
 class LUST (Algorithm):
     """
@@ -39,56 +36,48 @@ class LUST (Algorithm):
     """
 
     @staticmethod
-    def fit(data, features, targets):
+    def fit(dataset):
         """
         Preprocess transitions and learn rules for all variables/values.
 
         Args:
-            data: list of tuple (list of int, list of int)
+            dataset: pylfit.datasets.DiscreteStateTransitionsDataset
                 state transitions of a the system
-            features: list of (String, list of String)
-                feature variables of the system and their values
-            targets: list of (String, list of String)
-                targets variables of the system and their values
 
         Returns:
-            list of LogicProgram
-                    - each rules are minimals
-                    - the output set explains/reproduces only the input transitions
+            list of list of Rules
+                - each rules are minimals
+                - the output set explains/reproduces only the input transitions
         """
-        #eprint("Start LUST learning...")
-
-        # Nothing to learn
-        if len(data) == 0:
-            return [LogicProgram(features, targets, [])]
-
-        rules = []
-
         # Extract strictly determinists states and separate non-determinist ones
-        deterministic_core, deterministic_sets = LUST.interprete(data)
+        deterministic_core, deterministic_sets = LUST.interprete(dataset)
         output = []
-        #common = GULA.fit(deterministic_core, features, targets)
 
         # deterministic input
         if len(deterministic_sets) == 0:
-            output = [GULA.fit(deterministic_core, features, targets)]
+            output = [GULA.fit(deterministic_core)]
         else:
             for s in deterministic_sets:
-                eprint("GULA input: ",deterministic_core+s)
-                p = GULA.fit(deterministic_core+s, features, targets)
+                s.data.extend(deterministic_core.data)
+                p = GULA.fit(s)
                 output.append(p)
 
         return output
 
 
     @staticmethod
-    def interprete(transitions):
+    def interprete(dataset):
         """
         Split the time series into positive/negatives meta-states for the given variable/value
 
         Args:
-            transitions: list of tuple (list of int, list of int)
-                state transitions of a dynamic system
+            dataset: pylfit.datasets.DiscreteStateTransitionsDataset
+                state transitions of a the system.
+        Returns:
+            deterministic_core_dataset: pylfit.datasets.DiscreteStateTransitionsDataset
+                The set of deterministic transitions of the original dataset.
+            deterministic_sets_datasets: list of pylfit.datasets.DiscreteStateTransitionsDataset
+                Remaining non-deterministic transitions splited into deterministic set as dataset.
         """
         # DBG
         #eprint("Interpreting transitions...")
@@ -101,12 +90,12 @@ class LUST (Algorithm):
         #----------------------------------------------
 
         # convert numpy array to list of tuple
-        transitions = [(list(s1),list(s2)) for s1,s2 in transitions]
+        transitions = [(tuple(s1),tuple(s2)) for s1,s2 in dataset.data]
 
         for s1, s2 in transitions:
 
             # avoid duplicate
-            if [s1, s2] in placed:
+            if (s1, s2) in placed:
                 continue
 
             # 1) Deterministic Core
@@ -120,8 +109,8 @@ class LUST (Algorithm):
 
             # Deterministic transition, go in deterministic core
             if deterministic:
-                deterministic_core.append([s1,s2])
-                placed.append([s1,s2])
+                deterministic_core.append((s1,s2))
+                placed.append((s1,s2))
                 continue
 
             # 2) Deterministic sets
@@ -138,20 +127,20 @@ class LUST (Algorithm):
 
                 # Compatible with this set
                 if deterministic:
-                    s.append([s1,s2])
-                    placed.append([s1,s2])
+                    s.append((s1,s2))
+                    placed.append((s1,s2))
                     added = True
                     break
 
             # No consistent set, create new one
             if not added:
-                deterministic_sets.append([ [s1,s2] ])
-                placed.append([s1,s2])
+                deterministic_sets.append([ (s1,s2) ])
+                placed.append((s1,s2))
 
         # 3) Complete the deterministic sets
         #------------------------------------
         for s1, s2 in placed:
-            if [s1,s2] not in deterministic_core: # each origin state must appears
+            if (s1,s2) not in deterministic_core: # each origin state must appears
                 for s in deterministic_sets: # in each deterministic set
                     occurs = False
                     for s3, s4 in s:
@@ -159,7 +148,15 @@ class LUST (Algorithm):
                             occurs = True
                             break
                     if not occurs:
-                        s.append([s1,s2])
+                        s.append((s1,s2))
+
+        deterministic_core_dataset = dataset.copy()
+        deterministic_core_dataset.data = deterministic_core
+        deterministic_sets_datasets = []
+        for s in deterministic_sets:
+            deterministic_dataset = dataset.copy()
+            deterministic_dataset.data = s
+            deterministic_sets_datasets.append(deterministic_dataset)
 
 
-        return deterministic_core, deterministic_sets
+        return deterministic_core_dataset, deterministic_sets_datasets

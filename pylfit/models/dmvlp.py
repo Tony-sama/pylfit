@@ -1,24 +1,20 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/01
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: class DMVLP python source code file
 #-------------------------------------------------------------------------------
 
-from ..models import Model
-
 from ..utils import eprint
+from ..models import Model
+from ..objects import LegacyAtom
 from ..objects import Rule
-
 from ..datasets import DiscreteStateTransitionsDataset
-
-from ..algorithms import Algorithm, GULA, PRIDE
-
+from ..algorithms import GULA, PRIDE
 from ..semantics import Synchronous, Asynchronous, General
 
 import itertools
-import random
 import numpy
 
 class DMVLP(Model):
@@ -42,7 +38,7 @@ class DMVLP(Model):
     _COMPATIBLE_DATASETS = [DiscreteStateTransitionsDataset]
 
     """ Learning algorithms that can be use to fit this model """
-    _ALGORITHMS = ["gula", "pride", "lf1t"]
+    _ALGORITHMS = ["gula", "pride"]
 
     """ Optimization """
     _OPTIMIZERS = []
@@ -93,7 +89,6 @@ class DMVLP(Model):
         Supported algorithms:
             - "gula", General Usage LFIT Algorithm
             - "pride", Polynomial heuristic version of GULA
-            - "lf1t", (TODO)
 
         """
 
@@ -107,7 +102,7 @@ class DMVLP(Model):
         else:
             raise NotImplementedError('<DEV> algorithm="'+str(algorithm)+'" is in DMVLP._COMPATIBLE_ALGORITHMS but no behavior implemented.')
 
-    def fit(self, dataset, targets_to_learn=None, verbose=0, heuristics=None, threads=1):
+    def fit(self, dataset, options=None): # targets_to_learn=None, verbose=0, heuristics=None, threads=1):
         """
         Use the algorithm set by compile() to fit the rules to the dataset.
             - Learn a model from scratch using the chosen algorithm.
@@ -118,8 +113,33 @@ class DMVLP(Model):
         Raises:
             ValueError if the dataset can't be used with the algorithm.
 
+        Args:
+            dataset: pylfit.datasets.DiscreteStateTransitionsDataset
+                state transitions of a the system
+            options: dict string => any
+                targets_to_learn: dict of {String: list of String}
+                    target variables values of the dataset for wich we want to learn rules.
+                    If not given, all targets values will be learned.
+                verbose: int (0 or 1)
+                heuristics: list of string (only for PRIDE)
+                threads: int (>=1)
         """
+        # Options
+        targets_to_learn = None
+        verbose = 0
+        heuristics = None
+        threads = 1
 
+        if options is not None:
+            if "targets_to_learn" in options:
+                targets_to_learn = options["targets_to_learn"]
+            if "verbose" in options:
+                verbose = options["verbose"]
+            if "heuristics" in options:
+                heuristics = options["heuristics"]
+            if "threads" in options:
+                threads = options["threads"]
+            
         # Check parameters
         if not any(isinstance(dataset, i) for i in self._COMPATIBLE_DATASETS):
             msg = 'Dataset type (' + str(dataset.__class__.__name__)+ ') not suported by DMVLP model, must be one of '+ \
@@ -147,9 +167,6 @@ class DMVLP(Model):
         if self.algorithm not in DMVLP._ALGORITHMS:
             raise ValueError('algorithm property must be one element of DMVLP._COMPATIBLE_ALGORITHMS: '+str(DMVLP._ALGORITHMS)+'.')
 
-        # TODO: add time serie management
-        #eprint("algorithm set to " + str(self.algorithm))
-
         msg = 'Dataset type (' + str(dataset.__class__.__name__) + ') not supported \
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
         Dataset must be of type ' + str(DiscreteStateTransitionsDataset.__class__.__name__)
@@ -159,18 +176,15 @@ class DMVLP(Model):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with GULA")
-            self.rules = GULA.fit(dataset=dataset, targets_to_learn=targets_to_learn, verbose=verbose, threads=threads) #, targets_to_learn={'y1': ['1']})
+            self.rules = GULA.fit(dataset=dataset, targets_to_learn=targets_to_learn, verbose=verbose, threads=threads)
         elif self.algorithm == "pride":
             if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with PRIDE")
-            self.rules = PRIDE.fit(dataset=dataset, targets_to_learn=targets_to_learn, verbose=verbose, heuristics=heuristics, threads=threads)
+            self.rules = PRIDE.fit(dataset=dataset, options={"targets_to_learn":targets_to_learn, "verbose":verbose, "heuristics":heuristics, "threads":threads})
         else:
             raise NotImplementedError("Algorithm usage not implemented yet")
-
-        # TODO
-        #raise NotImplementedError('Not implemented yet')
 
     def extend(self, dataset, feature_states, verbose=0):
         """
@@ -181,6 +195,7 @@ class DMVLP(Model):
                 State transitions to learn from.
             feature_states: list of (list of string)
                 Features states that must be matched by the new rules to be found.
+            verbose: int (0 or 1)
         """
         if not isinstance(feature_states, list):
             raise TypeError("Argument feature_states must be a list of list of strings")
@@ -191,26 +206,23 @@ class DMVLP(Model):
         if not all(len(i) == len(self.features) for i in feature_states):
             raise TypeError("Features state must correspond to the model feature variables (bad length)")
 
-        dataset_feature_states = set(tuple(Algorithm.encode_state(s1, dataset.features)) for s1,s2 in dataset.data)
-
         for feature_state in feature_states:
-            encoded_feature_state = Algorithm.encode_state(feature_state, dataset.features)
 
             for var_id, (var,vals) in enumerate(dataset.targets):
                 for val_id, val in enumerate(vals):
 
                     # Check if new rules are needed
+                    head = LegacyAtom(var,set(vals),val,var_id)
                     for r in self.rules:
-                        if r.head_variable == var_id and r.head_value == val_id:
-                            if r.matches(encoded_feature_state):
+                        if r.head == head:
+                            if r.matches(feature_state):
                                 continue
 
                     # usual data conversion
-                    encoded_data = Algorithm.encode_transitions_set(dataset.data, dataset.features, dataset.targets)
-                    positives, negatives = PRIDE.interprete(encoded_data, var_id, val_id)
+                    positives, negatives = PRIDE.interprete(dataset, head)
 
                     # Search for likeliness rules
-                    new_rule = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), positives, negatives, encoded_feature_state, verbose)
+                    new_rule = PRIDE.find_one_optimal_rule_of(head, dataset, positives, negatives, feature_state, verbose)
                     if new_rule is not None:
                         self.rules.append(new_rule)
                     else:
@@ -243,47 +255,21 @@ class DMVLP(Model):
 
         output = dict()
         for feature_state in feature_states:
-            # Encode feature state with domain value id
-            feature_state_encoded = []
-            for var_id, val in enumerate(feature_state):
-                try:
-                    val_id = self.features[var_id][1].index(str(val))
-                except ValueError:
-                    raise ValueError("Bad value in "+str(feature_state)+": "+str(val)+" not in domain of "+str(self.features[var_id][0]))
-                feature_state_encoded.append(val_id)
-
-            #eprint(feature_state_encoded)
-
             target_states = []
             if semantics == "synchronous":
-                target_states = Synchronous.next(feature_state_encoded, self.targets, self.rules, default)
+                target_states = Synchronous.next(feature_state, self.targets, self.rules, default)
             elif semantics == "asynchronous":
                 if len(self.features) != len(self.targets):
                     raise ValueError("Asynchronous semantics can only be used if features and targets variables are the same (for now).")
-                target_states = Asynchronous.next(feature_state_encoded, self.targets, self.rules, default)
+                target_states = Asynchronous.next(feature_state, self.targets, self.rules, default)
             elif semantics == "general":
                 if len(self.features) != len(self.targets):
                     raise ValueError("General semantics can only be used if features and targets variables are the same (for now).")
-                target_states = General.next(feature_state_encoded, self.targets, self.rules, default)
+                target_states = General.next(feature_state, self.targets, self.rules, default)
             else:
                 raise ValueError("Parameter semantics of DMVLP.predict must be one element of ['synchronous', 'asynchronous', 'general']")
 
-
-            # Decode target states
-            local_output = dict()
-
-            for s, rules in target_states.items():
-                target_state = []
-                for var_id, val_id in enumerate(s):
-                    #eprint(var_id, val_id)
-                    if val_id == -1:
-                        target_state.append("?")
-                    else:
-                        target_state.append(self.targets[var_id][1][val_id])
-
-                local_output[tuple(target_state)] = rules
-
-            output[tuple(feature_state)] = local_output
+            output[tuple(feature_state)] = target_states
         return output
 
     def summary(self, line_length=None, print_fn=None):
@@ -317,7 +303,7 @@ class DMVLP(Model):
         else:
             print_fn(" Rules:")
             for r in self.rules:
-                print_fn("  "+r.logic_form(self.features, self.targets))
+                print_fn("  "+str(r))
 
     def to_string(self):
         """
@@ -333,44 +319,34 @@ class DMVLP(Model):
         output += "\nTargets: " + str(self.targets)
         output += "\nRules:\n"
         for r in self.rules:
-            output += r.logic_form(self.features, self.targets) + "\n"
+            output += r.to_string() + "\n"
         output += "}"
 
         return output
 
-    def feature_states(self, value_id_encoded=False):
+    def feature_states(self):
         """
         Compute all possible feature states of the logic program:
         all combination of variables values
 
         Returns:
-            - list of (list of string) if value_id_encoded=False
+            - list of (list of any)
                 All possible feature state of the logic program with their domain string label
-            - list of (list of int) if value_id_encoded=True
-                All possible feature state of the logic program with their domain value id
         """
-        if value_id_encoded:
-            values_ids = [[j for j in range(0,len(self.features[i][1]))] for i in range(0,len(self.features))]
-        else:
-            values_ids = [[self.features[i][1][j] for j in range(0,len(self.features[i][1]))] for i in range(0,len(self.features))]
+        values_ids = [[self.features[i][1][j] for j in range(0,len(self.features[i][1]))] for i in range(0,len(self.features))]
         output = [list(i) for i in list(itertools.product(*values_ids))]
         return output
 
-    def target_states(self, value_id_encoded=False):
+    def target_states(self):
         """
         Compute all possible target state of the logic program:
         all combination of variables values
 
         Returns:
-            - list of (list of string) if value_id_encoded=False
+            - list of (list of any)
                 All possible target state of the logic program with their domain string label
-            - list of (list of int) if value_id_encoded=True
-                All possible target state of the logic program with their domain value id
         """
-        if value_id_encoded:
-            values_ids = [[j for j in range(0,len(self.targets[i][1]))] for i in range(0,len(self.targets))]
-        else:
-            values_ids = [[self.targets[i][1][j] for j in range(0,len(self.targets[i][1]))] for i in range(0,len(self.targets))]
+        values_ids = [[self.targets[i][1][j] for j in range(0,len(self.targets[i][1]))] for i in range(0,len(self.targets))]
         output = [list(i) for i in list(itertools.product(*values_ids))]
         return output
 
@@ -382,7 +358,6 @@ class DMVLP(Model):
 #--------------
 # Properties
 #--------------
-
 
     # TODO: check param type/format
 

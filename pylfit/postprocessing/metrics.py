@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/03/03
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: pylfit metrics functions
 #-------------------------------------------------------------------------------
@@ -62,10 +62,6 @@ def accuracy_score_from_predictions(predictions, dataset):
 
     grouped_transitions = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in dataset.data if tuple(s1) == tuple(s1_)) for s1,s2 in dataset.data}
 
-    #eprint(grouped_transitions)
-
-    #eprint("Extracting expected values")
-
     # expected output: kinda one-hot encoding of values occurences
     expected = {}
     count = 0
@@ -81,25 +77,17 @@ def accuracy_score_from_predictions(predictions, dataset):
                         break
         expected[s1] = occurs
 
-    #eprint("Expected: ", expected)
-    #eprint("Computing predicted values")
-
     # predictions
     predicted = {}
     count = 0
     for s1, successors in grouped_transitions.items():
         count += 1
-        #eprint("\r",count,"/",len(grouped_transitions.items()), end='')
         occurs = {}
         for var_id, (var,values) in enumerate(dataset.targets):
             for val_id, val in enumerate(values):
                 occurs[(var,val)] = predictions[s1][var][val]
 
         predicted[s1] = occurs
-
-    #eprint("Prediction: ", predicted)
-
-    #eprint("\nComputing accuracy score")
 
     # compute average accuracy
     global_error = 0
@@ -115,8 +103,6 @@ def accuracy_score_from_predictions(predictions, dataset):
     global_error = global_error / len(expected.items())
 
     accuracy = 1.0 - global_error
-
-    #eprint("AVG accuracy: " + str(round(accuracy * 100,2)) + "%")
 
     return accuracy
 
@@ -156,19 +142,14 @@ def explanation_score(model, expected_model, dataset):
 
     sum_explanation_score = 0.0
     for feature_state, actual in expected.items():
-        #eprint("Feature state: ", feature_state)
 
         prediction = model.predict(feature_states=[list(feature_state)], raw_rules=True)
         prediction = prediction[feature_state]
-        #eprint(">> prediction: ", prediction)
-        #eprint(">> actual: ", actual)
 
         sum_score = 0.0
         nb_targets = 0
         for var_id, (variable, values) in enumerate(model.targets):
-            #eprint(" "+variable+": ")
             for val_id, (value, (proba, (_, r1), (_, r2))) in enumerate(prediction[variable].items()):
-                #eprint(" "+value+" "+str(round(proba*100.0,2))+"%")
 
                 # No decision or bad prediction implies wrong explanation
                 if proba == 0.5 or (proba > 0.5 and actual[(variable,value)] == 0.0) or (proba < 0.5 and actual[(variable,value)] == 1.0):
@@ -177,18 +158,16 @@ def explanation_score(model, expected_model, dataset):
                     nb_targets += 1
                     continue
 
-                encoded_feature_state = pylfit.algorithms.GULA.encode_state(feature_state, model.features)
-
                 # Predicted likely
                 if proba > 0.5:
                     expected_rules = [r for (w,r) in expected_model.rules \
-                    if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                    if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                     explanation_rule = r1
 
                 # Predicted unlikely
                 if proba < 0.5:
                     expected_rules = [r for (w,r) in expected_model.unlikeliness_rules \
-                    if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                    if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                     explanation_rule = r2
 
                 min_distance = len(model.features)
@@ -201,10 +180,6 @@ def explanation_score(model, expected_model, dataset):
 
                 score = 1.0 - (min_distance / len(model.features))
 
-                #eprint(explanation_type + " explanation evaluation")
-                #eprint("Explanation rule: " + explanation)
-                #eprint("Explanation score: ", end='')
-                #eprint(str(round(score, 2)) + " (nearest expected " + explanation_type + " rule: " + nearest_expected.logic_form(model.features, model.targets) + " distance: " + str(min_distance) + ")")
                 sum_score += score
                 nb_targets += 1
         sum_explanation_score += sum_score / nb_targets
@@ -214,7 +189,7 @@ def explanation_score(model, expected_model, dataset):
 def explanation_score_from_predictions(predictions, expected_model, dataset):
     """
     Args:
-        prediction: dict {tuple of string: {string: {string: (float,(float,Rule),(float,Rule))}}}
+        predictions: dict {tuple of string: {string: {string: (float,(float,Rule),(float,Rule))}}}
             Predictions of probability and explanation of each target variable value occurence for each feature_state of the dataset,
             i.e. dict {feature_state: {target_variable: {domain_value: (probability, (likeliness_weight, likliness_rule), unlikeliness_weight, unlikeliness_rule))}}}, with 0.0 <= probability <= 1.0.
         expected_model: WDMVLP
@@ -240,8 +215,6 @@ def explanation_score_from_predictions(predictions, expected_model, dataset):
         if dataset_domain != predictions_domain:
             raise ValueError("Predictions and dataset targets domains are different")
 
-    # TODO: check feature states are same
-
     grouped_transitions = {tuple(s1) : set(tuple(s2_) for s1_,s2_ in dataset.data if tuple(s1) == tuple(s1_)) for s1,s2 in dataset.data}
 
     # expected output: kinda one-hot encoding of values occurences
@@ -261,18 +234,12 @@ def explanation_score_from_predictions(predictions, expected_model, dataset):
 
     sum_explanation_score = 0.0
     for feature_state, actual in expected.items():
-        #eprint("Feature state: ", feature_state)
 
         prediction = predictions[feature_state]
-        #eprint(">> prediction: ", prediction)
-        #eprint(">> actual: ", actual)
-
         sum_score = 0.0
         nb_targets = 0
         for var_id, (variable, values) in enumerate(dataset.targets):
-            #eprint(" "+variable+": ")
             for val_id, (value, (proba, (w1, r1), (w2, r2))) in enumerate(prediction[variable].items()):
-                #eprint(" "+value+" "+str(round(proba*100.0,2))+"%")
 
                 # No decision or bad prediction implies wrong explanation
                 if proba == 0.5 or (proba > 0.5 and actual[(variable,value)] == 0.0) or (proba < 0.5 and actual[(variable,value)] == 1.0):
@@ -281,18 +248,17 @@ def explanation_score_from_predictions(predictions, expected_model, dataset):
                 # Extract explanation
                 else:
                     explanation_rule = None
-                    encoded_feature_state = pylfit.algorithms.GULA.encode_state(feature_state, dataset.features)
 
                     # Predicted likely
                     if proba > 0.5:
                         expected_rules = [r for (w,r) in expected_model.rules \
-                        if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                        if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                         explanation_rule = r1
 
                     # Predicted unlikely
                     if proba < 0.5:
                         expected_rules = [r for (w,r) in expected_model.unlikeliness_rules \
-                        if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                        if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                         explanation_rule = r2
 
                     if explanation_rule == None:
@@ -326,9 +292,9 @@ def hamming_distance(rule_1, rule_2):
         the number of differents conditions between the two rules.
     """
     cond_var = set()
-    for var,val in rule_1.body:
+    for var in rule_1.body:
         cond_var.add(var)
-    for var, val in rule_2.body:
+    for var in rule_2.body:
         cond_var.add(var)
 
     distance = 0

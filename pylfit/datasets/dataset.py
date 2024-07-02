@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: Interface class of LFIT datasets
 #   - Features/target variables labels and domain
@@ -35,6 +35,7 @@ class Dataset():
         Constructor of an empty dataset
 
         Args:
+            data: list of any
             features: list of pair (string, list of objects)
                 Feature variables name and domain
             targets: list of pair (string, list of objects)

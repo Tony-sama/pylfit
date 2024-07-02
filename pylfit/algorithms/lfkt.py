@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2019/05/03
+# @updated: 2023/12/27
 #
 # @desc: simple LFkT implementation, extension of LF1T for learning delayed influences.
 #   - INPUT: time series of discrete muli-valued states
@@ -21,12 +21,9 @@
 #-----------------------
 
 from ..utils import eprint
-from ..objects.rule import Rule
-from ..objects.logicProgram import LogicProgram
+from ..objects.legacyAtom import LegacyAtom
 from ..algorithms.gula import GULA
 from ..algorithms.algorithm import Algorithm
-
-import csv
 
 class LFkT (Algorithm):
     """
@@ -37,78 +34,63 @@ class LFkT (Algorithm):
         - deterministic
         - delayed
     INPUT: a set of sequences of states
-    OUTPUT: a logic program with delayed influences
+    OUTPUT: a list of logic rules with delayed influences
     """
 
     @staticmethod
-    def fit(data, feature_domains, target_domains): #variables, values, time_series):
+    def fit(time_series, features, targets):
         """
         Preprocess transitions and learn rules for all variables/values.
 
         Args:
-            data: list of list (list of int, list of int)
-                sequences of state transitions of the system
-            variables: list of string
-                variables of the system
-            values: list of list of string
-                possible value of each variable
+            time_series: list of list (list of any, list of any)
+                sequences of state transitions of the system.
+            features: list of pair (string, list of any)
+                features variables of the system and their domain.
+            targets: list of pair (string, list of any)
+                targets variables of the system and their domain.
 
         Returns:
-            LogicProgram
+            list of Rule
                 A logic program whose rules:
                     - explain/reproduce all the input transitions
                         - are minimals
         """
-        #eprint("Start LFkT learning...")
-
-        # Nothing to learn
-        if len(data) == 0:
-            return LogicProgram(feature_domains, target_domains, [])
-
         rules = []
 
-        final_feature_domains = feature_domains
+        final_features = features
 
         # Learn rules for each variable/value
-        for var in range(0, len(target_domains)):
-            for val in range(0, len(target_domains[var][1])):
-                positives, negatives, delay = LFkT.interprete(data, feature_domains, target_domains, var, val)
+        for var_id, (var,vals) in enumerate(targets):
+            for val in vals:
+                head = LegacyAtom(var, set(vals), val, var_id)
+                positives, negatives, delay = LFkT.interprete(time_series, head)
 
                 # Extend Herbrand Base
-                extended_feature_domains = []
+                extended_features = dict()
                 for d in range(1,delay+1):
-                    extended_feature_domains = [(var+"_"+str(d),vals) for (var,vals) in feature_domains] + extended_feature_domains
+                    for var_id_, (var_,vals_) in enumerate(features):
+                        extended_features[var_+"_t-"+str(d)] = LegacyAtom(var_+"_t-"+str(d),vals_,None,var_id_).void_atom()
 
-                rules += GULA.fit_var_val(extended_feature_domains, var, val, negatives)
+                rules += GULA.fit_var_val(head, extended_features, negatives)
 
-                if len(extended_feature_domains) > len(final_feature_domains):
-                    final_feature_domains = extended_feature_domains
+                if len(extended_features) > len(final_features):
+                    final_features = extended_features
 
-        # Instanciate output logic program
-        output = LogicProgram(final_feature_domains, target_domains, rules)
-
-        return output
+        return rules
 
 
     @staticmethod
-    def interprete(time_series, feature_domains, target_domains, variable, value):
+    def interprete(time_series, head):
         """
         Split the time series into positive/negatives meta-states for the given variable/value
 
         Args:
-            time_series: list of list (list of int, list of int)
+            time_series: list of list of pair (list of any, list of any)
                 sequences of state transitions of the system
-            feature_domains: list of (String, list of String)
-                feature variables of the system and their values
-            target_domains: list of (String, list of String)
-                target variables of the system and their values
-            variable: int
-                variable id
-            value: int
-                variable value id
+            head: LegacyAtom
+                the target atom
         """
-        # DBG
-        #eprint("Interpreting transitions...")
         positives = []
         negatives = []
 
@@ -126,7 +108,7 @@ class LFkT (Algorithm):
                         next_2 = serie_2[id_state_2+1]
 
                         # Non-determinism detected
-                        if state_1 == state_2 and next_1[variable] != next_2[variable]:
+                        if state_1 == state_2 and head.matches(next_1) != head.matches(next_2):
                             local_delay = 2
                             id_1 = id_state_1
                             id_2 = id_state_2
@@ -141,17 +123,14 @@ class LFkT (Algorithm):
 
                             global_delay = max(global_delay, local_delay)
 
-        #eprint("Delay found: ", global_delay)
-
         # 1) Aggregate states according to delay
         #----------------------------------------
         for serie in time_series:
             state_id = len(serie)-1
             while state_id >= global_delay:
                 state = serie[state_id-global_delay:state_id].copy() # extract states
-                #state.reverse()
                 state = [y for x in state for y in x] # fusion states
-                if serie[state_id][variable] == value:
+                if head.matches(serie[state_id]):
                     positives.append(state)
                 else:
                     negatives.append(state)

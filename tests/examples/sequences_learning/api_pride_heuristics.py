@@ -116,7 +116,7 @@ def generate_hidden_rules(data, feature_states, targets):
     return hidden_rules
 
 # Classify pos/neg states according to hidden rules
-def classify_data(data, features):
+def classify_data(data, features, hidden_rules):
     classified_data = []
     for s in data:
         label = "neg"
@@ -236,7 +236,7 @@ if __name__ == '__main__':
 
         # Classify pos/neg states according to hidden rules
         print(">> Classify data according to hidden rules...")
-        data = classify_data(data, features)
+        data = classify_data(data, features, hidden_rules)
 
         # Make hidden rules into optimal rules
         print("Make hidden rules optimal w.r.t. classified data...")

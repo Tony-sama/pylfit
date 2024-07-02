@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/11/25
-# @updated: 2019/11/25
+# @updated: 2023/12/26
 #
 # @desc: PyLFIT unit test script
 #
@@ -28,7 +28,7 @@ from tests_generator import random_DMVLP, random_DiscreteStateTransitionsDataset
 import itertools
 import math
 
-random.seed(0)
+#random.seed(0)
 
 
 class ProbalizerTest(unittest.TestCase):
@@ -36,7 +36,7 @@ class ProbalizerTest(unittest.TestCase):
         Unit test of class Probalizer from probabilizer.py
     """
 
-    _nb_tests = 10
+    _nb_tests = 100
 
     _nb_transitions = 100
 
@@ -161,27 +161,22 @@ class ProbalizerTest(unittest.TestCase):
 
                             # Only original transitions are produced from observed states
                             for s1, s2 in final_encoded_input.data:
-                                s1_encoded = []
-                                for var_id, val in enumerate(s1):
-                                    val_id = final_encoded_input.features[var_id][1].index(str(val))
-                                    s1_encoded.append(val_id)
-
                                 if not synchronous_independant:
-                                    encoded_target_states = SynchronousConstrained.next(s1_encoded, final_encoded_input.targets, rules, constraints).keys()
+                                    encoded_target_states = SynchronousConstrained.next(s1, final_encoded_input.targets, rules, constraints).keys()
                                 else:
-                                    encoded_target_states = Synchronous.next(s1_encoded, final_encoded_input.targets, rules).keys()
+                                    encoded_target_states = Synchronous.next(s1, final_encoded_input.targets, rules).keys()
 
-                                target_states = []
-                                for s in encoded_target_states:
-                                    target_state = []
-                                    for var_id, val_id in enumerate(s):
-                                        #eprint(var_id, val_id)
-                                        if val_id == -1:
-                                            target_state.append("?")
-                                        else:
-                                            target_state.append(final_encoded_input.targets[var_id][1][val_id])
-
-                                    target_states.append(target_state)
+                                target_states = encoded_target_states
+                                #target_states = []
+                                #for s in encoded_target_states:
+                                #    target_state = []
+                                #    for var_id, val_id in enumerate(s):
+                                #        #eprint(var_id, val_id)
+                                #        if val_id == -1:
+                                #            target_state.append("?")
+                                #        else:
+                                #            target_state.append(final_encoded_input.targets[var_id][1][val_id])
+                                #    target_states.append(target_state)
 
                                 #eprint(s2)
                                 #eprint(next)
@@ -190,9 +185,9 @@ class ProbalizerTest(unittest.TestCase):
                                 #eprint(s1)
                                 #eprint(target_states)
                                 #eprint(s2)
-                                self.assertTrue(list(s2) in target_states)
+                                self.assertTrue(tuple(s2) in target_states)
                                 for s in target_states:
-                                    self.assertTrue((list(s1),list(s)) in [(list(s1_),list(s2_)) for (s1_,s2_) in final_encoded_input.data])
+                                    self.assertTrue((tuple(s1),tuple(s)) in [(tuple(s1_),tuple(s2_)) for (s1_,s2_) in final_encoded_input.data])
 
                             # Ratio of learn rules fit to data
 

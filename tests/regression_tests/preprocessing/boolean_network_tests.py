@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/06/14
-# @updated: 2021/06/15
+# @updated: 2023/12/26
 #
 # @desc: boolean network class unit test script
 #
@@ -329,16 +329,20 @@ class boolean_network_tests(unittest.TestCase):
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule, model.features, model.targets))
+            expected_rules.append(Rule.from_string(string_rule).to_string())
+
+        output_rules = []
+        for r in model.rules:
+            output_rules.append(r.to_string())
 
         for r in expected_rules:
-            if r not in model.rules:
-                eprint("Missing rule: ", r.logic_form(model.features, model.targets), " (", r.to_string(),")")
-            self.assertTrue(r in model.rules)
+            if r not in output_rules:
+                eprint("Missing rule: ", r)
+            self.assertTrue(r in output_rules)
 
-        for r in model.rules:
+        for r in output_rules:
             if r not in expected_rules:
-                eprint("Additional rule: ", r.logic_form(model.features, model.targets), " (", r.to_string(),")")
+                eprint("Additional rule: ", r)
             self.assertTrue(r in expected_rules)
 
 

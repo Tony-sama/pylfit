@@ -1,15 +1,13 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/07/14
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: simple implementation of general semantic over DMVLP
 #   - Update any number of variables at a time
 #   - Can generate non-deterministic transitions
 #-----------------------
 
-from .. import utils
-from ..objects import rule
 from ..semantics.semantics import Semantics
 from ..utils import eprint
 
@@ -32,10 +30,12 @@ class General(Semantics):
                 Targets variables domains.
             rules: list of Rule.
                 A list of multi-valued logic rules.
+            default: list of pair (string, any)
+                default value for each variables
 
         Returns:
-            list of (list of int).
-                the possible next states according to the rules.
+            dict of list of any:list of rules.
+                the possible next states and the rules that produce it according to the semantics.
         """
 
         output = []
@@ -45,14 +45,14 @@ class General(Semantics):
         # extract conclusion of all matching rules
         for r in rules:
             if(r.matches(feature_state)):
-                domains[r.head_variable].add(r.head_value)
+                domains[r.head.state_position].add(r.head.value)
                 matching_rules.append(r)
 
         # Check variables without next value
         for i,domain in enumerate(domains):
             if len(domain) == 0:
                 if default == None:
-                    domains[i] = set([-1])
+                    domains[i] = set(["?"])
                 else:
                     domains[i] = set(default[i][1])
 
@@ -67,7 +67,7 @@ class General(Semantics):
         for s in target_states:
             realised_by = []
             for r in matching_rules:
-                if r.head_value == s[r.head_variable]:
+                if r.head.matches(s):
                     realised_by.append(r)
             output[tuple(s)] = realised_by
 

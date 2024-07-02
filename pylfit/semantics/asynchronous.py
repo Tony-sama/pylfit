@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/07/14
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: simple implementation of asynchronous semantic over LogicProgram
 #   - Update atmost one variables at a time
@@ -9,10 +9,7 @@
 #-----------------------
 
 from ..utils import eprint
-from ..objects.rule import Rule
 from ..semantics.semantics import Semantics
-
-import itertools
 
 class Asynchronous(Semantics):
     """
@@ -32,19 +29,15 @@ class Asynchronous(Semantics):
                 Targets variables domains.
             rules: list of Rules.
                 A list of multi-valued logic rules.
+            default: list of pair (string, any)
+                default value for each variables
 
         Returns:
-            list of (list of int).
-                the possible next states according to the rules.
+            dict of list of any:list of rules.
+                the possible next states and the rules that produce it according to the semantics.
         """
 
         # TODO: add projection to argument to handle different features/targets
-
-        #eprint("-- Args --")
-        #eprint("state: ", state)
-        #eprint("targets: ", targets)
-        #eprint("rules: ", rules)
-
         output = []
         domains = [set() for var in targets]
         matching_rules = []
@@ -52,17 +45,14 @@ class Asynchronous(Semantics):
         # extract conclusion of all matching rules
         for r in rules:
             if(r.matches(feature_state)):
-                domains[r.head_variable].add(r.head_value)
+                domains[r.head.state_position].add(r.head.value)
                 matching_rules.append(r)
-
-        # DBG
-        #eprint("domains: ", domains)
 
         # Check variables without next value
         for i,domain in enumerate(domains):
             if len(domain) == 0:
-                if default == None:
-                    domains[i] = set([-1])
+                if default is None:
+                    domains[i] = set(["?"])
                 else:
                     domains[i] = set(default[i][1])
 
@@ -76,13 +66,10 @@ class Asynchronous(Semantics):
                 if feature_state[var_id] != val:
                     s2 = list(feature_state)
                     s2[var_id] = val
-                    output[tuple(s2)] = [r for r in matching_rules if r.head_value == s2[r.head_variable]]
+                    output[tuple(s2)] = [r for r in matching_rules if r.head.matches(s2)]
 
         # Self loop if no possible transitions
         if len(output) == 0:
             output[tuple(feature_state)] = []
-
-        # DBG
-        #eprint("possible: ", possible)
 
         return output

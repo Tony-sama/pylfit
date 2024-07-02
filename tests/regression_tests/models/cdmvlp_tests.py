@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/05
-# @updated: 2021/06/15
+# @updated: 2023/12/22
 #
 # @desc: CCDMVLP class regression test script
 # done:
@@ -250,51 +250,26 @@ class CDMVLP_tests(unittest.TestCase):
 
                 prediction = model.predict(feature_states)
 
-                for state_id, s1 in enumerate(feature_states):
-                    feature_state_encoded = []
-                    for var_id, val in enumerate(s1):
-                        val_id = model.features[var_id][1].index(str(val))
-                        feature_state_encoded.append(val_id)
+                for s1 in feature_states:
 
                     #eprint(feature_state_encoded)
 
-                    target_states = SynchronousConstrained.next(feature_state_encoded, model.targets, model.rules, model.constraints)
+                    target_states = SynchronousConstrained.next(s1, model.targets, model.rules, model.constraints)
                     output = []
                     for s2, rules in target_states.items():
-                        target_state = []
-                        for var_id, val_id in enumerate(s2):
-                            #eprint(var_id, val_id)
-                            if val_id == -1:
-                                target_state.append("?")
-                            else:
-                                target_state.append(model.targets[var_id][1][val_id])
-                        output.append(tuple(target_state))
+                        output.append(tuple(s2))
 
                     self.assertEqual([s2 for s2 in prediction[s1]], output)
 
                 # Force missing value
-                model.rules = [r for r in model.rules if r.head_variable != random.randint(0,len(model.targets))]
+                model.rules = [r for r in model.rules if r.head.variable != random.choice([var for var,vals in model.targets])]
 
                 prediction = model.predict(feature_states)
-                for state_id, s1 in enumerate(feature_states):
-                    feature_state_encoded = []
-                    for var_id, val in enumerate(s1):
-                        val_id = model.features[var_id][1].index(str(val))
-                        feature_state_encoded.append(val_id)
-
-                    #eprint(feature_state_encoded)
-
-                    target_states = SynchronousConstrained.next(feature_state_encoded, model.targets, model.rules, model.constraints)
+                for s1 in feature_states:
+                    target_states = SynchronousConstrained.next(s1, model.targets, model.rules, model.constraints)
                     output = []
                     for s2, rules in target_states.items():
-                        target_state = []
-                        for var_id, val_id in enumerate(s2):
-                            #eprint(var_id, val_id)
-                            if val_id == -1:
-                                target_state.append("?")
-                            else:
-                                target_state.append(model.targets[var_id][1][val_id])
-                        output.append(tuple(target_state))
+                        output.append(tuple(s2))
 
                     self.assertEqual([s2 for s2 in prediction[s1]], output)
 
@@ -313,11 +288,6 @@ class CDMVLP_tests(unittest.TestCase):
 
                 feature_states[state_id].extend(["0" for i in range(random.randint(1,10))])
                 self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features >
-                feature_states[state_id] = original.copy()
-
-                var_id = random.randint(0,len(dataset.features)-1)
-                feature_states[state_id][var_id] = "bad_value"
-                self.assertRaises(ValueError, model.predict, feature_states) # Feature_states bad format: value out of domain
                 feature_states[state_id] = original.copy()
 
     def test_summary(self):
@@ -376,13 +346,13 @@ class CDMVLP_tests(unittest.TestCase):
                 else:
                     expected_print +=" Rules:\n"
                     for r in model.rules:
-                        expected_print += "  "+r.logic_form(model.features, model.targets)+"\n"
+                        expected_print += "  "+r.to_string()+"\n"
                 if len(model.constraints) == 0:
                     expected_print +=" Constraints: []\n"
                 else:
                     expected_print +=" Constraints:\n"
                     for r in model.constraints:
-                        expected_print += "  "+r.logic_form(model.features, model.targets)+"\n"
+                        expected_print += "  "+r.to_string()+"\n"
 
                 old_stdout = sys.stdout
                 sys.stdout = mystdout = StringIO()
@@ -415,9 +385,9 @@ class CDMVLP_tests(unittest.TestCase):
                  "\nTargets: "+ str(model.targets)+\
                  "\nRules:\n"
                 for r in model.rules:
-                    expected += r.logic_form(model.features, model.targets) + "\n"
+                    expected += r.to_string() + "\n"
                 for r in model.constraints:
-                    expected += r.logic_form(model.features, model.targets) + "\n"
+                    expected += r.to_string() + "\n"
                 expected += "}"
 
                 self.assertEqual(model.to_string(), expected)

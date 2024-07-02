@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/01
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: class PDMVLP python source code file
 #-------------------------------------------------------------------------------
@@ -9,16 +9,10 @@
 from ..models import CDMVLP
 
 from ..utils import eprint
-from ..objects import Rule
-
 from ..datasets import DiscreteStateTransitionsDataset
-
-from ..algorithms import Algorithm, Probalizer
-
+from ..algorithms import Probalizer
 from ..semantics import SynchronousConstrained
 
-import itertools
-import random
 import numpy
 
 class PDMVLP(CDMVLP):
@@ -70,6 +64,7 @@ class PDMVLP(CDMVLP):
         Supported algorithms:
             - "gula", General Usage LFIT Algorithm
             - "pride", Polynomial heuristic version of GULA
+            - "synchronizer", GULA + constraint learning
 
         """
 
@@ -105,9 +100,6 @@ class PDMVLP(CDMVLP):
         if self.algorithm not in PDMVLP._ALGORITHMS:
             raise ValueError('algorithm property must be one element of PDMVLP._COMPATIBLE_ALGORITHMS: '+str(PDMVLP._ALGORITHMS)+'.')
 
-        # TODO: add time serie management
-        #eprint("algorithm set to " + str(self.algorithm))
-
         msg = 'Dataset type (' + str(dataset.__class__.__name__) + ') not supported \
         by the algorithm (' + str(self.algorithm.__class__.__name__) + '). \
         Dataset must be of type ' + str(DiscreteStateTransitionsDataset.__class__.__name__)
@@ -117,7 +109,7 @@ class PDMVLP(CDMVLP):
                 raise ValueError(msg)
             if verbose > 0:
                 eprint("Starting fit with GULA")
-            self.targets, self.rules, _ = Probalizer.fit(dataset=dataset, complete=True, verbose=0, threads=threads) #, targets_to_learn={'y1': ['1']})
+            self.targets, self.rules, _ = Probalizer.fit(dataset=dataset, complete=True, verbose=0, threads=threads)
         elif self.algorithm == "pride":
             if not isinstance(dataset, DiscreteStateTransitionsDataset):
                 raise ValueError(msg)
@@ -152,30 +144,13 @@ class PDMVLP(CDMVLP):
 
         output = dict()
         for feature_state in feature_states:
-            # Encode feature state with domain value id
-            feature_state_encoded = []
-            for var_id, val in enumerate(feature_state):
-                try:
-                    val_id = self.features[var_id][1].index(str(val))
-                except ValueError:
-                    raise ValueError("Bad value in "+str(feature_state)+": "+str(val)+" not in domain of "+str(self.features[var_id][0]))
-                feature_state_encoded.append(val_id)
-
-            #eprint(feature_state_encoded)
-
-            target_states = SynchronousConstrained.next(feature_state_encoded, self.targets, self.rules, self.constraints)
+            target_states = SynchronousConstrained.next(feature_state, self.targets, self.rules, self.constraints)
 
             # Decode target states
             local_output = dict()
 
             for s, rules in target_states.items():
-                target_state = []
-                for var_id, val_id in enumerate(s):
-                    #eprint(var_id, val_id)
-                    if val_id == -1:
-                        target_state.append("?")
-                    else:
-                        target_state.append(self.targets[var_id][1][val_id])
+                target_state = list(s)
 
                 # proba of target state
                 if self.algorithm == "synchronizer":

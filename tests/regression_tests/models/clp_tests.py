@@ -42,7 +42,7 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 from tests_generator import random_ContinuousStateTransitionsDataset, random_ContinuumRule, random_CLP, random_continuous_state
 
-random.seed(0)
+#random.seed(0)
 
 class CLP_tests(unittest.TestCase):
     """

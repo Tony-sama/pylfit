@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/03
-# @updated: 2021/06/15
+# @updated: 2023/12/22
 #
 # @desc: Synchronizer regression test script
 # Tests algorithm methods on benchmark dataset
@@ -188,41 +188,48 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
 
     def _check_rules_and_predictions(self, dataset, expected_string_rules, expected_string_constraints):
         expected_string_rules = [s.strip() for s in expected_string_rules.strip().split("\n") if len(s) > 0 ]
+
         expected_string_constraints = [s.strip() for s in expected_string_constraints.strip().split("\n") if len(s) > 0 ]
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule, dataset.features, dataset.targets))
+            expected_rules.append(Rule.from_string(string_rule).to_string())
 
         expected_constraints = []
         for string_constraint in expected_string_constraints:
-            expected_constraints.append(Rule.from_string(string_constraint, dataset.features, dataset.targets))
+            expected_constraints.append(Rule.from_string(string_constraint).to_string())
 
         #eprint(expected_rules)
 
         rules, constraints = Synchronizer.fit(dataset)
 
+        
+        rules_str = [r.to_string() for r in rules]
+        constraints_str = [r.to_string() for r in constraints]
+
+        #eprint(rules_str)
+        #eprint(constraints_str)
         #eprint(output)
 
         for r in expected_rules:
-            if r not in rules:
-                eprint("Missing rule: ", r)
-            self.assertTrue(r in rules)
+            if r not in rules_str:
+                eprint("Missing rule: '", r)
+            self.assertTrue(r in rules_str)
 
-        for r in rules:
+        for r in rules_str:
             if r not in expected_rules:
                 eprint("Additional rule: ", r)
             self.assertTrue(r in expected_rules)
 
         for r in expected_constraints:
-            if r not in constraints:
+            if r not in constraints_str:
                 eprint("Missing constraint: ", r)
-            self.assertTrue(r in constraints)
+            self.assertTrue(r in constraints_str)
 
-        for r in constraints:
+        for r in constraints_str:
             if r not in expected_constraints:
                 eprint("Additional constraint: ", r)
-            self.assertTrue(r in constraints)
+            self.assertTrue(r in expected_constraints)
 
         model = CDMVLP(dataset.features, dataset.targets, rules, constraints)
 

@@ -1,15 +1,16 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2022/10/17
-# @updated: 2022/10/17
+# @updated: 2023/12/27
 #
 # @desc: PyLFIT unit test script
 #
 #-----------------------
 
-EXAMPLE_FOLDER = "examples/"
+EXAMPLE_FOLDER = ".\\examples\\"
 
 import os
+import subprocess
 
 example_files = [
     "api_acedia_example.py",
@@ -26,12 +27,8 @@ example_files = [
 
 for f in example_files:
 
-    cmd = "python3 "+EXAMPLE_FOLDER+f
-    print(cmd)
-
-    result = os.system(cmd+" > /dev/null")
-    if 0 == result:
-        print(" OK")
-    else:
-        print(" ERROR")
-        break
+    print("*******************************************")
+    print(f)
+    print("*******************************************")
+    result = subprocess.run(["python", EXAMPLE_FOLDER+f], capture_output=True, text=True)
+    print(result.stdout)

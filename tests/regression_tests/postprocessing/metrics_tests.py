@@ -23,7 +23,7 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 from tests_generator import random_rule, random_WDMVLP, random_DiscreteStateTransitionsDataset
 
-random.seed(0)
+#random.seed(0)
 
 class metrics_tests(unittest.TestCase):
     """
@@ -59,8 +59,9 @@ class metrics_tests(unittest.TestCase):
 
             distance = random.randint(0,r1.size())
 
+            cond = [var for var in r2.body]
             for d in range(distance):
-                r2.pop_condition()
+                r2.remove_condition(cond[d])
 
             self.assertEqual(hamming_distance(r1,r2), distance)
             self.assertEqual(hamming_distance(r2,r1), distance)
@@ -76,7 +77,7 @@ class metrics_tests(unittest.TestCase):
             r2 = random_rule(nb_features, nb_targets, nb_values, min(self._max_body_size,nb_features-1))
 
             distance = 0
-            for var in range(nb_features):
+            for var in set([var for var in r1.body]).union([var for var in r2.body]):
                 if r1.get_condition(var) != r2.get_condition(var):
                     distance += 1
             self.assertEqual(hamming_distance(r1,r2), distance)
@@ -593,18 +594,16 @@ class metrics_tests(unittest.TestCase):
                             nb_targets += 1
                             continue
 
-                        encoded_feature_state = pylfit.algorithms.GULA.encode_state(feature_state, model.features)
-
                         # Predicted likely
                         if proba > 0.5:
                             expected_rules = [r for (w,r) in optimal_model.rules \
-                            if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                            if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                             explanation_rule = r1
 
                         # Predicted unlikely
                         if proba < 0.5:
                             expected_rules = [r for (w,r) in optimal_model.unlikeliness_rules \
-                            if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                            if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                             explanation_rule = r2
 
                         min_distance = len(model.features)
@@ -838,18 +837,16 @@ class metrics_tests(unittest.TestCase):
                             nb_targets += 1
                             continue
 
-                        encoded_feature_state = pylfit.algorithms.GULA.encode_state(feature_state, model.features)
-
                         # Predicted likely
                         if proba > 0.5:
                             expected_rules = [r for (w,r) in optimal_model.rules \
-                            if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                            if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                             explanation_rule = r1
 
                         # Predicted unlikely
                         if proba < 0.5:
                             expected_rules = [r for (w,r) in optimal_model.unlikeliness_rules \
-                            if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state)]
+                            if r.head.variable == variable and r.head.value == value and r.matches(feature_state)]
                             explanation_rule = r2
 
                         min_distance = len(model.features)

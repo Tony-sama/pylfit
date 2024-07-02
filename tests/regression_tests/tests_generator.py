@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2022/08/29
+# @updated: 2023/12/20
 #
 # @desc: regression tests generator script.
 # Provide random factory function for pylfit regression tests.
@@ -17,24 +17,37 @@ import numpy
 from pylfit.objects import Rule, Continuum, ContinuumRule
 from pylfit.datasets import DiscreteStateTransitionsDataset, ContinuousStateTransitionsDataset
 from pylfit.models import DMVLP, CDMVLP, WDMVLP, PDMVLP, CLP
+from pylfit.objects.legacyAtom import LegacyAtom
 
 #--------------
 # DMVLP
 #--------------
 
+def random_legacy_atom(nb_variables, nb_values):
+    var = str(random.randint(0,nb_variables-1))
+    if nb_values <= 2:
+        dom = ["0","1"]
+    else:
+        dom = [str(i) for i in range(random.randint(2,nb_values))]
+    val = random.choice(dom)
+    pos = random.randint(0,nb_variables-1)
+    return LegacyAtom(var, dom, val, pos)
+
 def random_rule(nb_features, nb_targets, nb_values, max_body_size):
-    head_var = random.randint(0,nb_targets-1)
-    head_val = random.randint(0,nb_values-1)
-    body = []
-    conditions = []
+    head = random_legacy_atom(nb_targets, nb_values)
+    body = {}
     nb_conditions = random.randint(0,max_body_size)
     while len(body) < nb_conditions:
-        var = random.randint(0,nb_features-1)
-        val = random.randint(0,nb_values-1)
-        if var not in conditions:
-            body.append( (var, val) )
-            conditions.append(var)
-    r = Rule(head_var,head_val,nb_features,body)
+        atom = random_legacy_atom(nb_features, nb_values)
+        valid = True
+        for var in body:
+            if body[var].state_position == atom.state_position:
+                valid = False
+                break
+        if valid:
+            body[atom.variable] = atom
+        
+    r = Rule(head,body)
 
     return r
 
@@ -197,3 +210,23 @@ def random_CLP(nb_features, nb_targets, algorithm):
 
 def random_continuous_state(variables):
     return [random.uniform(variables[var][1].min_value,variables[var][1].max_value) for var in range(len(variables))]
+
+
+#----------
+# Unknowns
+#----------
+
+def random_unknown_values_dataset(data):
+    output = []
+    for (i,j) in data:
+        replace_count = random.randint(0, len(i))
+        i_ = i.copy()
+        if replace_count > 0:
+            i_.flat[numpy.random.choice(len(i), replace_count, replace=False)] = LegacyAtom._UNKNOWN_VALUE
+
+        replace_count = random.randint(0, len(j))
+        j_ = j.copy()
+        if replace_count > 0:
+            j_.flat[numpy.random.choice(len(j), replace_count, replace=False)] = LegacyAtom._UNKNOWN_VALUE
+        output.append((i_,j_))
+    return output

@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2021/06/15
+# @updated: 2023/12/13
 #
 # @desc: dmvlp class unit test script
 # done:
@@ -29,6 +29,7 @@ import contextlib
 from io import StringIO
 
 import pylfit
+from pylfit.objects import LegacyAtom
 from pylfit.objects import Rule
 from pylfit.models import DMVLP
 from pylfit.algorithms import Algorithm, GULA, PRIDE
@@ -194,7 +195,7 @@ class DMVLP_tests(unittest.TestCase):
 
         self.assertRaises(ValueError, model.compile, "lol")
         #self.assertRaises(NotImplementedError, model.compile, "pride")
-        self.assertRaises(NotImplementedError, model.compile, "lf1t")
+        #self.assertRaises(NotImplementedError, model.compile, "lf1t")
 
     def test_fit(self):
         print(">> DMVLP.fit(dataset, verbose)")
@@ -213,7 +214,7 @@ class DMVLP_tests(unittest.TestCase):
                 model.compile(algorithm="gula")
                 f = io.StringIO()
                 with contextlib.redirect_stderr(f):
-                    model.fit(dataset=dataset, verbose=verbose)
+                    model.fit(dataset=dataset, options={"verbose":verbose})
 
                 expected_rules = GULA.fit(dataset)
                 self.assertEqual(expected_rules, model.rules)
@@ -222,7 +223,7 @@ class DMVLP_tests(unittest.TestCase):
                 model.compile(algorithm="pride")
                 f = io.StringIO()
                 with contextlib.redirect_stderr(f):
-                    model.fit(dataset=dataset, verbose=verbose)
+                    model.fit(dataset=dataset, options={"verbose":verbose})
 
                 expected_rules = PRIDE.fit(dataset)
                 self.assertEqual(expected_rules, model.rules)
@@ -237,14 +238,14 @@ class DMVLP_tests(unittest.TestCase):
                     self.assertRaises(ValueError, model.fit, None, []) # dataset is not of valid type
 
                     model.algorithm = "gulaaaaa"
-                    self.assertRaises(ValueError, model.fit, dataset, None, verbose) # algorithm is not of valid
+                    self.assertRaises(ValueError, model.fit, dataset, {"verbose":verbose}) # algorithm is not of valid
                     model.algorithm = algorithm
 
-                    self.assertRaises(ValueError, model.fit, dataset, "", verbose) # targets_to_learn is not of valid
-                    self.assertRaises(ValueError, model.fit, dataset, {var:vals for var,vals in model.targets+model.features}, verbose) # targets_to_learn is not of valid
+                    self.assertRaises(ValueError, model.fit, dataset, {"targets_to_learn": "", "verbose":verbose}) # targets_to_learn is not of valid
+                    self.assertRaises(ValueError, model.fit, dataset, {"targets_to_learn": {var:vals for var,vals in model.targets+model.features}, "verbose":verbose}) # targets_to_learn is not of valid
                     bad_targets = model.targets.copy()
                     bad_targets[0] = (bad_targets[0][0],["lol","nope"])
-                    self.assertRaises(ValueError, model.fit, dataset, {var:vals for var,vals in bad_targets}, verbose) # targets_to_learn is not of valid
+                    self.assertRaises(ValueError, model.fit, dataset, {"targets_to_learn": {var:vals for var,vals in bad_targets}, "verbose":verbose}) # targets_to_learn is not of valid
 
                     original = DMVLP._COMPATIBLE_DATASETS.copy()
                     class newdataset(Dataset):
@@ -275,12 +276,12 @@ class DMVLP_tests(unittest.TestCase):
                             self._targets = value
 
                     DMVLP._COMPATIBLE_DATASETS = [newdataset]
-                    self.assertRaises(ValueError, model.fit, newdataset([],[],[]), None, verbose) # dataset not supported by the algo
+                    self.assertRaises(ValueError, model.fit, newdataset([],[],[]), {"verbose":verbose}) # dataset not supported by the algo
                     DMVLP._COMPATIBLE_DATASETS = original
 
                     #self.assertRaises(ValueError, model.fit, dataset, verbose) # algorithm is not of valid
-                    model.algorithm = "lf1t"
-                    self.assertRaises(NotImplementedError, model.fit, dataset, None, verbose) # algorithm is not of valid
+                    #model.algorithm = "lf1t"
+                    #self.assertRaises(NotImplementedError, model.fit, dataset, None, verbose) # algorithm is not of valid
 
     def test_extend(self):
         print(">> DMVLP.extend(dataset, feature_states)")
@@ -301,16 +302,9 @@ class DMVLP_tests(unittest.TestCase):
                     model.compile(algorithm=algo)
                     f = io.StringIO()
                     with contextlib.redirect_stderr(f):
-                        model.fit(dataset=dataset,verbose=verbose)
+                        model.fit(dataset=dataset,options={"verbose":verbose})
 
                     original_rules = model.rules.copy()
-
-                    # Encode data with DiscreteStateTransitionsDataset
-                    data_encoded = []
-                    for (s1,s2) in dataset.data:
-                        s1_encoded = [domain.index(s1[var_id]) for var_id, (var,domain) in enumerate(dataset.features)]
-                        s2_encoded = [domain.index(s2[var_id]) for var_id, (var,domain) in enumerate(dataset.targets)]
-                        data_encoded.append((s1_encoded,s2_encoded))
 
                     values_ids = [[j for j in dataset.features[i][1]] for i in range(0,len(dataset.features))]
                     feature_states = [list(i) for i in list(itertools.product(*values_ids))]
@@ -328,35 +322,40 @@ class DMVLP_tests(unittest.TestCase):
                     # atmost one aditional rule per feature state for each var/val
                     for var_id, (var,vals) in enumerate(dataset.targets):
                         for val_id, val in enumerate(vals):
-                            self.assertTrue(len([r for r in model.rules if r.head_variable == var_id if r.head_value == val_id if r not in original_rules]) <= len(feature_states))
+                            self.assertTrue(len([r for r in model.rules if r.head.variable == var if r.head.value == val if r not in original_rules]) <= len(feature_states))
 
 
                     for feature_state in feature_states_to_match:
-                        encoded_feature_state = Algorithm.encode_state(feature_state, dataset.features)
+                        #encoded_feature_state = Algorithm.encode_state(feature_state, dataset.features)
                         for var_id, (var,vals) in enumerate(dataset.targets):
                             for val_id, val in enumerate(vals):
                                 #eprint("var: ", var_id)
                                 #eprint("val: ", val_id)
-                                pos, neg = PRIDE.interprete(data_encoded, var_id, val_id)
+                                head = LegacyAtom(var,set(vals),val,var_id)
+                                pos, neg = PRIDE.interprete(dataset, head)
 
                                 # Only way to not match is no rule can be find
-                                new_rule = PRIDE.find_one_optimal_rule_of(var_id, val_id, len(dataset.features), pos, neg, encoded_feature_state, 0)
+                                new_rule = PRIDE.find_one_optimal_rule_of(head, dataset, pos, neg, feature_state, 0)
                                 matched = False
                                 for r in model.rules:
-                                    if r.head_variable == var_id and r.head_value == val_id and r.matches(encoded_feature_state):
+                                    if r.head.variable == var and r.head.value == val and r.matches(feature_state):
                                         matched = True
                                         break
 
                                 if not matched:
+                                    if not new_rule is None:
+                                        print(feature_state)
+                                        print(new_rule)
                                     self.assertTrue(new_rule is None)
 
                     # check rules
                     for var_id, (var,vals) in enumerate(dataset.targets):
                         for val_id, val in enumerate(vals):
-                            pos, neg = PRIDE.interprete(data_encoded, var_id, val_id)
+                            head = LegacyAtom(var,set(vals),val,var_id)
+                            pos, neg = PRIDE.interprete(dataset, head)
                             new_rules = [x for x in model.rules if x not in original_rules]
 
-                            for r in [r for r in new_rules if r.head_variable==var_id if r.head_value==val_id]:
+                            for r in [r for r in new_rules if r.head.variable == var if r.head.value == val]:
                                 # Cover at least a positive
                                 cover = False
                                 for s in pos:
@@ -375,31 +374,26 @@ class DMVLP_tests(unittest.TestCase):
                                 self.assertFalse(cover)
 
                                 # Rules is minimal
-                                for (var_id_, val_id_) in r.body:
-                                    r.remove_condition(var_id_) # Try remove condition
+                                for var in r.body:
+                                    r_ = r.copy()
+                                    r_.remove_condition(var) # Try remove condition
 
                                     conflict = False
                                     for s in neg:
-                                        if r.matches(s): # Cover a negative example
+                                        if r_.matches(s): # Cover a negative example
                                             conflict = True
                                             break
                                     self.assertTrue(conflict)
-                                    r.add_condition(var_id_,val_id_) # Cancel removal
 
                     # Check feature state cannot be matched
                     for var_id, (var,vals) in enumerate(dataset.targets):
                         for val_id, val in enumerate(vals):
-                            pos, neg = PRIDE.interprete(data_encoded, var_id, val_id)
+                            head = LegacyAtom(var,set(vals),val,var_id)
+                            pos, neg = PRIDE.interprete(dataset, head)
                             if len(neg) > 0:
-                                state_raw = neg[0]
-                                state_string = []
-                                for var_id_, val_id_ in enumerate(state_raw):
-                                    #eprint(var_id, val_id)
-                                    state_string.append(model.features[var_id_][1][val_id_])
-
                                 f = io.StringIO()
                                 with contextlib.redirect_stderr(f):
-                                    model.extend(dataset, [state_string], verbose)
+                                    model.extend(dataset, [neg[0]], verbose)
 
                     # exceptions
                     self.assertRaises(TypeError, model.extend, dataset, "", verbose)
@@ -469,54 +463,31 @@ class DMVLP_tests(unittest.TestCase):
                         prediction = model.predict(feature_states, semantics=semantics)
 
                     for state_id, s1 in enumerate(feature_states):
-                        feature_state_encoded = []
-                        for var_id, val in enumerate(s1):
-                            val_id = model.features[var_id][1].index(str(val))
-                            feature_state_encoded.append(val_id)
-
                         #eprint(feature_state_encoded)
 
-                        target_states = semantics_class.next(feature_state_encoded, model.targets, model.rules)
+                        target_states = semantics_class.next(s1, model.targets, model.rules)
                         output = dict()
                         for s in target_states:
-                            target_state = []
-                            for var_id, val_id in enumerate(s):
-                                #eprint(var_id, val_id)
-                                if val_id == -1:
-                                    target_state.append("?")
-                                else:
-                                    target_state.append(model.targets[var_id][1][val_id])
-                            output[tuple(target_state)] = target_states[s]
+                            output[tuple(s)] = target_states[s]
 
                         self.assertEqual(prediction[tuple(s1)], output)
 
                     # Force missing value
                     rules = model.rules
-                    model.rules = [r for r in model.rules if r.head_variable != random.randint(0,len(model.targets))]
+                    model.rules = [r for r in model.rules if r.head != random.choice([r.head for r in model.rules])]
 
                     if semantics is None:
                         prediction = model.predict(feature_states)
                     else:
                         prediction = model.predict(feature_states, semantics=semantics)
                     for state_id, s1 in enumerate(feature_states):
-                        feature_state_encoded = []
-                        for var_id, val in enumerate(s1):
-                            val_id = model.features[var_id][1].index(str(val))
-                            feature_state_encoded.append(val_id)
 
                         #eprint(feature_state_encoded)
 
-                        target_states = semantics_class.next(feature_state_encoded, model.targets, model.rules)
+                        target_states = semantics_class.next(s1, model.targets, model.rules)
                         output = dict()
                         for s in target_states:
-                            target_state = []
-                            for var_id, val_id in enumerate(s):
-                                #eprint(var_id, val_id)
-                                if val_id == -1:
-                                    target_state.append("?")
-                                else:
-                                    target_state.append(model.targets[var_id][1][val_id])
-                            output[tuple(target_state)] = target_states[s]
+                            output[tuple(s)] = target_states[s]
 
                         self.assertEqual(prediction[tuple(s1)], output)
                     model.rules = rules
@@ -536,11 +507,6 @@ class DMVLP_tests(unittest.TestCase):
 
                     feature_states[state_id].extend(["0" for i in range(random.randint(1,10))])
                     self.assertRaises(TypeError, model.predict, feature_states) # Feature_states bad format: size of state not correspond to model features >
-                    feature_states[state_id] = original.copy()
-
-                    var_id = random.randint(0,len(dataset.features)-1)
-                    feature_states[state_id][var_id] = "bad_value"
-                    self.assertRaises(ValueError, model.predict, feature_states) # Feature_states bad format: value out of domain
                     feature_states[state_id] = original.copy()
 
                     # Semantics restriction
@@ -604,7 +570,7 @@ class DMVLP_tests(unittest.TestCase):
                 else:
                     expected_print +=" Rules:\n"
                     for r in model.rules:
-                        expected_print += "  "+r.logic_form(model.features, model.targets)+"\n"
+                        expected_print += "  "+r.to_string()+"\n"
 
                 old_stdout = sys.stdout
                 sys.stdout = mystdout = StringIO()
@@ -637,7 +603,7 @@ class DMVLP_tests(unittest.TestCase):
                  "\nTargets: "+ str(model.targets)+\
                  "\nRules:\n"
                 for r in model.rules:
-                    expected += r.logic_form(model.features, model.targets) + "\n"
+                    expected += r.to_string() + "\n"
                 expected += "}"
 
                 self.assertEqual(model.to_string(), expected)
@@ -653,20 +619,10 @@ class DMVLP_tests(unittest.TestCase):
             max_target_values=self._nb_target_values, \
             algorithm="gula")
 
-            values_ids = [[j for j in range(0,len(model.features[i][1]))] for i in range(0,len(model.features))]
-            expected = [list(i) for i in list(itertools.product(*values_ids))]
-
-            output = model.feature_states(True)
-
-            for state in output:
-                self.assertTrue(state in expected)
-            for state in expected:
-                self.assertTrue(state in output)
-
             values_ids = [[model.features[i][1][j] for j in range(0,len(model.features[i][1]))] for i in range(0,len(model.features))]
             expected = [list(i) for i in list(itertools.product(*values_ids))]
 
-            output = model.feature_states(False)
+            output = model.feature_states()
 
             for state in output:
                 self.assertTrue(state in expected)
@@ -684,20 +640,10 @@ class DMVLP_tests(unittest.TestCase):
             max_target_values=self._nb_target_values, \
             algorithm="gula")
 
-            values_ids = [[j for j in range(0,len(model.targets[i][1]))] for i in range(0,len(model.targets))]
-            expected = [list(i) for i in list(itertools.product(*values_ids))]
-
-            output = model.target_states(True)
-
-            for state in output:
-                self.assertTrue(state in expected)
-            for state in expected:
-                self.assertTrue(state in output)
-
             values_ids = [[model.targets[i][1][j] for j in range(0,len(model.targets[i][1]))] for i in range(0,len(model.targets))]
             expected = [list(i) for i in list(itertools.product(*values_ids))]
 
-            output = model.target_states(False)
+            output = model.target_states()
 
             for state in output:
                 self.assertTrue(state in expected)

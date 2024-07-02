@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/17
-# @updated: 2021/06/15
+# @updated: 2023/12/22
 #
 # @desc: general class unit test script
 # done:
@@ -72,49 +72,27 @@ class General_tests(unittest.TestCase):
         model.compile(algorithm="gula")
         model.fit(dataset=dataset)
 
-        feature_state = Algorithm.encode_state(["0","0","0"], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([(1,0,0), (0,0,0), (0, 0, 1), (1,0,1)]))
-        feature_state = Algorithm.encode_state(["1","1","1"], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([(1,1,0), (1,1,1)]))
-        feature_state = Algorithm.encode_state(["0","1","0"], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([(1,0,1), (0,1,0), (1,0,0), (0,0,1), (1,1,1), (0,0,0), (1,1,0), (0,1,1)]))
+        feature_state = ["0","0","0"]
+        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([("1","0","0"), ("0","0","0"), ("0", "0", "1"), ("1","0","1")]))
+        feature_state = ["1","1","1"]
+        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([("1","1","0"), ("1","1","1")]))
+        feature_state = ["0","1","0"]
+        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([("1","0","1"), ("0","1","0"), ("1","0","0"), ("0","0","1"), ("1","1","1"), ("0","0","0"), ("1","1","0"), ("0","1","1")]))
 
-        # incomplete program, semantics with default
-        model = DMVLP(features=dataset.features, targets=dataset.targets)
-        rules = [
-        "p_t(1) :- q_t-1(1)",
-        "q_t(1) :- p_t-1(1), r_t-1(1)",
-        "r_t(1) :- p_t-1(0)"]
-        model.rules = [Rule.from_string(s, model.features, model.targets) for s in rules]
-        default = [("p_t", [0]), ("q_t", [0]), ("r_t", [0])]
+        # test default
+        rules = []
+        for r in model.rules:
+            if r.head.variable != "p_t":
+                rules.append(r)
 
-        feature_state = Algorithm.encode_state([0,0,0], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(0,0,0), (0,0,1)]))
+        model.rules = rules
+        #print(model.rules)
+        feature_state = ["0","0","0"]
+        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules)]), set([("?","0","0"), ("?", "0", "1"), ("0","0","0"), ("0", "0", "1")]))
 
-        feature_state = Algorithm.encode_state([0,0,1], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(0,0,1)]))
-
-        feature_state = Algorithm.encode_state([0,1,0], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(0,1,0), (0,0,0), (0,1,1), (0,0,1), (1,0,0), (1,0,1), (1,1,0), (1,1,1)]))
-
-        feature_state = Algorithm.encode_state([1,0,0], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(1,0,0), (0,0,0)]))
-
-        feature_state = Algorithm.encode_state([0,1,1], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(0,1,1), (0,0,1), (1,1,1), (1,0,1)]))
-
-        feature_state = Algorithm.encode_state([1,0,1], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(1,0,1), (0,0,1), (1,0,0), (1,1,1), (0,1,1), (1,1,0), (0,1,0), (0,0,0)]))
-
-        feature_state = Algorithm.encode_state([1,1,0], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(1,1,0), (1,0,0)]))
-
-        feature_state = Algorithm.encode_state([1,1,1], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([(1,1,1), (1,1,0)]))
-
-        # Default to unknow
-        feature_state = Algorithm.encode_state([1,1,1], model.features)
-        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, None)]), set([(1,1,1), (1,1,-1)]))
+        default = [("p_t", ["1"]), ("q_t", ["0"]), ("r_t", ["0"])]
+        feature_state = ["0","0","0"]
+        self.assertEqual(set([tuple(s) for s in General.next(feature_state, model.targets, model.rules, default)]), set([("1","0","0"), ("0","0","0"), ("0", "0", "1"), ("1","0","1")]))
 
         # Random tests
         for i in range(self._nb_tests):
@@ -125,7 +103,7 @@ class General_tests(unittest.TestCase):
             model.fit(dataset=dataset)
 
             feature_state = random.choice(model.feature_states())
-            feature_state = Algorithm.encode_state(feature_state, model.features)
+            feature_state = feature_state
 
             output = General.next(feature_state, model.targets, model.rules)
 
@@ -134,7 +112,7 @@ class General_tests(unittest.TestCase):
             # extract conclusion of all matching rules
             for r in model.rules:
                 if(r.matches(feature_state)):
-                    domains[r.head_variable].add(r.head_value)
+                    domains[r.head.state_position].add(r.head.value)
 
             # Check variables without next value
             for i,domain in enumerate(domains):
@@ -158,8 +136,8 @@ class General_tests(unittest.TestCase):
             for state, rules in output.items():
                 for r in rules:
                     self.assertTrue(r.matches(feature_state))
-                    self.assertEqual(r.head_value,state[r.head_variable])
-                    self.assertEqual([],[r for r in model.rules if r not in rules and r.matches(feature_state) and r.head_value == state[r.head_variable]])
+                    self.assertEqual(r.head.value,state[r.head.state_position])
+                    self.assertEqual([],[r for r in model.rules if r not in rules and r.matches(feature_state) and r.head.value == state[r.head.state_position]])
 
             # Exception:
             # ----------

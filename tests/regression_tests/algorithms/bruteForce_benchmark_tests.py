@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/05/10
-# @updated: 2021/06/15
+# @updated: 2023/12/20
 #
 # @desc: BruteForce regression test script
 # Tests algorithm methods on random dataset
@@ -23,14 +23,14 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_DiscreteStateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset, random_unknown_values_dataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms import BruteForce
 from pylfit.objects import Rule
 
 from pylfit.datasets import DiscreteStateTransitionsDataset
-from pylfit.preprocessing import transitions_dataset_from_csv
+from pylfit.preprocessing import discrete_state_transitions_dataset_from_csv
 
 from pylfit.models import DMVLP
 
@@ -47,14 +47,48 @@ class BruteForce_benchmark_tests(unittest.TestCase):
     # Test functions
     #------------------
 
+    def test_void_learning(self):
+        print(">> Bruteforce benchmark <void learning>:")
+        for test_id in range(self._nb_tests):
+            dataset = random_DiscreteStateTransitionsDataset( \
+                nb_transitions=10, \
+                nb_features=random.randint(1,3), \
+                nb_targets=random.randint(1,3), \
+                max_feature_values=3, max_target_values=3)
+
+            # Random mask
+            data = random_unknown_values_dataset(dataset.data)
+            masked_dataset = DiscreteStateTransitionsDataset(data, dataset.features, dataset.targets)
+
+            original_rules = BruteForce.fit(dataset=dataset)
+            masked_rules = BruteForce.fit(dataset=masked_dataset)
+
+            # All original are dominated
+            for r in original_rules:
+                dominated = False
+                for r_ in masked_rules:
+                    if r.head == r_.head and r_.subsumes(r):
+                        dominated = True
+                        break
+                self.assertTrue(dominated)
+
+            # No over specialization
+            for r_ in masked_rules:
+                dominated = False
+                for r in original_rules:
+                    if r.head == r_.head and r.subsumes(r_) and r != r_:
+                        dominated = True
+                        break
+                self.assertFalse(dominated)
+
     def test_repressilator(self):
-        print(">> BruteForce benchmark <repressilator>:")
+        print(">> Bruteforce benchmark <repressilator>:")
 
         dataset_filepath = "datasets/repressilator.csv"
         features_col_header = ["p_t_1","q_t_1","r_t_1"]
         targets_col_header = ["p_t","q_t","r_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -71,13 +105,13 @@ class BruteForce_benchmark_tests(unittest.TestCase):
 
 
     def test_mammalian(self):
-        print(">> BruteForce benchmark <mammalian>:")
+        print(">> Bruteforce benchmark <mammalian>:")
 
         dataset_filepath = "datasets/mammalian.csv"
         features_col_header = ["CycD_t_1","CycE_t_1","Rb_t_1","E2F_t_1","CycA_t_1","p27_t_1","Cdc20_t_1","UbcH10_t_1","Cdh1_t_1","CycB_t_1"]
         targets_col_header = ["CycD_t","CycE_t","Rb_t","E2F_t","CycA_t","p27_t","Cdc20_t","UbcH10_t","Cdh1_t","CycB_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -134,13 +168,13 @@ class BruteForce_benchmark_tests(unittest.TestCase):
         self._check_rules_and_predictions(dataset, expected_string_rules)
 
     def test_fission_yeast(self):
-        print(">> BruteForce benchmark <fission_yeast>:")
+        print(">> Bruteforce benchmark <fission_yeast>:")
 
         dataset_filepath = "datasets/fission_yeast.csv"
         features_col_header = ["Start_t_1","SK_t_1","Ste9_t_1","Cdc2/Cdc13_t_1","Rum1_t_1","PP_t_1","Cdc25_t_1","Slp1_t_1","Wee1/Mik1_t_1","Cdc2/Cdc13*_t_1"]
         targets_col_header = ["Start_t","SK_t","Ste9_t","Cdc2/Cdc13_t","Rum1_t","PP_t","Cdc25_t","Slp1_t","Wee1/Mik1_t","Cdc2/Cdc13*_t"]
 
-        dataset = transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
+        dataset = discrete_state_transitions_dataset_from_csv(path=dataset_filepath, feature_names=features_col_header, target_names=targets_col_header)
 
         # Expected rules
         expected_string_rules = """
@@ -224,31 +258,38 @@ class BruteForce_benchmark_tests(unittest.TestCase):
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule, dataset.features, dataset.targets))
+            expected_rules.append(Rule.from_string(string_rule).to_string())
 
         #eprint(expected_rules)
 
-        output = BruteForce.fit(dataset, False, 1)
+        output = BruteForce.fit(dataset)
+        output_str = [r.to_string() for r in output]
+        
+        #eprint(len(output))
 
-        #eprint(output)
+        #eprint(output_str)
+        #for r in output_str:
+        #    print(r)
 
         for r in expected_rules:
-            if r not in output:
+            if r not in output_str:
                 eprint("Missing rule: ", r)
-            self.assertTrue(r in output)
+            self.assertTrue(r in output_str)
 
-        for r in output:
+        for r in output_str:
             if r not in expected_rules:
                 eprint("Additional rule: ", r)
             self.assertTrue(r in expected_rules)
-
+        
         model = DMVLP(dataset.features, dataset.targets, output)
+        #print(model)
 
         expected = set((tuple(s1),tuple(s2)) for s1,s2 in dataset.data)
         predicted = set()
 
         for s1 in model.feature_states():
             prediction = model.predict([s1])
+            #print(prediction)
             for s2 in prediction[tuple(s1)]:
                 predicted.add( (tuple(s1), tuple(s2)) )
 

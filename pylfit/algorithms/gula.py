@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/15
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: simple GULA implementation, the General Usage LFIT Algorithm.
 #   - INPUT: a set of pairs of discrete multi-valued states
@@ -22,8 +22,8 @@ from ..utils import eprint
 from ..objects.rule import Rule
 from ..algorithms.algorithm import Algorithm
 from ..datasets import DiscreteStateTransitionsDataset
+from ..objects.legacyAtom import LegacyAtom
 
-import csv
 import numpy as np
 import multiprocessing
 import itertools
@@ -36,20 +36,23 @@ class GULA (Algorithm):
         - discrete
         - synchronous/asynchronous/general/other semantic
     INPUT: a set of pairs of discrete states
-    OUTPUT: a logic program
+    OUTPUT: a list of discrete rules
     """
 
     @staticmethod
-    def fit(dataset, targets_to_learn=None, impossibility_mode=False, supported_only=False, verbose=0, threads=1): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
+    def fit(dataset, targets_to_learn=None, impossibility_mode=False, verbose=0, threads=1): #variables, values, transitions, conclusion_values=None, program=None): #, partial_heuristic=False):
         """
         Preprocess transitions and learn rules for all given features/targets variables/values.
 
         Args:
             dataset: pylfit.datasets.DiscreteStateTransitionsDataset
                 state transitions of a the system
-            targets: dict of {String: list of String}
+            targets_to_learn: dict of {String: list of String}
                 target variables values of the dataset for wich we want to learn rules.
                 If not given, all targets values will be learned.
+            impossibility_mode: Boolean
+            verbose: int (0 or 1)
+            threads: int (>=1)
 
         Returns:
             list of pylfit.objects.Rule
@@ -58,8 +61,6 @@ class GULA (Algorithm):
                     - complete: matches all possible feature states (even not in the dataset).
                     - optimal: all rules are minimals
         """
-        #eprint("Start GULA learning...")
-
         # Parameters checking
         if not isinstance(dataset, DiscreteStateTransitionsDataset):
             raise ValueError('Dataset type not supported, GULA expect ' + str(DiscreteStateTransitionsDataset.__name__))
@@ -83,77 +84,51 @@ class GULA (Algorithm):
                         raise ValueError('targets_to_learn values must be in target variable domain')
 
         feature_domains = dataset.features
-        target_domains = dataset.targets
+        features_void_atoms = dataset.features_void_atoms
         rules = []
 
-        #if conclusion_values == None:
-        #    conclusion_values = values
-
-        # Replace state variable value (string) by their domain id (int)
-        encoded_data = Algorithm.encode_transitions_set(dataset.data, dataset.features, dataset.targets)
-        #eprint(encoded_data)
-
-        #eprint(transitions)
         if verbose > 0:
             eprint("\nConverting transitions to nparray...")
-        #processed_transitions = np.array([tuple(s1)+tuple(s2) for s1,s2 in encoded_data])
-        processed_transitions = np.array([np.concatenate( (s1, s2), axis=None) for s1,s2 in encoded_data])
-
-        #exit()
+        processed_transitions = np.array([np.concatenate( (s1, s2), axis=None) for s1,s2 in dataset.data])
 
         if len(processed_transitions) > 0:
-            #eprint("flattened: ", processed_transitions)
             if verbose > 0:
                 eprint("Sorting transitions...")
             processed_transitions = processed_transitions[np.lexsort(tuple([processed_transitions[:,col] for col in reversed(range(0,len(feature_domains)))]))]
-            #for i in range(0,len(variables)):
-            #processed_transitions = processed_transitions[np.argsort(processed_transitions[:,i])]
-            #eprint("sorted: ", processed_transitions)
 
             if verbose > 0:
                 eprint("Grouping transitions by initial state...")
-            #processed_transitions = np.array([ (row[:len(variables)], row[len(variables):]) for row in processed_transitions])
 
             processed_transitions_ = []
             s1 = processed_transitions[0][:len(feature_domains)]
             S2 = []
             for row in processed_transitions:
                 if not np.array_equal(row[:len(feature_domains)], s1): # New initial state
-                    #eprint("new state: ", s1)
                     processed_transitions_.append((s1,S2))
                     s1 = row[:len(feature_domains)]
                     S2 = []
 
-                #eprint("adding ", row[len(feature_domains):], " to ", s1)
                 S2.append(row[len(feature_domains):]) # Add new next state
 
             # Last state
             processed_transitions_.append((s1,S2))
-
             processed_transitions = processed_transitions_
 
-        #eprint(processed_transitions)
-
-        # Learn rules for each observed variable/value
-        #for var in range(0, len(target_domains)):
-        #    for val in range(0, len(target_domains[var][1])):
-        #eprint(targets_to_learn)
         thread_parameters = []
         for var_id, (var_name, var_domain) in enumerate(dataset.targets):
-            #eprint(var_id, (var_name, var_domain))
             for val_id, val_name in enumerate(var_domain):
-                #eprint(val_id, val_name)
                 if var_name not in targets_to_learn:
                     continue
                 if val_name not in targets_to_learn[var_name]:
                     continue
 
-                if(threads == 1):
-                    rules += GULA.fit_thread([processed_transitions, feature_domains, target_domains, var_id, val_id, impossibility_mode, supported_only, verbose])
-                else:
-                    thread_parameters.append([processed_transitions, feature_domains, target_domains, var_id, val_id, impossibility_mode, supported_only, verbose])
+                head = LegacyAtom(var_name, set(var_domain), val_name, var_id)
 
-        #pool = ThreadPool(4)
+                if(threads == 1):
+                    rules += GULA.fit_thread([processed_transitions, features_void_atoms, head, [dataset._UNKNOWN_VALUE], dataset.has_unknown_values(), impossibility_mode, verbose])
+                else:
+                    thread_parameters.append([processed_transitions, features_void_atoms, head, [dataset._UNKNOWN_VALUE], dataset.has_unknown_values(), impossibility_mode, verbose])
+
         if(threads > 1):
             if(verbose):
                 eprint("Start learning over "+str(threads)+" threads")
@@ -165,85 +140,100 @@ class GULA (Algorithm):
 
     @staticmethod
     def fit_thread(args):
-        processed_transitions, feature_domains, target_domains, var_id, val_id, impossibility_mode, supported_only, verbose = args
+        """
+        Thread wrapper for fit_var/fit_var_val_with_unknown_values functions (see below)
+        """
+        processed_transitions, features_void_atoms, head, unknown_values, has_unknown_values, impossibility_mode, verbose = args
         if verbose > 0:
-            eprint("\nStart learning of var=", var_id+1,"/", len(target_domains), ", val=", val_id+1, "/", len(target_domains[var_id][1]))
+            eprint("\nStart learning of ", head)
+        
+        positives, negatives = GULA.interprete(processed_transitions, head)
+
+        # Remove potential false negatives
+        if has_unknown_values:
+            certain_negatives = []
+            for neg in negatives:
+                uncertain_negative = False
+                for pos in positives:
+                    possible_same_state = True
+                    for i in range(len(pos)):
+                        if neg[i] != pos[i] and pos[i] not in unknown_values and neg[i] not in unknown_values: # explicit difference
+                            possible_same_state = False
+                            break
+                    if possible_same_state:
+                        uncertain_negative = True
+                        break
+                if not uncertain_negative:
+                    certain_negatives.append(neg)
+
+            negatives = certain_negatives
 
         if impossibility_mode:
-            negatives, positives = GULA.interprete(processed_transitions, var_id, val_id, True)#, partial_heuristic)
-            rules = GULA.fit_var_val(feature_domains, var_id, val_id, positives, negatives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
-        else:
-            negatives, positives = GULA.interprete(processed_transitions, var_id, val_id, supported_only)#, partial_heuristic)
-            rules = GULA.fit_var_val(feature_domains, var_id, val_id, negatives, positives, verbose) #variables, values, var, val, negatives, program)#, partial_heuristic)
+            positives, negatives = negatives.copy(), positives.copy()
 
+        #if has_unknown_values:
+        #    rules = GULA.fit_var_val_with_unknown_values(head, features_void_atoms, negatives, positives, unknown_values, verbose)
+        #else:
+        #    rules = GULA.fit_var_val(head, features_void_atoms, negatives, verbose)
+        rules = GULA.fit_var_val(head, features_void_atoms, negatives, verbose)
 
         if verbose > 0:
-            eprint("\nFinished learning of var=", var_id+1,"/", len(target_domains), ", val=", val_id+1, "/", len(target_domains[var_id][1]))
+            eprint("\nFinished learning of ", head)
         return rules
 
 
     @staticmethod
-    def interprete(transitions, variable, value, supported_only=False): #, partial_heuristic=False):
+    def interprete(transitions, head):
         """
-        Split transition into positive/negatives states for the given variable/value
+        Split transition into positive/negatives states for the given head atom
 
         Args:
-            transitions: list of tuple (tuple of int, list of tuple of int)
+            transitions: list of tuple (tuple of any, list of tuple of any)
                 state transitions grouped by initial state
-            variable: int
-                variable id
-            value: int
-                variable value id
+            head: Atom
+                target atom
+        Returns:
+            positives: list of tuple of any
+            negatives: list of tuple of any
         """
-        # DBG
-        #eprint("Interpreting transitions to:",variable,"=",value)
-        #positives = [t1 for t1,t2 in transitions if t2[variable] == value]
-        #negatives = [t1 for t1,t2 in transitions if t1 not in positives]
 
-        positives = None
-        if supported_only:
-            positives = []
-
+        positives = []
         negatives = []
+
         for s1, S2 in transitions:
             negative = True
             for s2 in S2:
-                if s2[variable] == value:
+                if head.matches(s2) or s2[head.state_position] == LegacyAtom._UNKNOWN_VALUE:
+                    positives.append(s1)
                     negative = False
                     break
             if negative:
                 negatives.append(s1)
-            elif supported_only:
-                positives.append(s1)
-
-        return negatives, positives
+                
+        return positives, negatives
 
 
     @staticmethod
-    def fit_var_val(feature_domains, variable, value, negatives, positives=None, verbose=0): #variables, values, variable, value, negatives, program=None):#, partial_heuristic=False):
+    def fit_var_val(head, features_void_atoms, negatives, verbose=0):
         """
         Learn minimal rules that explain positive examples while consistent with negatives examples
 
         Args:
-            feature_domains: list of (name, list of int)
-                Features variables
-            variable: int
-                variable id
-            value: int
-                variable value id
-            negatives: list of (list of int)
-                States of the system where the variable cannot take this value in the next state
-            positives: list of (list of int)
-                States of the system where the variable can take this value in the next state
-                Optional, if given rule will be enforced to matches alteast one of those states
+            head: LegacyAtom
+                head of the rules.
+            features_void_atoms: dictionary of string:Atom
+                Features variables void atoms.
+            negatives: list of (list of any)
+                States of the system where the variable cannot take this value in the next state.
+            verbose: int (0 or 1)
+        Returns:
+            list of pylfit.objects.Rule
+                minimals consistent rules
         """
 
         # 0) Initialize program as most the general rule
         #------------------------------------------------
-        minimal_rules = [Rule(variable, value, len(feature_domains), [])]
-
-        #if program is not None:
-        #    minimal_rules = program.get_rules_of(variable, value)
+        minimal_rules = [Rule(head)] # HACK legacy atom target
 
         # DBG
         neg_count = 0
@@ -258,16 +248,10 @@ class GULA (Algorithm):
             # 1) Extract unconsistents rules
             #--------------------------------
 
-            # Simple way
-            #unconsistents = [ rule for rule in minimal_rules if rule.matches(neg) ]
-            #minimal_rules = [ rule for rule in minimal_rules if rule not in unconsistents ]
-
-            # Efficient way
             unconsistents = []
             index=0
             while index < len(minimal_rules):
                 if minimal_rules[index].matches(neg):
-                    #print "length of %s is: %s" %(x[index], len(x[index]))
                     unconsistents.append(minimal_rules[index])
                     del minimal_rules[index]
                     continue
@@ -282,63 +266,23 @@ class GULA (Algorithm):
 
                 # Generates all least specialisation of the rule
                 ls = []
-                for var in range(len(feature_domains)):
-                    for val in range(len(feature_domains[var][1])):
+                ls = unconsistent.least_specialization(neg, features_void_atoms)
 
-                        # Variable availability
-                        if unconsistent.has_condition(var):
-                            continue
+                for candidate in ls:
+                    # Discard if subsumed by a consistent minimal rule
+                    subsumed = False
+                    for minimal_rule in minimal_rules:
+                        if minimal_rule.subsumes(candidate):
+                            subsumed = True
+                            break
 
-                        # Value validity
-                        if val == neg[var]:
-                            continue
+                    if subsumed:
+                        continue
 
-                        # Create least specialization of r on var/val
-                        #least_specialization = unconsistent#.copy()
-                        unconsistent.add_condition(var,val)
-
-                        # Heuristic: discard rule that cover no positives example (partial input only)
-                        #if partial_heuristic:
-                        #    supported = False
-                        #    for s in positives:
-                        #        if unconsistent.matches(s):
-                        #            supported = True
-                        #            break
-                        #    if not supported:
-                        #        unconsistent.pop_condition()
-                        #        continue
-
-                        # Discard if subsumed by a consistent minimal rule
-                        subsumed = False
-                        for minimal_rule in minimal_rules:
-                            if minimal_rule.subsumes(unconsistent):
-                                subsumed = True
-                                break
-
-                        if subsumed:
-                            unconsistent.pop_condition()
-                            continue
-
-                        # Heuristic 1: check if the rule matches atleast one positive example
-                        if positives is not None:
-                            supported = False
-                            for s in positives:
-                                if unconsistent.matches(s):
-                                    supported = True
-                                    break
-                            if not supported:
-                                unconsistent.pop_condition()
-                                continue
-
-                        least_specialization = unconsistent.copy()
-                        new_rules.append(least_specialization)
-                        unconsistent.pop_condition()
+                    new_rules.append(candidate)
 
             # Add new minimal rules
             for new_rule in new_rules:
                 minimal_rules.append(new_rule)
-
-        #DBG
-        #eprint("\r",end='')
 
         return minimal_rules

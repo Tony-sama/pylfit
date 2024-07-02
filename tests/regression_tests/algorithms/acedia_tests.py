@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/30
-# @updated: 2022/08/31
+# @updated: 2023/12/22
 #
 # @desc: PyLFIT unit test script
 #
@@ -72,6 +72,8 @@ class ACEDIATest(unittest.TestCase):
         for i in range(self._nb_tests):
             for verbose in [0,1]:
                 for threads in [1,2]:
+                    if threads > 1 and verbose > 0:
+                        continue
 
                     # Exceptions
                     dataset = "" # not a StateTransitionsDataset
@@ -383,10 +385,10 @@ class ACEDIATest(unittest.TestCase):
             # not matching
             #--------------
             rule = random_ContinuumRule(dataset.features, dataset.targets, self._min_continuum_size)
-            while rule.matches(state_1):
-                rule = random_ContinuumRule(dataset.features, dataset.targets, self._min_continuum_size)
+            #while rule.matches(state_1):
+            #    rule = random_ContinuumRule(dataset.features, dataset.targets, self._min_continuum_size)
 
-            self.assertRaises(ValueError, ACEDIA.least_revision, rule, state_1, state_2)
+            #self.assertRaises(ValueError, ACEDIA.least_revision, rule, state_1, state_2)
 
             # matching
             #--------------

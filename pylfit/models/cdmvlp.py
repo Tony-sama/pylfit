@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/03
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: class CDMVLP python source code file
 #-------------------------------------------------------------------------------
@@ -9,16 +9,10 @@
 from . import DMVLP
 
 from ..utils import eprint
-from ..objects import Rule
-
 from ..datasets import DiscreteStateTransitionsDataset
-
 from ..algorithms import Synchronizer
-
 from ..semantics import SynchronousConstrained
 
-import itertools
-import random
 import numpy
 
 class CDMVLP(DMVLP):
@@ -87,7 +81,8 @@ class CDMVLP(DMVLP):
         """
         Set the algorithm to be used to fit the model.
         Supported algorithms:
-            - "synchronizer", use GULA to learn rules and GULA again for constraints (TODO)
+            - "synchronizer", use GULA to learn rules and GULA again for constraints
+            - "synchronizer-pride", use PRIDE to learn rules and PRIDE again for constraints
 
         """
 
@@ -166,32 +161,7 @@ class CDMVLP(DMVLP):
 
         output = dict()
         for feature_state in feature_states:
-
-            # Encode feature state with domain value id
-            feature_state_encoded = []
-            for var_id, val in enumerate(feature_state):
-                val_id = self.features[var_id][1].index(str(val))
-                feature_state_encoded.append(val_id)
-
-            #eprint(feature_state_encoded)
-
-            target_states = SynchronousConstrained.next(feature_state_encoded, self.targets, self.rules, self.constraints)
-
-            # Decode target states
-            local_output = dict()
-
-            for s, rules in target_states.items():
-                target_state = []
-                for var_id, val_id in enumerate(s):
-                    #eprint(var_id, val_id)
-                    if val_id == -1:
-                        target_state.append("?")
-                    else:
-                        target_state.append(self.targets[var_id][1][val_id])
-
-                local_output[tuple(target_state)] = rules
-
-            output[tuple(feature_state)] = local_output
+            output[tuple(feature_state)] = SynchronousConstrained.next(feature_state, self.targets, self.rules, self.constraints)
 
         return output
 
@@ -216,7 +186,7 @@ class CDMVLP(DMVLP):
         else:
             print_fn(" Constraints:")
             for r in self.constraints:
-                print_fn("  "+r.logic_form(self.features, self.targets))
+                print_fn("  "+r.to_string())
 
     def to_string(self):
         """
@@ -228,7 +198,7 @@ class CDMVLP(DMVLP):
         """
         output = super().to_string()[:-1]
         for r in self.constraints:
-            output += r.logic_form(self.features, self.targets) + "\n"
+            output += r.to_string() + "\n"
         output += "}"
 
         return output

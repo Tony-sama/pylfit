@@ -46,3 +46,6 @@
         - added example of ACEDIA use with the api
     - Added multi-thread support for GULA/PRIDE/Synchronizer/ACEDIA/probalizer
     - Added heuristic for PRIDE regarding coverage
+
+2024/07/02
+	- New version up to date with IJCLR24 manuscript

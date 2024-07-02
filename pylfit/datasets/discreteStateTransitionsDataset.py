@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/01/13
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: Dataset container class for state transitions data
 #   - Features/target variables labels and domain
@@ -13,9 +13,10 @@
 from ..utils import eprint
 
 from ..datasets import Dataset
+from ..objects.atom import Atom
+from ..objects.legacyAtom import LegacyAtom
 
 import numpy
-import pandas
 import csv
 import collections
 
@@ -29,11 +30,18 @@ class DiscreteStateTransitionsDataset(Dataset):
             Feature variables name and domain.
             Can have values not appearing in data.
             Missing data values will be added.
+        features_atoms: list of LegacyAtoms
+            For each variable the corresponding void atom.
         targets: list of tuple (string, list of string)
             Target variables name and domain.
             Can have values not appearing in data.
             Missing data values will be added.
+        unknown_values: list of string
+            List of value representing unknown value.
     """
+
+    """ Value representing unknown """
+    _UNKNOWN_VALUE = Atom._UNKNOWN_VALUE
 
 #--------------
 # Constructors
@@ -58,7 +66,15 @@ class DiscreteStateTransitionsDataset(Dataset):
 
         self.data = data
         self.features = features
+        self.features_void_atoms = {}
+        self.targets_void_atoms = {}
         self.targets = targets
+
+        # Compute void atoms
+        for var_id, (var, vals) in enumerate(features):
+            self.features_void_atoms[var] = LegacyAtom(var, vals, LegacyAtom._VOID_VALUE, var_id)
+        for var_id, (var, vals) in enumerate(targets):
+            self.targets_void_atoms[var] = LegacyAtom(var, vals, LegacyAtom._VOID_VALUE, var_id)
 
         # Check data values are in features/targets domains
         for transition_id, (s1,s2) in enumerate(data):
@@ -70,10 +86,10 @@ class DiscreteStateTransitionsDataset(Dataset):
                 raise ValueError("Transition " + str((s1,s2)) + ": target state of wrong size, targets size is " + str(len(self.targets)))
 
             for var_id, val in enumerate(s1):
-                if str(val) not in features[var_id][1]:
+                if val != self._UNKNOWN_VALUE and str(val) not in features[var_id][1]:
                     raise ValueError("Transition " + str((s1,s2)) + ": value not in features for variable " + str(var_id))
             for var_id, val in enumerate(s2):
-                if str(val) not in targets[var_id][1]:
+                if val != self._UNKNOWN_VALUE and str(val) not in targets[var_id][1]:
                     raise ValueError("Transition " + str((s1,s2)) + ": value not in targets for variable " + str(var_id))
 
     def copy(self):
@@ -111,7 +127,9 @@ class DiscreteStateTransitionsDataset(Dataset):
         else:
             print_fn(" Data:")
             for d in self.data:
-                print_fn("  "+str( ([i for i in d[0]], [i for i in d[1]] )))
+                print_fn("  "+str( ([i for i in d[0]],
+                                    [i for i in d[1]] )))
+        print_fn(" Unknown values: "+ str(self.nb_unknown_values))
 
     def to_string(self):
         """
@@ -124,8 +142,11 @@ class DiscreteStateTransitionsDataset(Dataset):
         output = "{"
         output += "Features: " + str(self.features)
         output += "\nTargets: " + str(self.targets)
-        output += "\nData: " + str(self.data)
-        output += "}"
+        output += "\nData: " #+ str(self.data)
+        for d in self.data:
+            output += "\n"+str( ([i for i in d[0]],
+                                [i for i in d[1]] ))
+        output += "\n}"
 
         return output
 
@@ -137,7 +158,7 @@ class DiscreteStateTransitionsDataset(Dataset):
             path_to_file: String.
                 Path to the file.
         """
-        with open(path_to_file, mode='w') as output_file:
+        with open(path_to_file, mode='w', newline='') as output_file:
             output_writer = csv.writer(output_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
             output_writer.writerow([var for var,vals in self.features]+[var for var,vals in self.targets])
@@ -159,6 +180,13 @@ class DiscreteStateTransitionsDataset(Dataset):
             if (dataset.data[id][0] != i).any() or (dataset.data[id][1] != j).any():
                 return False
         return True
+
+#--------------
+# Observers
+#--------------
+
+    def has_unknown_values(self):
+        return self.nb_unknown_values > 0
 
 #--------------
 # Statics methods
@@ -184,12 +212,17 @@ class DiscreteStateTransitionsDataset(Dataset):
                 raise TypeError(msg)
             feature_state = transition[0]
             target_state = transition[1]
-            #if not isinstance(feature_state, numpy.ndarray) or not isinstance(target_state, numpy.ndarray): # States must be ndarray
-            #    raise ValueError(msg)
             if not all(isinstance(val, (str)) for val in feature_state) or not all(isinstance(val, (str)) for val in target_state): # Values must be string or int
                 raise ValueError(msg)
 
-        self._data = [(numpy.array([str(i) for i in s1]), numpy.array([str(i) for i in s2])) for s1, s2 in value]
+        self._data = [(numpy.array([str(i) if str(i) != DiscreteStateTransitionsDataset._UNKNOWN_VALUE else DiscreteStateTransitionsDataset._UNKNOWN_VALUE for i in s1]),
+                       numpy.array([str(i) if str(i) != DiscreteStateTransitionsDataset._UNKNOWN_VALUE else DiscreteStateTransitionsDataset._UNKNOWN_VALUE for i in s2]))
+                       for s1, s2 in value]
+        
+        self.nb_unknown_values = 0
+        for (i,j) in self.data:
+            self.nb_unknown_values += numpy.count_nonzero(i == DiscreteStateTransitionsDataset._UNKNOWN_VALUE)
+            self.nb_unknown_values += numpy.count_nonzero(j == DiscreteStateTransitionsDataset._UNKNOWN_VALUE)
 
     @property
     def features(self):
@@ -224,3 +257,28 @@ class DiscreteStateTransitionsDataset(Dataset):
         if(len(duplicate) > 0):
             raise ValueError("Target variables name must be unique: "+str(duplicate)+" are duplicated")
         self._targets = value.copy()
+
+    @property
+    def features_void_atoms(self):
+        return self._features_void_atoms
+    
+    @features_void_atoms.setter
+    def features_void_atoms(self, value):
+        self._features_void_atoms = value
+
+    @property
+    def targets_void_atoms(self):
+        return self._targets_void_atoms
+    
+    @targets_void_atoms.setter
+    def targets_void_atoms(self, value):
+        self._targets_void_atoms = value
+
+    @property
+    def nb_unknown_values(self):
+        return self._nb_unknown_values
+
+    @nb_unknown_values.setter
+    def nb_unknown_values(self, value):
+        self._nb_unknown_values = value
+

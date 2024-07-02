@@ -1,23 +1,17 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2022/08/24
-# @updated: 2022/08/24
+# @updated: 2023/12/27
 #
 # @desc: class CLP python source code file
 #-------------------------------------------------------------------------------
 
-from ..models import Model
-
 from ..utils import eprint
+from ..models import Model
 from ..objects import Continuum, ContinuumRule
-
 from ..datasets import ContinuousStateTransitionsDataset
+from ..algorithms import ACEDIA
 
-from ..algorithms import Algorithm, ACEDIA
-
-#from ..semantics import Synchronous, Asynchronous, General
-
-import abc
 import numpy
 
 class CLP(Model):
@@ -292,14 +286,14 @@ class CLP(Model):
         Recursive sub-function of state(self, epsilon)
 
         Args:
+            variables: list of pairs (String, Continuum),
+                labels of the variables and their continuum of values.
             epsilon: float in ]0,1]
                 the precision ratio of each state value
             variable: int
                 A variable id
             state: list of float
                 A system state
-            states: list of (list of float)
-                the set of all states generated so far
         """
 
         # All variable are assigned

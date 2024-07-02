@@ -1,65 +1,49 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/03/20
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: Class Rule python source code file
 #-----------------------
 
 from ..utils import eprint
-
-import random
-import array
+from ..objects.atom import Atom
+from ..objects.legacyAtom import LegacyAtom
 
 class Rule:
     """
-    Define a discrete logic rule, conclusion and conditions are pairs (variable, value):
+    Define a logic rule, conclusion and conditions are atoms:
         - one conclusion
         - one conjonction of conditions
             - atmost one condition per variable, i.e. atmost one value is specified for a variable
         - a rule holds when all conditions are present in a system state, i.e. the rule matches the state
     """
 
-    """ Conclusion variable id: int """
-    #_head_variable = 0
+    """ Conclusion atom: Atom """
 
-    """ Conclusion value id: int """
-    #_head_value = 0
+    """ Conditions atoms: map of Atom """
 
-    """ Conditions variables: list of int """
-    #_body_variables = [0,2,5]
-
-    """ Conditions values: vector of int """
-    #_body_values = [1,0,3]
+    # Partial match values
+    _NO_MATCH = 0
+    _PARTIAL_MATCH = 1
+    _FULL_MATCH = 2
 
 #--------------
 # Constructors
 #--------------
 
-    def __init__(self, head_variable, head_value, nb_body_variables, body=None):
+    def __init__(self, head, body={}):
         """
-        Constructor of a discrete logic rule
+        Constructor of a logic rule
 
         Args:
-            head_variable: int
-                id of the head variable
-            head_value: int
-                id of the value of the head variable
-            nb_body_variables: int
-                number of variables that can have a condition in body
-            body: list of tuple (int,int)
-                list of conditions as pairs of variable id, value id
+            head: Atom
+                A logic atom
+            body: dict of Atom
+                A dictionary of logic atom
         """
-        self.head_variable = head_variable
-        self.head_value = head_value
-
-        self._body_variables = []
-        self._body_values = array.array('i', [-1 for i in range(nb_body_variables)]) #np.full((nb_body_variables,),-1,dtype=int) # -1 encode no value
-        #eprint("body_values: ", self._body_values)
-
-        if body != None:
-            for (var, val) in body:
-                self.add_condition(var,val)
+        self.head = head
+        self.body = body.copy()
 
     def copy(self):
         """
@@ -69,56 +53,41 @@ class Rule:
             Rule
                 A copy of the rule
         """
-        return Rule(self.head_variable, self.head_value, len(self._body_values), self.body)
+        return Rule(self.head, self.body)
 
     @staticmethod
-    def from_string(string_format, features, targets):
+    def from_string(string_format):
         """
-        Construct a Rule from a string format using features/targets to convert to domain ids.
+        Construct a Rule from a string format.
 
         Returns:
             Rule
-                The rule represented by the string w.r.t features/targets
+                The rule represented by the string
         """
         #eprint(string_format)
         constraint = False
-        tokens = string_format.split(":-")
+        tokens = string_format.strip().split(":-")
 
         if len(tokens[0]) == 0:
-            constraint = True
-            head_variable_id = -1
-            head_value_id = -1
-            features = features+targets
+            #constraint = True
+            head = None
+            #features = features+targets
         else:
-            head_string = tokens[0].split('(')
-
-            head_variable = head_string[0].strip()
-            head_value = head_string[1].split(')')[0].strip()
-
-            head_variable_id = [var for (var,vals) in targets].index(head_variable)
-            head_value_id = targets[head_variable_id][1].index(head_value)
+            head = LegacyAtom.from_string(tokens[0])
 
         body_string = tokens[1].split(",")
 
         # Empty rule
         if len(body_string) >= 1 and "(" not in body_string[0]:
-            return Rule(head_variable_id, head_value_id, len(features))
+            return Rule(head)
 
-        body = []
+        body = {}
 
         for token in body_string:
-            token = token.split("(")
-            variable = token[0].strip()
-            value = token[1].split(")")[0].strip()
-            body.append((variable, value))
+            condition = LegacyAtom.from_string(token)
+            body[condition.variable] = condition
 
-        body_encoded = []
-        for variable,value in body:
-            variable_id = [var for (var,vals) in features].index(variable)
-            value_id = features[variable_id][1].index(value)
-            body_encoded.append( (variable_id, value_id) )
-
-        return Rule(head_variable_id, head_value_id, len(features), body_encoded)
+        return Rule(head, body)
 
 #--------------
 # Observers
@@ -132,7 +101,7 @@ class Rule:
             int
                 the number of conditions in the rule body
         """
-        return len(self._body_variables)
+        return len(self.body)
 
     def to_string(self):
         """
@@ -142,122 +111,59 @@ class Rule:
             String
                 a readable representation of the object
         """
-        out = str(self._head_variable) + "=" + str(self._head_value)
-
-        out += " :- "
-        for var, val in self.body:
-            out += str(var) + "=" + str(val) + ", "
-        if len(self._body_variables) > 0:
-            out = out[:-2]
-        out += "."
-        return out
-
-    def logic_form(self, features, targets):
-        """
-        Convert the rule to a logic programming string format,
-        using given variables/values labels.
-
-        Args:
-            features: list of (String, list of String)
-                Labels of the features variables and their values
-            targets: list of (String, list of String)
-                Labels of the targets variables and their values
-
-        Returns:
-            String
-                a logic programming string representation of the rule with original labels
-        """
-
-        # DBG
-        #eprint(conclusion_values)
         out = ""
 
-        constraint = False
-        if self.head_variable < 0:
-            constraint = True
-
-        # Not a constraint
-        if not constraint:
-            if len(targets) <= self.head_variable:
-                raise ValueError("Variable id in rule head out of bound of given targets")
-            if len(targets[self.head_variable][1]) <= self.head_value:
-                raise ValueError("Value id in rule head out of bound of given targets")
-
-            var_label = targets[self.head_variable][0]
-            val_label = targets[self.head_variable][1][self.head_value]
-            out = str(var_label) + "(" + str(val_label) + ") "
-
-        out += ":- "
-
-        for var, val in self.body:
-            if var < 0:
-                raise ValueError("Variable id cannot be negative in rule body")
-
-            if var >= len(features):
-                if not constraint:
-                    raise ValueError("Variable id in rule body out of bound of given features")
-                elif var >= len(features)+len(targets):
-                    raise ValueError("Variable id in constraint body out of bound of given targets")
-                var_label = targets[var-len(features)][0]
-                val_label = targets[var-len(features)][1][val]
-            else:
-                var_label = features[var][0]
-                val_label = features[var][1][val]
-
-            out += str(var_label) + "(" + str(val_label) + "), "
-
-        # Delete last ", "
-        if len(self._body_variables) > 0:
+        if self.head is not None:
+            out += self.head.to_string() + " :- "
+        else:
+            out += ":- "
+        variables = list(self.body.keys())
+        variables.sort()
+        for var in variables:
+            out += self.body[var].to_string() + ", "
+        if len(self.body) > 0:
             out = out[:-2]
-
         out += "."
         return out
-
 
     def get_condition(self, variable):
         """
         Accessor to the condition value over the given variable
 
         Args:
-            variable: int
+            variable: string
                 a variable id
-
         Returns:
-            int
-                The value of the condition over the variable if it exists
-                None if no condition exists on the given variable
+            atom
+                The atom of the condition over the variable if it exists
+            None
+                if no condition exists on the given variable
         """
-        #if self._body_values[variable] == -1:
-        #    return None
+        if variable not in self.body:
+            return None
 
-        return self._body_values[variable]
-        #for (var, val) in self._body:
-        #    if (var == variable):
-        #        return val
-        #return None
+        return self.body[variable]
 
     def has_condition(self, variable):
         """
         Observer to condition existence over the given variable
 
         Args:
-            variable: int
+            variable: string
                 a variable id
-
         Returns:
             Bool
                 True if a condition exists over the given variable
                 False otherwize
         """
-        return self._body_values[variable] != -1
-        #return self.get_condition(variable) is not None
+        return variable in self.body
 
     def matches(self, state):
         """
         Check if the conditions of the rules holds in the given state
 
         Args:
-            state: list of int
+            state: list of any
                 a state of the system
 
         Returns:
@@ -265,17 +171,41 @@ class Rule:
                 True if all conditions holds in the given state
                 False otherwize
         """
-        #for (var,val) in self._body:
-        for var in self._body_variables:
-            val = self._body_values[var]
-            # delayed condition
-            if(var >= len(state)):
-                return False
-
-            if(state[var] != val):
+        for var in self.body:
+            if not self.body[var].matches(state):
                 return False
         return True
+    
+    def partial_matches(self, state, unknown_values):
+        """
+        Check if the conditions of the rules holds in the given state.
+        Consider partial matching with unknown values.
 
+        Args:
+            state: list of any
+                a state of the system
+
+        Returns:
+            int
+                _NO_MATCH if a condition conflict with a state value
+                _PARTIAL_MATCH if some condition have unknown value in the state
+                _FULL_MATCH if all condition are present in the state
+        """
+        output = Rule._FULL_MATCH
+        for var in self.body:
+            result = self.body[var].partial_matches(state, unknown_values)
+
+            if result == Atom._NO_MATCH:
+                return Rule._NO_MATCH
+
+            if result == Atom._PARTIAL_MATCH:
+                output = Rule._PARTIAL_MATCH
+
+            # Full match by default
+
+        return output
+
+    # TODO
     def cross_matches(self, rule):
         """
         Check if their is a state that both rules match
@@ -288,18 +218,12 @@ class Rule:
                 True if the rules cross-match
                 False otherwize
         """
-        #for var, val in self._body:
-        for var in self._body_variables:
-            val = self._body_values[var]
-            val_ = rule.get_condition(var)
-            if val_ !=-1 and val_ != val:
-                return False
-        return True
+        pass
 
     def subsumes(self, rule):
         """
         Check if the rule will match every states the other rule match.
-        Onlly occurs when all conditions of the current rules appears in the other one.
+        Only occurs when all conditions of the current rules appears in the other one.
 
         Args:
             rule: Rule
@@ -309,13 +233,13 @@ class Rule:
                 True if the rule subsumes the other one
                 False otherwize
         """
-        #if self.size() > rule.size():
-        #    return False
+        if self.size() > rule.size():
+            return False
 
-        #for var, val in self._body:
-        for var in self._body_variables:
-            val = self._body_values[var]
-            if rule.get_condition(var) != val:
+        for var in self.body:
+            if rule.get_condition(var) is None:
+                return False
+            if not self.body[var].subsumes(rule.get_condition(var)):
                 return False
 
         return True
@@ -336,31 +260,10 @@ class Rule:
                 True if the other rule is equal
                 False otherwize
         """
-        if isinstance(rule, Rule):
-            # Different head
-            if (self.head_variable != rule.head_variable) or (self.head_value != rule.head_value):
-                return False
-
-            # Different size
-            #if len(self.body) != len(rule.body):
-            if self.size() != rule.size():
-                return False
-
-            # Check conditions
-            #for c in self.body:
-            for var in self._body_variables:
-                val = self._body_values[var]
-
-                if var >= len(rule._body_values):
-                    return False
-
-                if rule.get_condition(var) != val:
-                    return False
-
-            # Same head, same number of conditions and all conditions appear in the other rule
-            return True
-
-        return False
+        return isinstance(rule, Rule) and self.head == rule.head and self.body == rule.body
+    
+    def __ne__(self, rule):
+        return not (self == rule)
 
     def __str__(self):
         return self.to_string()
@@ -370,87 +273,79 @@ class Rule:
 
     def __hash__(self):
         return hash(str(self))
+    
+    def __lt__(self, other):
+        return self.subsumes(other)
 
 #--------------
 # Methods
 #--------------
 
     # @warning: Expecting no condition already exist
-    def add_condition(self, variable, value):
+    def add_condition(self, atom):
         """
         Add a condition to the body of the rule
 
         Args:
-            variable: int
-                id of a variable
-            value: int
-                id of a value of the variable
+            Atom
+                The atom to be added as condition
         """
-        # DBG
-        #if self.has_condition(variable):
-        #    self.remove_condition(variable)
-
-        #index = 0
-        #for var, val in self._body: # Order w.r.t. variable id
-        #for var in self._body_variables:
-        #    if var > variable:
-        #        self._body_variables.insert(index, variable)
-        #        self._body_values[variable] = value
-        #        return
-        #    index += 1
-
-        self._body_variables.append(variable)
-        self._body_values[variable] = value
+        self.body[atom.variable] = atom
 
     def remove_condition(self, variable):
         """
         Remove a condition from the body of the rule
 
         Args:
-            variable: int
+            variable: string
                 id of a variable
         """
-        index = 0
-        #for (var, val) in self._body:
-        for var in self._body_variables:
-            if (var == variable):
-                self._body_variables.pop(index)
-                self._body_values[variable] = -1
-                return
-            index += 1
+        if variable in self.body:
+            del self.body[variable]
 
-    def pop_condition(self):
+    def least_specialization(self, state, features, unknown_values=[]):
         """
-        Remove last condition from the body of the rule
+        Return a set of rules that matches same states as current rule beside given state.
+        Rely on condition atom self least specialization correctness.
+
+        Args:
+            state: array of value
+            features: dict of void atoms
+            unknown_values: list of string
         """
-        if len(self._body_variables) > 0:
-            var = self._body_variables.pop()
-            self._body_values[var] = -1
+        output = []
+        for var in features:
+            # Unknown value does not require spec
+            #if state[features[var].state_position] == Atom._UNKNOWN_VALUE:
+            #    continue
+            # No condition on variable
+            if not self.has_condition(var):
+                new_atoms = features[var].least_specialization(state, unknown_values)
+            else:
+                new_atoms = self.body[var].least_specialization(state, unknown_values)
+            for atom in new_atoms:
+                new_rule = self.copy()
+                new_rule.add_condition(atom) # don't need to remove it get replaced
+                output.append(new_rule)
+
+        return output
+
 #--------------
 # Properties
 #--------------
 
-    # TODO: check types
-
     @property
-    def head_variable(self):
-        return self._head_variable
+    def head(self):
+        return self._head
 
-    @head_variable.setter
-    def head_variable(self, value):
-        self._head_variable = value
-
-    @property
-    def head_value(self):
-        return self._head_value
-
-    @head_value.setter
-    def head_value(self, value):
-        self._head_value = value
+    @head.setter
+    def head(self, value):
+        self._head = value
 
     @property
     def body(self):
-        output = []
-        for var in self._body_variables:
-            output.append((var,self._body_values[var]))
-        return sorted(output)
+        return self._body
+
+    @body.setter
+    def body(self, value):
+        self._body = value

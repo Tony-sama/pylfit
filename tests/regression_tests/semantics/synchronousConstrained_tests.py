@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/17
-# @updated: 2021/06/15
+# @updated: 2023/12/22
 #
 # @desc: SynchronousConstrained class unit test script
 # done:
@@ -70,13 +70,14 @@ class SynchronousConstrained_tests(unittest.TestCase):
         model = CDMVLP(features=dataset.features, targets=dataset.targets)
         model.compile(algorithm="synchronizer")
         model.fit(dataset=dataset)
+        #model.summary() # DBG
 
-        feature_state = Algorithm.encode_state([0,0,0], model.features)
-        self.assertEqual(set([tuple(s) for s in SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)]), set([(1,0,0), (0, 0, 1)]))
-        feature_state = Algorithm.encode_state([1,1,1], model.features)
-        self.assertEqual(set([tuple(s) for s in SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)]), set([(1,1,0)]))
-        feature_state = Algorithm.encode_state([0,1,0], model.features)
-        self.assertEqual(set([tuple(s) for s in SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)]), set([(1,0,1)]))
+        feature_state = ["0","0","0"]
+        self.assertEqual(set([tuple(s) for s in SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)]), set([("1","0","0"), ("0", "0", "1")]))
+        feature_state = ["1","1","1"]
+        self.assertEqual(set([tuple(s) for s in SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)]), set([("1","1","0")]))
+        feature_state = ["0","1","0"]
+        self.assertEqual(set([tuple(s) for s in SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)]), set([("1","0","1")]))
 
         # Random tests
         for i in range(self._nb_tests):
@@ -90,7 +91,7 @@ class SynchronousConstrained_tests(unittest.TestCase):
             algorithm="synchronizer")
 
             feature_state = random.choice(model.feature_states())
-            feature_state = Algorithm.encode_state(feature_state, model.features)
+            feature_state = feature_state
 
             target_states = SynchronousConstrained.next(feature_state, model.targets, model.rules, model.constraints)
 

@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # @author: Tony Ribeiro
 # @created: 2019/04/30
-# @updated: 2022/08/31
+# @updated: 2023/12/27
 #
 # @desc: simple ACEDIA implementation:
 #   - INPUT: a set of pairs of continuous valued state transitions
@@ -22,9 +22,6 @@ from ..objects.continuumRule import ContinuumRule
 from ..algorithms.algorithm import Algorithm
 from ..datasets import ContinuousStateTransitionsDataset
 
-import warnings
-
-import csv
 import multiprocessing
 import itertools
 
@@ -36,17 +33,17 @@ class ACEDIA (Algorithm):
         - continuous valued
         - continuum deterministic
     INPUT: a set of pairs of continuous valued states
-    OUTPUT: a continuum logic program
+    OUTPUT: a list of continuum rules
     """
 
     @staticmethod
     def fit(dataset, targets_to_learn=None, verbose=0, threads=1):
         """
         Preprocess transitions and learn rules for all target_to_learn variables.
-        Assume deterministics transitions: only one future for each state.
+        Assume continuum deterministics transitions: only one future continuum for each state.
 
         Args:
-            dataset: pylfit.datasets.StateTransitionsDataset
+            dataset: pylfit.datasets.ContinuousStateTransitionsDataset
                 state transitions of a the system
             targets_to_learn: list of String
                 target variables of the dataset for wich we want to learn rules.
@@ -98,6 +95,9 @@ class ACEDIA (Algorithm):
 
     @staticmethod
     def fit_thread(args):
+        """
+        Thread wrapper for fit_var function (see below)
+        """
         feature_domains, target_domains, transitions, var_id, verbose = args
         if verbose > 0:
             eprint("\nStart learning of var=", var_id+1,"/", len(target_domains))
@@ -115,7 +115,12 @@ class ACEDIA (Algorithm):
         Learn minimal rules that realizes the given transitions
 
         Args:
-            TODO
+            features: list of (string, list of string)
+            transitions: list of pair (list of float, list of float)
+            variable: string
+            varbose: int
+        Returns:
+            list of ContinuumRule
         """
         #if verbose > 0:
         #    eprint("\rLearning var="+str(variable+1)+"/"+str(len(features)), end='')
@@ -179,7 +184,7 @@ class ACEDIA (Algorithm):
         """
         Compute the least revision of rule w.r.t. the transition (state_1, state_2)
 
-        Agrs:
+        Args:
             rule: ContinuumRule
             state_1: list of float
             state_2: list of float

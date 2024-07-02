@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2019/10/29
-# @updated: 2021/06/15
+# @updated: 2023/12/27
 #
 # @desc: simple implementation synchronous semantic over DMVLP
 #   - Update all variables at the same time
@@ -35,8 +35,8 @@ class SynchronousConstrained(Semantics):
                 A list of multi-valued logic constraints
 
         Returns:
-            list of (list of int).
-                the possible next states according to the rules.
+            dict of list of any:list of rules.
+                the possible next states and the rules that produce it according to the semantics.
         """
         # Apply synchronous semantics
         candidates = Synchronous.next(feature_state, targets, rules)
@@ -48,13 +48,8 @@ class SynchronousConstrained(Semantics):
             for c in constraints:
                 if c.matches(list(feature_state)+list(s)):
                     valid = False
-                    #eprint(c, " matches ", feature_state, ", ", s)
                     break
             if valid:
-                # Decode state with domain values
                 output[s] = rules
-
-        # DBG
-        #eprint("constrainted: ", output)
 
         return output

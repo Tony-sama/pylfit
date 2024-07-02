@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2022/08/29
-# @updated: 2022/08/19
+# @updated: 2023/12/26
 #
 # @desc: ContinuousStateTransitionsDataset class unit test script
 # done:
@@ -62,8 +62,8 @@ class ContinuousStateTransitionsDataset_tests(unittest.TestCase):
         for i in range(self._nb_tests):
             features = [("x_"+str(var), Continuum(self._min_value,self._max_value,True,True)) for var in range(0, random.randint(1,self._nb_features))]
             targets = [("y_"+str(var), Continuum(self._min_value,self._max_value,True,True)) for var in range(0, random.randint(1,self._nb_targets))]
-            data = [([random.randint(features[var][1].min_value, features[var][1].max_value) for var in range(0,len(features))], \
-            [random.randint(targets[var][1].min_value, targets[var][1].max_value) for var in range(0,len(targets))]) \
+            data = [([random.uniform(features[var][1].min_value, features[var][1].max_value) for var in range(0,len(features))], \
+            [random.uniform(targets[var][1].min_value, targets[var][1].max_value) for var in range(0,len(targets))]) \
             for i in range(0, random.randint(0, self._nb_transitions))]
 
 

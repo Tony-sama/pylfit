@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2021/02/02
-# @updated: 2021/06/15
+# @updated: 2023/12/13
 #
 # @desc: GULA regression test script
 # Tests algorithm methods on random dataset
@@ -23,7 +23,7 @@ sys.path.insert(0, str(str(pathlib.Path(__file__).parent.parent.absolute())))
 
 import itertools
 
-from tests_generator import random_DiscreteStateTransitionsDataset
+from tests_generator import random_DiscreteStateTransitionsDataset, random_unknown_values_dataset
 
 from pylfit.utils import eprint
 from pylfit.algorithms import GULA
@@ -41,11 +41,45 @@ class GULA_benchmark_tests(unittest.TestCase):
         Regression tests of class GULA from gula.py with benchmarks data
     """
 
-    _nb_tests = 10
+    _nb_tests = 100
 
     #------------------
     # Test functions
     #------------------
+
+    def test_void_learning(self):
+        print(">> GULA benchmark <void learning>:")
+        for test_id in range(self._nb_tests):
+            dataset = random_DiscreteStateTransitionsDataset( \
+                nb_transitions=10, \
+                nb_features=random.randint(1,3), \
+                nb_targets=random.randint(1,3), \
+                max_feature_values=3, max_target_values=3)
+
+            # Random mask
+            data = random_unknown_values_dataset(dataset.data)
+            masked_dataset = DiscreteStateTransitionsDataset(data, dataset.features, dataset.targets)
+
+            original_rules = GULA.fit(dataset=dataset)
+            masked_rules = GULA.fit(dataset=masked_dataset)
+
+            # All original are dominated
+            for r in original_rules:
+                dominated = False
+                for r_ in masked_rules:
+                    if r.head == r_.head and r_.subsumes(r):
+                        dominated = True
+                        break
+                self.assertTrue(dominated)
+
+            # No over specialization
+            for r_ in masked_rules:
+                dominated = False
+                for r in original_rules:
+                    if r.head == r_.head and r.subsumes(r_) and r != r_:
+                        dominated = True
+                        break
+                self.assertFalse(dominated)
 
     def test_repressilator(self):
         print(">> GULA benchmark <repressilator>:")
@@ -469,31 +503,38 @@ class GULA_benchmark_tests(unittest.TestCase):
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule, dataset.features, dataset.targets))
+            expected_rules.append(Rule.from_string(string_rule).to_string())
 
         #eprint(expected_rules)
 
         output = GULA.fit(dataset)
+        output_str = [r.to_string() for r in output]
+        
+        #eprint(len(output))
 
-        #eprint(output)
+        #eprint(output_str)
+        #for r in output_str:
+        #    print(r)
 
         for r in expected_rules:
-            if r not in output:
+            if r not in output_str:
                 eprint("Missing rule: ", r)
-            self.assertTrue(r in output)
+            self.assertTrue(r in output_str)
 
-        for r in output:
+        for r in output_str:
             if r not in expected_rules:
                 eprint("Additional rule: ", r)
             self.assertTrue(r in expected_rules)
-
+        
         model = DMVLP(dataset.features, dataset.targets, output)
+        #print(model)
 
         expected = set((tuple(s1),tuple(s2)) for s1,s2 in dataset.data)
         predicted = set()
 
         for s1 in model.feature_states():
             prediction = model.predict([s1])
+            #print(prediction)
             for s2 in prediction[tuple(s1)]:
                 predicted.add( (tuple(s1), tuple(s2)) )
 

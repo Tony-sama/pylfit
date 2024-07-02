@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     for i in range(1, multiprocessing.cpu_count()+1):
         start = time.time()
-        model.fit(dataset=dataset, verbose=0, threads=i)
+        model.fit(dataset=dataset, options={"threads":i})
         end = time.time()
         print(">> "+str(i)+" threads: "+str(round(end - start,2))+" s")
 
@@ -67,14 +67,14 @@ if __name__ == '__main__':
 
     for i in range(1, multiprocessing.cpu_count()+1):
         start = time.time()
-        model.fit(dataset=dataset, verbose=0, threads=i)
+        model.fit(dataset=dataset, options={"threads":i})
         end = time.time()
         print(">> "+str(i)+" threads: "+str(round(end - start,2))+" s")
 
     print("> PRIDE multi-thread at rule level")
     for i in range(1, multiprocessing.cpu_count()+1):
         start = time.time()
-        model.fit(dataset=dataset, verbose=0, heuristics=["multi_thread_at_rule_level"], threads=i)
+        model.fit(dataset=dataset, options={"heuristics":["multi_thread_at_rule_level"], "threads":i})
         end = time.time()
         print(">> "+str(i)+" threads: "+str(round(end - start,2))+" s")
 
@@ -110,6 +110,6 @@ if __name__ == '__main__':
 
 
     # Fit the DMVLP on the dataset
-    # optional targets: model.fit(dataset=dataset, targets_to_learn={'p_t':["1"], 'r_t':["0"]})
+    # optional targets: model.fit(dataset=dataset, targets_to_learn={p_t:["1"], r_t:["0"]})
     #model.fit(dataset=dataset, targets_to_learn=None)
     #model.summary()

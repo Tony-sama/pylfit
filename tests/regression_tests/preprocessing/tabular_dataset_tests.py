@@ -1,7 +1,7 @@
 #-----------------------
 # @author: Tony Ribeiro
 # @created: 2020/12/23
-# @updated: 2022/08/29
+# @updated: 2023/12/26
 #
 # @desc: dataset class unit test script
 #
@@ -109,6 +109,35 @@ class tabular_dataset_tests(unittest.TestCase):
             for i in range(len(data)):
                 self.assertTrue( (dataset.data[i][0]==data[i][0]).all() )
                 self.assertTrue( (dataset.data[i][1]==data[i][1]).all() )
+
+            # exceptions
+            #------------
+            self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, 10, features_col_header, targets_col_header)
+        
+            # features_names is not list of string
+            feature_names = ["p_t-1","q_t-1","r_t-1"]
+            target_names = ["p_t","q_t","r_t"]
+
+            feature_names = ""
+            self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, dataset_filepath,feature_names, target_names)
+            feature_names = [1,0.5,"lol"]
+            self.assertRaises(ValueError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, dataset_filepath,feature_names, target_names)
+
+            # target_names is not list of string
+            feature_names = ["p_t-1","q_t-1","r_t-1"]
+            target_names = ["p_t","q_t","r_t"]
+
+            target_names = ""
+            self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, dataset_filepath, feature_names, target_names)
+            target_names = [1,0.5,"lol"]
+            self.assertRaises(ValueError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, dataset_filepath, feature_names, target_names)
+
+            # Unknown values must be a list
+            feature_names = ["p_t-1","q_t-1","r_t-1"]
+            target_names = ["p_t","q_t","r_t"]
+            self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, dataset_filepath, feature_names, target_names, "?")
+            #self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_csv, dataset_filepath, feature_names, target_names, ["?",1])
+
 
 
     def test_discrete_state_transitions_dataset_from_array(self):
@@ -251,7 +280,7 @@ class tabular_dataset_tests(unittest.TestCase):
         self.assertRaises(ValueError, pylfit.preprocessing.discrete_state_transitions_dataset_from_array, data, None, targets, None, target_names)
         self.assertRaises(ValueError, pylfit.preprocessing.discrete_state_transitions_dataset_from_array, data, features, targets, feature_names, target_names)
 
-        # target_names is not list of string
+        # features_names is not list of string
         data = [ \
         ([0,0,0],[0,0,1]), \
         ([0,0,0],[1,0,0])]
@@ -274,6 +303,15 @@ class tabular_dataset_tests(unittest.TestCase):
         self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_array, data, None, None, feature_names, target_names)
         target_names = [1,0.5,"lol"]
         self.assertRaises(ValueError, pylfit.preprocessing.discrete_state_transitions_dataset_from_array, data, None, None, feature_names, target_names)
+
+        # Unknown values must be a list
+        data = [ \
+        ([0,"?",0],[0,0,1]), \
+        ([0,0,0],[1,"?",0])]
+        feature_names = ["p_t-1","q_t-1","r_t-1"]
+        target_names = ["p_t","q_t","r_t"]
+        self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_array, data, None, None, feature_names, target_names, "?")
+        #self.assertRaises(TypeError, pylfit.preprocessing.discrete_state_transitions_dataset_from_array, data, None, None, feature_names, target_names, ["?",1])
 
         # Random tests
         for i in range(self._nb_random_tests):
