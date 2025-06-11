@@ -39,8 +39,8 @@ from pylfit.algorithms.algorithm import Algorithm
 
 from pylfit.datasets import DiscreteStateTransitionsDataset
 
-#random.seed(10)
-#np.random.seed(10)
+random.seed(0)
+np.random.seed(0)
 
 class GULA_tests(unittest.TestCase):
     """

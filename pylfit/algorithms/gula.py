@@ -149,6 +149,9 @@ class GULA (Algorithm):
         
         positives, negatives = GULA.interprete(processed_transitions, head)
 
+        if impossibility_mode:
+            positives, negatives = negatives.copy(), positives.copy()
+
         # Remove potential false negatives
         if has_unknown_values:
             certain_negatives = []
@@ -167,9 +170,6 @@ class GULA (Algorithm):
                     certain_negatives.append(neg)
 
             negatives = certain_negatives
-
-        if impossibility_mode:
-            positives, negatives = negatives.copy(), positives.copy()
 
         #if has_unknown_values:
         #    rules = GULA.fit_var_val_with_unknown_values(head, features_void_atoms, negatives, positives, unknown_values, verbose)
@@ -267,6 +267,80 @@ class GULA (Algorithm):
                 # Generates all least specialisation of the rule
                 ls = []
                 ls = unconsistent.least_specialization(neg, features_void_atoms)
+
+                for candidate in ls:
+                    # Discard if subsumed by a consistent minimal rule
+                    subsumed = False
+                    for minimal_rule in minimal_rules:
+                        if minimal_rule.subsumes(candidate):
+                            subsumed = True
+                            break
+
+                    if subsumed:
+                        continue
+
+                    new_rules.append(candidate)
+
+            # Add new minimal rules
+            for new_rule in new_rules:
+                minimal_rules.append(new_rule)
+
+        return minimal_rules
+    
+    @staticmethod
+    def fit_var_val_strict(head, features_void_atoms, negatives, verbose=0):
+        """
+        Learn minimal rules that explain positive examples while consistent with negatives examples (unsured total unmatch)
+
+        Args:
+            head: LegacyAtom
+                head of the rules.
+            features_void_atoms: dictionary of string:Atom
+                Features variables void atoms.
+            negatives: list of (list of any)
+                States of the system where the variable cannot take this value in the next state.
+            verbose: int (0 or 1)
+        Returns:
+            list of pylfit.objects.Rule
+                minimals consistent rules
+        """
+
+        # 0) Initialize program as most the general rule
+        #------------------------------------------------
+        minimal_rules = [Rule(head)] # HACK legacy atom target
+
+        # DBG
+        neg_count = 0
+
+        # Revise learned rules against each negative example
+        for neg in negatives:
+
+            neg_count += 1
+            if verbose > 0:
+                eprint("\rNegative examples satisfied: ",neg_count,"/",len(negatives), ", rules: ", len(minimal_rules), "               ", end='')
+
+            # 1) Extract unconsistents rules
+            #--------------------------------
+
+            unconsistents = []
+            index=0
+            while index < len(minimal_rules):
+                if minimal_rules[index].partial_matches(neg, [LegacyAtom._VOID_VALUE]) != Rule._NO_MATCH:
+                    unconsistents.append(minimal_rules[index])
+                    del minimal_rules[index]
+                    continue
+                index+=1
+
+            # 2) Revise unconsistents rules
+            #--------------------------------
+
+            new_rules = []
+
+            for unconsistent in unconsistents:
+
+                # Generates all least specialisation of the rule
+                ls = []
+                ls = unconsistent.least_specialization_strict(neg, features_void_atoms, [LegacyAtom._VOID_VALUE])
 
                 for candidate in ls:
                     # Discard if subsumed by a consistent minimal rule

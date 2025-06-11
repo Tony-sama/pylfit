@@ -105,7 +105,7 @@ class Rule_tests(unittest.TestCase):
             features = random_features(self._nb_features, self._nb_values)
             targets = random_targets(self._nb_targets, self._nb_values)
             r1 = random_rule(len(features), len(targets), self._nb_values, min(self._max_body_size,self._nb_features-1))
-            r2 = Rule.from_string(r1.to_string())
+            r2 = Rule.from_string(r1.to_string(), features, targets)
 
             # Equality beside domain/state_position
             self.assertEqual(r1.head.variable,r2.head.variable)
@@ -117,7 +117,7 @@ class Rule_tests(unittest.TestCase):
 
             # Constraint case
             r1.head = None
-            r2 = Rule.from_string(r1.to_string())
+            r2 = Rule.from_string(r1.to_string(), features, targets)
             self.assertEqual(r1.head,r2.head)
             for var in r1.body:
                 self.assertEqual(r1.body[var].value,r2.body[var].value)
@@ -236,10 +236,10 @@ class Rule_tests(unittest.TestCase):
             self.assertEqual(r.partial_matches(state,["?"]), Rule._PARTIAL_MATCH)
 
             var = random.choice(list(r.body.keys()))
-            val = random.choice(r.body[var].domain)
+            val = random.choice(list(r.body[var].domain))
 
             while val == r.body[var].value:
-                val = random.choice(r.body[var].domain)
+                val = random.choice(list(r.body[var].domain))
 
             state[r.body[var].state_position] = val
 

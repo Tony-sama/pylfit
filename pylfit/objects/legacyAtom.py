@@ -32,6 +32,10 @@ class LegacyAtom(Atom):
             state_position: int
                 id of the position of the variable in an observed state
         """
+        #DBG
+        if not isinstance(domain, (set)) or not all(isinstance(val, (str)) for val in domain):
+            raise ValueError("Domain of a LegacyAtom must be a set of string")
+
         super().__init__(variable,domain,value)
         self.state_position = state_position
 
@@ -46,13 +50,19 @@ class LegacyAtom(Atom):
         return LegacyAtom(self.variable, self.domain, self.value, self.state_position)
     
     @staticmethod
-    def from_string(string_format):
+    def from_string(string_format, variables):
         tokens = string_format.split('(')
 
         variable = tokens[0].strip()
         value = tokens[1].split(")")[0].strip()
+        values = set(value)
+        position = -1
+        for pos, (var, vals) in enumerate(variables):
+            if var == variable:
+                position = pos
+                values = set(vals)
 
-        return LegacyAtom(variable, {value}, value, -1)
+        return LegacyAtom(variable, values, value, position)
 
 
 #--------------

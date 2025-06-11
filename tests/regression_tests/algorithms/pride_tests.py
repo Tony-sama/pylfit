@@ -39,8 +39,8 @@ from pylfit.algorithms.algorithm import Algorithm
 
 from pylfit.datasets import DiscreteStateTransitionsDataset
 
-#random.seed(0)
-#np.random.seed(0)
+random.seed(0)
+np.random.seed(0)
 
 class PRIDE_tests(unittest.TestCase):
     """
@@ -72,8 +72,8 @@ class PRIDE_tests(unittest.TestCase):
             dataset = "" # not a DiscreteStateTransitionsDataset
             self.assertRaises(ValueError, PRIDE.fit, dataset)
 
-            #heuristics_list = ["try_all_atoms", "max_coverage_dynamic", "max_coverage_static", "max_diversity", "multi_thread_at_rule_level"]
-            heuristics_list = PRIDE._HEURISTICS # TODO
+            heuristics_list = ["try_all_atoms", "max_coverage_dynamic", "max_coverage_static", "max_diversity", "multi_thread_at_rule_level"]
+            #heuristics_list = PRIDE._HEURISTICS # TODO
             
             for partial_dataset in [False,True]:
                 for impossibility_mode in [False,True]:
@@ -198,6 +198,7 @@ class PRIDE_tests(unittest.TestCase):
                                                     self.assertFalse(observed)
                                             else:
                                                 if not observed:
+                                                        print("threads:", threads)
                                                         print("impossibility:", impossibility_mode)
                                                         print("heuristics:", heuristics)
                                                         print(r)
@@ -242,17 +243,18 @@ class PRIDE_tests(unittest.TestCase):
 
                                         # # DEBUG:
                                         if not minimal:
-                                            eprint("Simplification exists: "+r_.to_string())
-
-                                        # # DEBUG:
-                                        if not minimal:
+                                            print("threads:", threads)
+                                            eprint("Impossibility_mode", impossibility_mode)
+                                            eprint("Heuristics:",heuristics)
                                             eprint("not minimal "+r.to_string())
+                                            eprint("Simplification exists: "+r_.to_string())
                                             eprint("pos: ",pos)
                                             eprint()
                                             eprint("neg: ",neg)
                                             eprint(output)
 
                                         self.assertTrue(minimal)
+
 
                                 # TODO: check exceptions and targets to learn mode
                                 if heuristics is not None:

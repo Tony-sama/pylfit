@@ -56,11 +56,11 @@ def dmvlp_from_boolean_network_file(file_path, compute_complementary_rules=False
 
         # Negation: inverse values (CNF)
         for var_id, bodies in grouped_rules.items():
-            reversed_bodies = [ [(var,0) if val == 1 else (var,1) for var,val in body] for body in bodies]
+            reversed_bodies = [ [(var,"0") if val == "1" else (var,"1") for var,val in body] for body in bodies]
             grouped_rules[var_id] = reversed_bodies
 
         # CNF to DNF
-        eprint("computing complementary rules...")
+        #eprint("computing complementary rules...")
         for var_id, bodies in grouped_rules.items():
             nb_combinations = numpy.prod([len(l) for l in bodies])
             done = 0
@@ -68,27 +68,28 @@ def dmvlp_from_boolean_network_file(file_path, compute_complementary_rules=False
             valid_bodies = []
             for body in itertools.product(*bodies):
                 done += 1
-                eprint("\r", var_id+1, "/", len(features), " ",done,"/",nb_combinations, end='')
+                #eprint("\r", var_id+1, "/", len(features), " ",done,"/",nb_combinations, end='')
                 # delete doublon
                 body = set(body)
 
                 # Only one value per variable
                 valid = True
                 for var,val in body:
-                    if val == 0 and (var,1) in body:
+                    if val == "0" and (var,"1") in body:
                         valid = False
                         break
-                    if val == 1 and (var,0) in body:
+                    if val == "1" and (var,"0") in body:
                         valid = False
                         break
                 if valid:
                     valid_bodies.append(list(body))
+            #eprint()
 
             new_rules = []
             for body in valid_bodies:
-                new_rule = Rule(LegacyAtom(targets[var_id][0],[0,1],0,var_id))
+                new_rule = Rule(LegacyAtom(targets[var_id][0],{"0","1"},"0",var_id))
                 for var,val in body:
-                    new_rule.add_condition(LegacyAtom(features[var][0],[0,1],val,var))
+                    new_rule.add_condition(LegacyAtom(features[var][0],{"0","1"},val,var))
                 # Check subsumption of the new rule
                 subsumed = False
                 for r in new_rules:
@@ -174,26 +175,26 @@ def dmvlp_from_bnet_file(file_path):
         # Special function without clauses
         if len(factors) == 1:
             if factors == [["0"]]: # Function always false
-                rules.append(Rule(LegacyAtom(targets[head_var_id][0],[0,1],0,head_var_id)))
+                rules.append(Rule(LegacyAtom(targets[head_var_id][0],{"0","1"},"0",head_var_id)))
                 head_var_id += 1
                 continue
             if factors == [["1"]]: # Function always true
-                Rule(LegacyAtom(targets[head_var_id][0],[0,1],1,head_var_id))
+                Rule(LegacyAtom(targets[head_var_id][0],{"0","1"},"1",head_var_id))
                 head_var_id += 1
                 continue
         for clause in factors:
             #eprint(clause)
-            rule = Rule(LegacyAtom(targets[head_var_id][0],[0,1],1,head_var_id))
+            rule = Rule(LegacyAtom(targets[head_var_id][0],{"0","1"},"1",head_var_id))
             for condition in clause:
                 
                 if condition[0] == '!':
                     var_id = variables.index(condition[1:])
-                    val_id = 0
+                    val_id = "0"
                 else:
                     var_id = variables.index(condition[0:])
-                    val_id = 1
+                    val_id = "1"
 
-                rule.add_condition(LegacyAtom(features[var_id][0],[0,1],val_id,var_id))
+                rule.add_condition(LegacyAtom(features[var_id][0],{"0","1"},val_id,var_id))
 
             rules.append(rule)
         head_var_id += 1
@@ -312,15 +313,15 @@ def dmvlp_from_net_file(file_path):
                 index += 1
                 break
 
-            head_val = int(line[-1])
-            rule = Rule(LegacyAtom(targets[head_var_id][0],[0,1],head_val,head_var_id))
+            head_val = line[-1]
+            rule = Rule(LegacyAtom(targets[head_var_id][0],{"0","1"},head_val,head_var_id))
 
             for reg_id in range(0,len(regulators)):
-                atom = LegacyAtom(features[regulators[reg_id]-1][0],[0,1],0,regulators[reg_id]-1)
+                atom = LegacyAtom(features[regulators[reg_id]-1][0],{"0","1"},"0",regulators[reg_id]-1)
                 if line[reg_id] == '0':
                     rule.add_condition(atom)
                 if line[reg_id] == '1':
-                    atom.value = 1
+                    atom.value = '1'
                     rule.add_condition(atom)
 
             rules.append(rule)

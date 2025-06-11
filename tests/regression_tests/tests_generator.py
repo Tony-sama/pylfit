@@ -26,10 +26,10 @@ from pylfit.objects.legacyAtom import LegacyAtom
 def random_legacy_atom(nb_variables, nb_values):
     var = str(random.randint(0,nb_variables-1))
     if nb_values <= 2:
-        dom = ["0","1"]
+        dom = {"0","1"}
     else:
-        dom = [str(i) for i in range(random.randint(2,nb_values))]
-    val = random.choice(dom)
+        dom = {str(i) for i in range(random.randint(2,nb_values))}
+    val = random.choice(list(dom))
     pos = random.randint(0,nb_variables-1)
     return LegacyAtom(var, dom, val, pos)
 

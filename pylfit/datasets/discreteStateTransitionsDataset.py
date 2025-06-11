@@ -72,9 +72,9 @@ class DiscreteStateTransitionsDataset(Dataset):
 
         # Compute void atoms
         for var_id, (var, vals) in enumerate(features):
-            self.features_void_atoms[var] = LegacyAtom(var, vals, LegacyAtom._VOID_VALUE, var_id)
+            self.features_void_atoms[var] = LegacyAtom(var, set(vals), LegacyAtom._VOID_VALUE, var_id)
         for var_id, (var, vals) in enumerate(targets):
-            self.targets_void_atoms[var] = LegacyAtom(var, vals, LegacyAtom._VOID_VALUE, var_id)
+            self.targets_void_atoms[var] = LegacyAtom(var, set(vals), LegacyAtom._VOID_VALUE, var_id)
 
         # Check data values are in features/targets domains
         for transition_id, (s1,s2) in enumerate(data):
@@ -87,7 +87,7 @@ class DiscreteStateTransitionsDataset(Dataset):
 
             for var_id, val in enumerate(s1):
                 if val != self._UNKNOWN_VALUE and str(val) not in features[var_id][1]:
-                    raise ValueError("Transition " + str((s1,s2)) + ": value not in features for variable " + str(var_id))
+                    raise ValueError("Transition " + str((s1,s2)) + ": value not in features for variable " + str(var_id) + " ("+str(val)+")"+ " "+str(features[var_id]))
             for var_id, val in enumerate(s2):
                 if val != self._UNKNOWN_VALUE and str(val) not in targets[var_id][1]:
                     raise ValueError("Transition " + str((s1,s2)) + ": value not in targets for variable " + str(var_id))
@@ -191,7 +191,7 @@ class DiscreteStateTransitionsDataset(Dataset):
 #--------------
 # Statics methods
 #--------------
-
+    
 #--------------
 # Accessors
 #--------------
@@ -281,4 +281,3 @@ class DiscreteStateTransitionsDataset(Dataset):
     @nb_unknown_values.setter
     def nb_unknown_values(self, value):
         self._nb_unknown_values = value
-

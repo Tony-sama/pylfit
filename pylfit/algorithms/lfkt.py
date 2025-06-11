@@ -70,7 +70,7 @@ class LFkT (Algorithm):
                 extended_features = dict()
                 for d in range(1,delay+1):
                     for var_id_, (var_,vals_) in enumerate(features):
-                        extended_features[var_+"_t-"+str(d)] = LegacyAtom(var_+"_t-"+str(d),vals_,None,var_id_).void_atom()
+                        extended_features[var_+"_t-"+str(d)] = LegacyAtom(var_+"_t-"+str(d),set(vals_),None,var_id_).void_atom()
 
                 rules += GULA.fit_var_val(head, extended_features, negatives)
 

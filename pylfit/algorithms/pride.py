@@ -24,7 +24,12 @@ class PRIDE (Algorithm):
     """
 
     """ Learning heuristics that can be use with the algorithm"""
-    _HEURISTICS = ["try_all_atoms", "max_coverage_dynamic", "max_coverage_static", "max_diversity", "multi_thread_at_rule_level"]
+    _HEURISTICS = ["try_all_atoms", 
+                   "max_coverage_dynamic", 
+                   "max_coverage_static", 
+                   "max_diversity", 
+                   "multi_thread_at_rule_level",
+                   "min_negative_likeliness"]
 
     def fit(dataset, options=None):
         """
@@ -158,8 +163,12 @@ class PRIDE (Algorithm):
 
         positives, negatives = PRIDE.interprete(dataset, head)
 
+        if impossibility_mode:
+            positives, negatives = negatives.copy(), positives.copy()
+
         # Remove potential false negatives
         if dataset.has_unknown_values:
+            uncertain_negatives = []
             certain_negatives = []
             for neg in negatives:
                 uncertain_negative = False
@@ -172,16 +181,34 @@ class PRIDE (Algorithm):
                     if possible_same_state:
                         uncertain_negative = True
                         break
-                if not uncertain_negative:
+                if uncertain_negative:
+                    uncertain_negatives.append(neg)
+                else:
                     certain_negatives.append(neg)
 
             negatives = certain_negatives
 
-        if impossibility_mode:
-            rules = PRIDE.fit_var_val(head, dataset, negatives, positives, verbose, heuristics, threads)
-        else:
-            rules = PRIDE.fit_var_val(head, dataset, positives, negatives, verbose, heuristics, threads)
+            # Heuristic 1: acceptable uncertain negative
+            if heuristics is not None and "min_negative_likeliness" in heuristics and heuristics["min_negative_likeliness"] < 1:
+                for neg in uncertain_negatives:
+                    negative_likeliness = 1
+                    for pos in positives:
+                        negative_likeliness *= 1-Algorithm.equality_likeliness(neg,pos,dataset.features)
+                    
+                    if negative_likeliness >= heuristics["min_negative_likeliness"]:
+                        negatives.append(neg)
+                        #print(neg, "added to negatives, likeliness",positive_likeliness)
+                    else:
+                        positives.append(neg)
+            else:
+                positives += uncertain_negatives
 
+        #if impossibility_mode:
+        #    rules = PRIDE.fit_var_val(head, dataset, negatives, positives, verbose, heuristics, threads)
+        #else:
+        #    rules = PRIDE.fit_var_val(head, dataset, positives, negatives, verbose, heuristics, threads)
+
+        rules = PRIDE.fit_var_val(head, dataset, positives, negatives, verbose, heuristics, threads)
 
         if verbose > 0:
             eprint("\nFinished learning of ", head)
@@ -258,26 +285,27 @@ class PRIDE (Algorithm):
 
         # 0) Clean unexplainable positives
         #------------------------------------
-        #if dataset.has_unknown_values():
-        #    for pos in positives:
-        #        explainable = True
-        #        values = [(var,val) for var, val in enumerate(pos) if val != dataset._UNKNOWN_VALUE]
-        #        pos_rule = Rule(head)
-        #        for var_id,val in values:
-        #            var_name = dataset.features[var_id][0]
-        #            domain = set(dataset.features[var_id][1])
-        #            pos_rule.add_condition(LegacyAtom(var_name,domain,val,var_id))
-        #
-        #        for neg in negatives:
-        #            if pos_rule.matches(neg):
-        #                explainable = False
-        #                break
-        #
-        #        if explainable:
-        #           remaining.append(pos)
-        #else:
-        #    remaining = positives.copy()
-        remaining = positives.copy()
+        if dataset.has_unknown_values():
+            for pos in positives:
+                explainable = True
+                values = [(var,val) for var, val in enumerate(pos) if val != dataset._UNKNOWN_VALUE]
+                pos_rule = Rule(head)
+                for var_id,val in values:
+                    var_name = dataset.features[var_id][0]
+                    domain = set(dataset.features[var_id][1])
+                    pos_rule.add_condition(LegacyAtom(var_name,domain,val,var_id))
+        
+                for neg in negatives:
+                    if pos_rule.matches(neg) or pos_rule.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH:
+                        explainable = False
+                        break
+        
+                if explainable:
+                   remaining.append(pos)
+        else:
+            remaining = positives.copy()
+
+        #remaining = positives.copy()
 
         output = []
 
@@ -286,13 +314,16 @@ class PRIDE (Algorithm):
             target = remaining[0]
 
             R = Rule(head)
-
             # 1) Consistency: against negatives examples
             #---------------------------------------------
-            for neg in negatives:
-                if R.matches(neg): # Cover a negative example
+            for neg in negatives: # DBG add partial match
+                if R.matches(neg) or R.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH: # Cover a negative example
                     specialized = False
                     for var in dataset.features_void_atoms:
+                        # Useless to specialize on unknown value
+                        if neg[dataset.features_void_atoms[var].state_position] == LegacyAtom._UNKNOWN_VALUE:
+                            continue
+
                         void_atom = dataset.features_void_atoms[var]
                         if R.has_condition(void_atom.variable):
                             ls = R.get_condition(void_atom.variable).least_specialization(neg)
@@ -314,7 +345,7 @@ class PRIDE (Algorithm):
                 R.remove_condition(var) # Try remove condition
 
                 for neg in negatives:
-                    if R.matches(neg): # Cover a negative example
+                    if R.matches(neg) or R.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH: # Cover a negative example
                         R.add_condition(atom) # Cancel removal
                         break
 
@@ -413,14 +444,14 @@ class PRIDE (Algorithm):
                     var_name = dataset.features[var_id][0]
                     domain = set(dataset.features[var_id][1])
                     pos_rule.add_condition(LegacyAtom(var_name,domain,val,var_id))
-
+        
                 for neg in negatives:
-                    if pos_rule.matches(neg):
+                    if pos_rule.matches(neg) or pos_rule.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH:
                         explainable = False
                         break
-
+        
                 if explainable:
-                    remaining.append(pos)
+                   remaining.append(pos)
         else:
             remaining = positives.copy()
 
@@ -502,17 +533,20 @@ class PRIDE (Algorithm):
             if heuristic_max_coverage_dynamic:
                 matched_positives = [s for s in positives if R.matches(s)]
             for neg in negatives:
-                if R.matches(neg): # Cover a negative example
+                if R.matches(neg) or R.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH: # Cover a negative example
                     specializations = []
                     specialized = False
                     for var in dataset.features_void_atoms:
+                        # Useless to specialize on unknown value
+                        if neg[dataset.features_void_atoms[var].state_position] == LegacyAtom._UNKNOWN_VALUE:
+                            continue
                         void_atom = dataset.features_void_atoms[var]
                         if R.has_condition(void_atom.variable):
                             ls = R.get_condition(void_atom.variable).least_specialization(neg)
                         else:
                             ls = void_atom.least_specialization(neg)
                         for atom in ls:
-                            if atom.matches(target): # 
+                            if atom.matches(target):
                                 if not heuristic_max_coverage_dynamic and not heuristic_max_coverage_static and not heuristic_max_diversity:
                                     R.add_condition(atom)
                                     specialized = True
@@ -550,7 +584,7 @@ class PRIDE (Algorithm):
                 R.remove_condition(var) # Try remove condition
 
                 for neg in negatives:
-                    if R.matches(neg): # Cover a negative example
+                    if R.matches(neg) or R.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH: # Cover a negative example
                         R.add_condition(atom) # Cancel removal
                         break
 
@@ -561,10 +595,10 @@ class PRIDE (Algorithm):
                 R.remove_condition(var) # Try remove condition
 
                 for neg in negatives:
-                    if R.matches(neg): # Cover a negative example
+                    if R.matches(neg) or R.partial_matches(neg,[LegacyAtom._UNKNOWN_VALUE]) == Rule._PARTIAL_MATCH: # Cover a negative example
                         R.add_condition(atom) # Cancel removal
                         break
-
+                
             optimal_rules.add(R)
 
         return optimal_rules

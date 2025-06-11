@@ -59,7 +59,7 @@ def discrete_state_transitions_dataset_from_csv(path, feature_names, target_name
     #if not all(isinstance(i, str) for i in unknown_values):
     #   raise TypeError("Argument unknown_values must be a list of string")
 
-    df = pandas.read_csv(path)
+    df = pandas.read_csv(path,dtype=str)
 
     if unknown_values is None:
         unknown_values = []

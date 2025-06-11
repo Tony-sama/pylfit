@@ -329,7 +329,7 @@ class boolean_network_tests(unittest.TestCase):
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule).to_string())
+            expected_rules.append(Rule.from_string(string_rule, model.features, model.targets).to_string())
 
         output_rules = []
         for r in model.rules:
@@ -337,7 +337,11 @@ class boolean_network_tests(unittest.TestCase):
 
         for r in expected_rules:
             if r not in output_rules:
-                eprint("Missing rule: ", r)
+                eprint("Missing rule: \""+r+"\"")
+                for r in output_rules:
+                    eprint("\""+r+"\"")
+                eprint("****")
+                exit(0)
             self.assertTrue(r in output_rules)
 
         for r in output_rules:

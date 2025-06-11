@@ -240,7 +240,7 @@ class WDMVLP(DMVLP):
                     if not need_likeliness and not need_unlikeliness:
                         continue
 
-                    head = LegacyAtom(var, dataset.targets[var_id][1], val, var_id)
+                    head = LegacyAtom(var, set(dataset.targets[var_id][1]), val, var_id)
                     positives, negatives = PRIDE.interprete(dataset, head)
 
                     # Search for likeliness rules

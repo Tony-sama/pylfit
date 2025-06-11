@@ -265,7 +265,7 @@ class WDMVLP_tests(unittest.TestCase):
                             for val_id, val in enumerate(vals):
                                 #eprint("var: ", var_id)
                                 #eprint("val: ", val_id)
-                                head = LegacyAtom(var, dataset.targets[var_id][1], val, var_id)
+                                head = LegacyAtom(var, set(dataset.targets[var_id][1]), val, var_id)
                                 pos, neg = PRIDE.interprete(dataset, head)
 
                                 # Only way to not match is no rule can be find
@@ -293,7 +293,7 @@ class WDMVLP_tests(unittest.TestCase):
                     # check rules
                     for var_id, (var,vals) in enumerate(dataset.targets):
                         for val_id, val in enumerate(vals):
-                            head = LegacyAtom(var, dataset.targets[var_id][1], val, var_id)
+                            head = LegacyAtom(var, set(dataset.targets[var_id][1]), val, var_id)
                             pos, neg = PRIDE.interprete(dataset, head)
                             new_likely_rules = [x for x in model.rules if x not in original_rules]
                             new_unlikeliness_rules = [x for x in model.unlikeliness_rules if x not in original_unlikeliness_rules]
@@ -356,7 +356,7 @@ class WDMVLP_tests(unittest.TestCase):
                     # Check feature state cannot be matched
                     for var_id, (var,vals) in enumerate(dataset.targets):
                         for val_id, val in enumerate(vals):
-                            head = LegacyAtom(var, dataset.targets[var_id][1], val, var_id)
+                            head = LegacyAtom(var, set(dataset.targets[var_id][1]), val, var_id)
                             pos, neg = PRIDE.interprete(dataset, head)
                             if len(neg) > 0:
                                 f = io.StringIO()

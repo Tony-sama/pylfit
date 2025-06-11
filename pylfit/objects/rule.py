@@ -56,7 +56,7 @@ class Rule:
         return Rule(self.head, self.body)
 
     @staticmethod
-    def from_string(string_format):
+    def from_string(string_format, features, targets):
         """
         Construct a Rule from a string format.
 
@@ -73,7 +73,7 @@ class Rule:
             head = None
             #features = features+targets
         else:
-            head = LegacyAtom.from_string(tokens[0])
+            head = LegacyAtom.from_string(tokens[0], targets)
 
         body_string = tokens[1].split(",")
 
@@ -84,7 +84,7 @@ class Rule:
         body = {}
 
         for token in body_string:
-            condition = LegacyAtom.from_string(token)
+            condition = LegacyAtom.from_string(token, features)
             body[condition.variable] = condition
 
         return Rule(head, body)
@@ -318,6 +318,33 @@ class Rule:
             # Unknown value does not require spec
             #if state[features[var].state_position] == Atom._UNKNOWN_VALUE:
             #    continue
+            # No condition on variable
+            if not self.has_condition(var):
+                new_atoms = features[var].least_specialization(state, unknown_values)
+            else:
+                new_atoms = self.body[var].least_specialization(state, unknown_values)
+            for atom in new_atoms:
+                new_rule = self.copy()
+                new_rule.add_condition(atom) # don't need to remove it get replaced
+                output.append(new_rule)
+
+        return output
+    
+    def least_specialization_strict(self, state, features, unknown_values=[]):
+        """
+        Return a set of rules that matches same states as current rule beside given state.
+        Rely on condition atom self least specialization correctness.
+
+        Args:
+            state: array of value
+            features: dict of void atoms
+            unknown_values: list of string
+        """
+        output = []
+        for var in features:
+            # Unknown value does not require spec
+            if state[features[var].state_position] in unknown_values:
+                continue
             # No condition on variable
             if not self.has_condition(var):
                 new_atoms = features[var].least_specialization(state, unknown_values)

@@ -193,11 +193,11 @@ class Synchronizer_benchmark_tests(unittest.TestCase):
 
         expected_rules = []
         for string_rule in expected_string_rules:
-            expected_rules.append(Rule.from_string(string_rule).to_string())
+            expected_rules.append(Rule.from_string(string_rule, dataset.features, dataset.targets).to_string())
 
         expected_constraints = []
         for string_constraint in expected_string_constraints:
-            expected_constraints.append(Rule.from_string(string_constraint).to_string())
+            expected_constraints.append(Rule.from_string(string_constraint, dataset.features, dataset.targets).to_string())
 
         #eprint(expected_rules)
 
