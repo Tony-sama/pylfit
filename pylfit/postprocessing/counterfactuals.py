@@ -55,7 +55,7 @@ def bruteforce_counterfactuals(dmvlp, feature_state, target_variable, excluded_v
             changes = set()
             for var_id in range(len(state)):
                 if state[var_id] != feature_state[var_id]:
-                    changes.add(LegacyAtom(dmvlp.features[var_id][0], dmvlp.features[var_id][1], state[var_id], var_id))
+                    changes.add(LegacyAtom(dmvlp.features[var_id][0], set(dmvlp.features[var_id][1]), state[var_id], var_id))
             candidates.append(changes)
     
         # 3) Keep minimal changes
@@ -391,10 +391,10 @@ def compute_counterfactuals(dmvlp, feature_state, target_variable, excluded_valu
 
         features_void_atoms = dict()
         for var_id, (var, vals) in enumerate(dmvlp.features):
-            features_void_atoms[var] = LegacyAtom(var, vals, LegacyAtom._VOID_VALUE, var_id)
+            features_void_atoms[var] = LegacyAtom(var, set(vals), LegacyAtom._VOID_VALUE, var_id)
 
         # Use gula to compute rules that avoid excluded rules
-        rules = GULA.fit_var_val_strict(LegacyAtom("valid",["true","false"],"true",0), features_void_atoms, negatives, verbose)
+        rules = GULA.fit_var_val_strict(LegacyAtom("valid",{"true","false"},"true",0), features_void_atoms, negatives, verbose)
         candidates = [set([atom for _, atom in r.body.items()]) for r in rules]
 
         if verbose > 0:
