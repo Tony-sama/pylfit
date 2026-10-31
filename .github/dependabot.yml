@@ -1,0 +1,15 @@
+# Proposes updates to the actions the workflows pin, as one pull
+# request a month: the pins are commit hashes, which nothing else
+# would ever move. A release is proposed only once it is a week old,
+# time for a hijacked one to be found and pulled first.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]

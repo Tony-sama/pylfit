@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 330" width="600" height="330" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>The learned network: a six-state cycle and two unvisited states</title>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+  <rect width="600" height="330" rx="8" fill="#ffffff"/>
+  <line x1="332.0" y1="68.5" x2="363.3" y2="86.5" stroke="#444" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="395.3" y1="124.0" x2="395.3" y2="196.0" stroke="#444" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="363.3" y1="233.5" x2="332.0" y2="251.5" stroke="#444" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="268.0" y1="251.5" x2="236.7" y2="233.5" stroke="#444" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="204.7" y1="196.0" x2="204.7" y2="124.0" stroke="#444" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="236.7" y1="86.5" x2="268.0" y2="68.5" stroke="#444" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="272.0" y="35.0" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="300.0" y="55.0" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">000</text>
+  <rect x="367.3" y="90.0" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="395.3" y="110.0" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">100</text>
+  <rect x="367.3" y="200.0" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="395.3" y="220.0" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">110</text>
+  <rect x="272.0" y="255.0" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="300.0" y="275.0" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">111</text>
+  <rect x="176.7" y="200.0" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="204.7" y="220.0" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">011</text>
+  <rect x="176.7" y="90.0" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="204.7" y="110.0" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">001</text>
+  <rect x="42.0" y="145.0" width="56" height="30" rx="4" fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="70" y="165" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#999">010</text>
+  <rect x="502.0" y="145.0" width="56" height="30" rx="4" fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="530" y="165" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#999">101</text>
+  <text x="300.0" y="316" text-anchor="middle" fill="#666" font-size="12">Solid: one possible next state. Dashed: never a starting point in the data.</text>
+</svg>

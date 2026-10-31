@@ -1,0 +1,51 @@
+/* Code fonts such as Cascadia Code draw `!=` as one ≠ glyph; show the
+   characters a reader has to type. */
+code, pre, kbd {
+  font-variant-ligatures: none;
+}
+
+/* `stepper.js`: one figure of a `pylfit-stepper` at a time, in a box
+   as tall as the tallest, so the page below doesn't move. */
+.pylfit-stepper-on {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 6px;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+}
+
+.pylfit-stepper-frames {
+  display: grid;
+}
+
+.pylfit-stepper-frames > figure {
+  grid-area: 1 / 1;
+  margin: 0;
+  visibility: hidden;
+}
+
+.pylfit-stepper-frames > figure.pylfit-stepper-current {
+  visibility: visible;
+}
+
+.pylfit-stepper-nav {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0.5em;
+}
+
+.pylfit-stepper-nav button {
+  font: inherit;
+  padding: 0.2em 0.9em;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 4px;
+  background: var(--pst-color-surface);
+  color: var(--pst-color-text-base);
+  cursor: pointer;
+}
+
+.pylfit-stepper-nav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

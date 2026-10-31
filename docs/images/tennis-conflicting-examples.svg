@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 441" width="760" height="441" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>The tennis table with a conflicting row, its rows sorted into the examples of each value of play</title>
+  <rect width="760" height="441" rx="8" fill="#ffffff"/>
+  <text x="184.0" y="30" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, monospace" font-weight="bold" fill="#222">play = yes</text>
+  <text x="28" y="71" fill="#222" font-size="11" font-weight="bold">outlook</text>
+  <text x="98" y="71" fill="#222" font-size="11" font-weight="bold">temperature</text>
+  <text x="184" y="71" fill="#222" font-size="11" font-weight="bold">humidity</text>
+  <text x="254" y="71" fill="#222" font-size="11" font-weight="bold">wind</text>
+  <text x="310" y="71" fill="#222" font-size="11" font-weight="bold">play</text>
+  <line x1="22" y1="77" x2="346" y2="77" stroke="#999"/>
+  <rect x="22" y="78" width="282" height="18" fill="#f9e1dd"/>
+  <text x="28" y="91" fill="#b03a2e" font-size="11">sunny</text>
+  <text x="98" y="91" fill="#b03a2e" font-size="11">hot</text>
+  <text x="184" y="91" fill="#b03a2e" font-size="11">high</text>
+  <text x="254" y="91" fill="#b03a2e" font-size="11">weak</text>
+  <text x="310" y="91" fill="#222" font-size="11">no</text>
+  <rect x="22" y="97" width="282" height="18" fill="#f9e1dd"/>
+  <text x="28" y="110" fill="#b03a2e" font-size="11">sunny</text>
+  <text x="98" y="110" fill="#b03a2e" font-size="11">hot</text>
+  <text x="184" y="110" fill="#b03a2e" font-size="11">high</text>
+  <text x="254" y="110" fill="#b03a2e" font-size="11">strong</text>
+  <text x="310" y="110" fill="#222" font-size="11">no</text>
+  <rect x="22" y="116" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="129" fill="#1b5e20" font-size="11">overcast</text>
+  <text x="98" y="129" fill="#1b5e20" font-size="11">hot</text>
+  <text x="184" y="129" fill="#1b5e20" font-size="11">high</text>
+  <text x="254" y="129" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="129" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="135" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="148" fill="#1b5e20" font-size="11">rain</text>
+  <text x="98" y="148" fill="#1b5e20" font-size="11">mild</text>
+  <text x="184" y="148" fill="#1b5e20" font-size="11">high</text>
+  <text x="254" y="148" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="148" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="154" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="167" fill="#1b5e20" font-size="11">rain</text>
+  <text x="98" y="167" fill="#1b5e20" font-size="11">cool</text>
+  <text x="184" y="167" fill="#1b5e20" font-size="11">normal</text>
+  <text x="254" y="167" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="167" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="173" width="282" height="18" fill="#f9e1dd"/>
+  <text x="28" y="186" fill="#b03a2e" font-size="11">rain</text>
+  <text x="98" y="186" fill="#b03a2e" font-size="11">cool</text>
+  <text x="184" y="186" fill="#b03a2e" font-size="11">normal</text>
+  <text x="254" y="186" fill="#b03a2e" font-size="11">strong</text>
+  <text x="310" y="186" fill="#222" font-size="11">no</text>
+  <rect x="22" y="192" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="205" fill="#1b5e20" font-size="11">overcast</text>
+  <text x="98" y="205" fill="#1b5e20" font-size="11">cool</text>
+  <text x="184" y="205" fill="#1b5e20" font-size="11">normal</text>
+  <text x="254" y="205" fill="#1b5e20" font-size="11">strong</text>
+  <text x="310" y="205" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="211" width="282" height="18" fill="#ececec"/>
+  <text x="28" y="224" fill="#777" font-size="11">sunny</text>
+  <text x="98" y="224" fill="#777" font-size="11">mild</text>
+  <text x="184" y="224" fill="#777" font-size="11">high</text>
+  <text x="254" y="224" fill="#777" font-size="11">weak</text>
+  <text x="310" y="224" fill="#222" font-size="11">no</text>
+  <rect x="20" y="210" width="286" height="20" rx="3" fill="none" stroke="#777" stroke-width="1.5" stroke-dasharray="4 2"/>
+  <rect x="22" y="230" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="243" fill="#1b5e20" font-size="11">sunny</text>
+  <text x="98" y="243" fill="#1b5e20" font-size="11">cool</text>
+  <text x="184" y="243" fill="#1b5e20" font-size="11">normal</text>
+  <text x="254" y="243" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="243" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="249" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="262" fill="#1b5e20" font-size="11">rain</text>
+  <text x="98" y="262" fill="#1b5e20" font-size="11">mild</text>
+  <text x="184" y="262" fill="#1b5e20" font-size="11">normal</text>
+  <text x="254" y="262" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="262" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="268" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="281" fill="#1b5e20" font-size="11">sunny</text>
+  <text x="98" y="281" fill="#1b5e20" font-size="11">mild</text>
+  <text x="184" y="281" fill="#1b5e20" font-size="11">normal</text>
+  <text x="254" y="281" fill="#1b5e20" font-size="11">strong</text>
+  <text x="310" y="281" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="287" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="300" fill="#1b5e20" font-size="11">overcast</text>
+  <text x="98" y="300" fill="#1b5e20" font-size="11">mild</text>
+  <text x="184" y="300" fill="#1b5e20" font-size="11">high</text>
+  <text x="254" y="300" fill="#1b5e20" font-size="11">strong</text>
+  <text x="310" y="300" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="306" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="319" fill="#1b5e20" font-size="11">overcast</text>
+  <text x="98" y="319" fill="#1b5e20" font-size="11">hot</text>
+  <text x="184" y="319" fill="#1b5e20" font-size="11">normal</text>
+  <text x="254" y="319" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="319" fill="#222" font-size="11">yes</text>
+  <rect x="22" y="325" width="282" height="18" fill="#f9e1dd"/>
+  <text x="28" y="338" fill="#b03a2e" font-size="11">rain</text>
+  <text x="98" y="338" fill="#b03a2e" font-size="11">mild</text>
+  <text x="184" y="338" fill="#b03a2e" font-size="11">high</text>
+  <text x="254" y="338" fill="#b03a2e" font-size="11">strong</text>
+  <text x="310" y="338" fill="#222" font-size="11">no</text>
+  <rect x="22" y="344" width="282" height="18" fill="#dcefdc"/>
+  <text x="28" y="357" fill="#1b5e20" font-size="11">sunny</text>
+  <text x="98" y="357" fill="#1b5e20" font-size="11">mild</text>
+  <text x="184" y="357" fill="#1b5e20" font-size="11">high</text>
+  <text x="254" y="357" fill="#1b5e20" font-size="11">weak</text>
+  <text x="310" y="357" fill="#222" font-size="11">yes</text>
+  <rect x="20" y="343" width="286" height="20" rx="3" fill="none" stroke="#777" stroke-width="1.5" stroke-dasharray="4 2"/>
+  <text x="576.0" y="30" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, monospace" font-weight="bold" fill="#222">play = no</text>
+  <text x="420" y="71" fill="#222" font-size="11" font-weight="bold">outlook</text>
+  <text x="490" y="71" fill="#222" font-size="11" font-weight="bold">temperature</text>
+  <text x="576" y="71" fill="#222" font-size="11" font-weight="bold">humidity</text>
+  <text x="646" y="71" fill="#222" font-size="11" font-weight="bold">wind</text>
+  <text x="702" y="71" fill="#222" font-size="11" font-weight="bold">play</text>
+  <line x1="414" y1="77" x2="738" y2="77" stroke="#999"/>
+  <rect x="414" y="78" width="282" height="18" fill="#dcefdc"/>
+  <text x="420" y="91" fill="#1b5e20" font-size="11">sunny</text>
+  <text x="490" y="91" fill="#1b5e20" font-size="11">hot</text>
+  <text x="576" y="91" fill="#1b5e20" font-size="11">high</text>
+  <text x="646" y="91" fill="#1b5e20" font-size="11">weak</text>
+  <text x="702" y="91" fill="#222" font-size="11">no</text>
+  <rect x="414" y="97" width="282" height="18" fill="#dcefdc"/>
+  <text x="420" y="110" fill="#1b5e20" font-size="11">sunny</text>
+  <text x="490" y="110" fill="#1b5e20" font-size="11">hot</text>
+  <text x="576" y="110" fill="#1b5e20" font-size="11">high</text>
+  <text x="646" y="110" fill="#1b5e20" font-size="11">strong</text>
+  <text x="702" y="110" fill="#222" font-size="11">no</text>
+  <rect x="414" y="116" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="129" fill="#b03a2e" font-size="11">overcast</text>
+  <text x="490" y="129" fill="#b03a2e" font-size="11">hot</text>
+  <text x="576" y="129" fill="#b03a2e" font-size="11">high</text>
+  <text x="646" y="129" fill="#b03a2e" font-size="11">weak</text>
+  <text x="702" y="129" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="135" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="148" fill="#b03a2e" font-size="11">rain</text>
+  <text x="490" y="148" fill="#b03a2e" font-size="11">mild</text>
+  <text x="576" y="148" fill="#b03a2e" font-size="11">high</text>
+  <text x="646" y="148" fill="#b03a2e" font-size="11">weak</text>
+  <text x="702" y="148" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="154" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="167" fill="#b03a2e" font-size="11">rain</text>
+  <text x="490" y="167" fill="#b03a2e" font-size="11">cool</text>
+  <text x="576" y="167" fill="#b03a2e" font-size="11">normal</text>
+  <text x="646" y="167" fill="#b03a2e" font-size="11">weak</text>
+  <text x="702" y="167" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="173" width="282" height="18" fill="#dcefdc"/>
+  <text x="420" y="186" fill="#1b5e20" font-size="11">rain</text>
+  <text x="490" y="186" fill="#1b5e20" font-size="11">cool</text>
+  <text x="576" y="186" fill="#1b5e20" font-size="11">normal</text>
+  <text x="646" y="186" fill="#1b5e20" font-size="11">strong</text>
+  <text x="702" y="186" fill="#222" font-size="11">no</text>
+  <rect x="414" y="192" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="205" fill="#b03a2e" font-size="11">overcast</text>
+  <text x="490" y="205" fill="#b03a2e" font-size="11">cool</text>
+  <text x="576" y="205" fill="#b03a2e" font-size="11">normal</text>
+  <text x="646" y="205" fill="#b03a2e" font-size="11">strong</text>
+  <text x="702" y="205" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="211" width="282" height="18" fill="#dcefdc"/>
+  <text x="420" y="224" fill="#1b5e20" font-size="11">sunny</text>
+  <text x="490" y="224" fill="#1b5e20" font-size="11">mild</text>
+  <text x="576" y="224" fill="#1b5e20" font-size="11">high</text>
+  <text x="646" y="224" fill="#1b5e20" font-size="11">weak</text>
+  <text x="702" y="224" fill="#222" font-size="11">no</text>
+  <rect x="412" y="210" width="286" height="20" rx="3" fill="none" stroke="#777" stroke-width="1.5" stroke-dasharray="4 2"/>
+  <rect x="414" y="230" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="243" fill="#b03a2e" font-size="11">sunny</text>
+  <text x="490" y="243" fill="#b03a2e" font-size="11">cool</text>
+  <text x="576" y="243" fill="#b03a2e" font-size="11">normal</text>
+  <text x="646" y="243" fill="#b03a2e" font-size="11">weak</text>
+  <text x="702" y="243" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="249" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="262" fill="#b03a2e" font-size="11">rain</text>
+  <text x="490" y="262" fill="#b03a2e" font-size="11">mild</text>
+  <text x="576" y="262" fill="#b03a2e" font-size="11">normal</text>
+  <text x="646" y="262" fill="#b03a2e" font-size="11">weak</text>
+  <text x="702" y="262" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="268" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="281" fill="#b03a2e" font-size="11">sunny</text>
+  <text x="490" y="281" fill="#b03a2e" font-size="11">mild</text>
+  <text x="576" y="281" fill="#b03a2e" font-size="11">normal</text>
+  <text x="646" y="281" fill="#b03a2e" font-size="11">strong</text>
+  <text x="702" y="281" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="287" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="300" fill="#b03a2e" font-size="11">overcast</text>
+  <text x="490" y="300" fill="#b03a2e" font-size="11">mild</text>
+  <text x="576" y="300" fill="#b03a2e" font-size="11">high</text>
+  <text x="646" y="300" fill="#b03a2e" font-size="11">strong</text>
+  <text x="702" y="300" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="306" width="282" height="18" fill="#f9e1dd"/>
+  <text x="420" y="319" fill="#b03a2e" font-size="11">overcast</text>
+  <text x="490" y="319" fill="#b03a2e" font-size="11">hot</text>
+  <text x="576" y="319" fill="#b03a2e" font-size="11">normal</text>
+  <text x="646" y="319" fill="#b03a2e" font-size="11">weak</text>
+  <text x="702" y="319" fill="#222" font-size="11">yes</text>
+  <rect x="414" y="325" width="282" height="18" fill="#dcefdc"/>
+  <text x="420" y="338" fill="#1b5e20" font-size="11">rain</text>
+  <text x="490" y="338" fill="#1b5e20" font-size="11">mild</text>
+  <text x="576" y="338" fill="#1b5e20" font-size="11">high</text>
+  <text x="646" y="338" fill="#1b5e20" font-size="11">strong</text>
+  <text x="702" y="338" fill="#222" font-size="11">no</text>
+  <rect x="414" y="344" width="282" height="18" fill="#ececec"/>
+  <text x="420" y="357" fill="#777" font-size="11">sunny</text>
+  <text x="490" y="357" fill="#777" font-size="11">mild</text>
+  <text x="576" y="357" fill="#777" font-size="11">high</text>
+  <text x="646" y="357" fill="#777" font-size="11">weak</text>
+  <text x="702" y="357" fill="#222" font-size="11">yes</text>
+  <rect x="412" y="343" width="286" height="20" rx="3" fill="none" stroke="#777" stroke-width="1.5" stroke-dasharray="4 2"/>
+  <rect x="22" y="374" width="14" height="14" rx="2" fill="#dcefdc" stroke="#1b5e20" stroke-width="0.8"/>
+  <text x="42" y="385" fill="#1b5e20" font-size="12">positive</text>
+  <rect x="122" y="374" width="14" height="14" rx="2" fill="#f9e1dd" stroke="#b03a2e" stroke-width="0.8"/>
+  <text x="142" y="385" fill="#b03a2e" font-size="12">negative</text>
+  <rect x="222" y="374" width="14" height="14" rx="2" fill="#ececec" stroke="#777" stroke-width="0.8"/>
+  <text x="242" y="385" fill="#777" font-size="12">neither: its state is also seen with this value</text>
+  <text x="380.0" y="411" text-anchor="middle" fill="#666" font-size="12">The added last row has the weather of a day without a game.</text>
+  <text x="380.0" y="427" text-anchor="middle" fill="#666" font-size="12">In each copy, one of the two rows is a positive, the other neither.</text>
+</svg>

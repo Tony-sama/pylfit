@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" width="760" height="360" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>Two measured series turned into levels by thresholds</title>
+  <rect width="760" height="360" rx="8" fill="#ffffff"/>
+  <text x="195.0" y="24" text-anchor="middle" font-weight="bold" fill="#222">Nitrate</text>
+  <rect x="70" y="131.2" width="250" height="58.8" fill="#e3eef8"/>
+  <text x="326" y="164.6" fill="#2c6fad" font-size="12">low</text>
+  <rect x="70" y="40.0" width="250" height="91.2" fill="#f9e1dd"/>
+  <text x="326" y="89.6" fill="#b03a2e" font-size="12">high</text>
+  <line x1="70" y1="131.2" x2="320" y2="131.2" stroke="#666" stroke-dasharray="5 3"/>
+  <text x="64" y="135.2" text-anchor="end" fill="#555" font-size="11">mean</text>
+  <line x1="70" y1="40" x2="70" y2="190" stroke="#444"/>
+  <line x1="70" y1="190" x2="320" y2="190" stroke="#444"/>
+  <text x="64" y="50" text-anchor="end" fill="#555" font-size="11">µmol/L</text>
+  <text x="80.4" y="205" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="101.2" y="205" text-anchor="middle" fill="#555" font-size="11">F</text>
+  <text x="122.1" y="205" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="142.9" y="205" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="163.8" y="205" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="184.6" y="205" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="205.4" y="205" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="226.2" y="205" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="247.1" y="205" text-anchor="middle" fill="#555" font-size="11">S</text>
+  <text x="267.9" y="205" text-anchor="middle" fill="#555" font-size="11">O</text>
+  <text x="288.8" y="205" text-anchor="middle" fill="#555" font-size="11">N</text>
+  <text x="309.6" y="205" text-anchor="middle" fill="#555" font-size="11">D</text>
+  <polyline points="80.4,72.1 101.2,61.4 122.1,82.9 142.9,125.7 163.8,168.6 184.6,182.0 205.4,184.6 226.2,183.6 247.1,173.9 267.9,147.1 288.8,109.6 309.6,82.9" fill="none" stroke="#333" stroke-width="2"/>
+  <circle cx="80.4" cy="72.1" r="3" fill="#333"/>
+  <circle cx="101.2" cy="61.4" r="3" fill="#333"/>
+  <circle cx="122.1" cy="82.9" r="3" fill="#333"/>
+  <circle cx="142.9" cy="125.7" r="3" fill="#333"/>
+  <circle cx="163.8" cy="168.6" r="3" fill="#333"/>
+  <circle cx="184.6" cy="182.0" r="3" fill="#333"/>
+  <circle cx="205.4" cy="184.6" r="3" fill="#333"/>
+  <circle cx="226.2" cy="183.6" r="3" fill="#333"/>
+  <circle cx="247.1" cy="173.9" r="3" fill="#333"/>
+  <circle cx="267.9" cy="147.1" r="3" fill="#333"/>
+  <circle cx="288.8" cy="109.6" r="3" fill="#333"/>
+  <circle cx="309.6" cy="82.9" r="3" fill="#333"/>
+  <text x="565.0" y="24" text-anchor="middle" font-weight="bold" fill="#222">Phaeocystis</text>
+  <rect x="440" y="175.0" width="250" height="15.0" fill="#f0f0f0"/>
+  <text x="696" y="186.5" fill="#888" font-size="12">absent</text>
+  <rect x="440" y="145.0" width="250" height="30.0" fill="#e6f3e6"/>
+  <text x="696" y="164.0" fill="#2e7d32" font-size="12">low</text>
+  <rect x="440" y="40.0" width="250" height="105.0" fill="#c8e6c9"/>
+  <text x="696" y="96.5" fill="#2e7d32" font-size="12">high</text>
+  <line x1="440" y1="175.0" x2="690" y2="175.0" stroke="#666" stroke-dasharray="5 3"/>
+  <text x="434" y="179.0" text-anchor="end" fill="#555" font-size="11">noise 50</text>
+  <line x1="440" y1="145.0" x2="690" y2="145.0" stroke="#666" stroke-dasharray="5 3"/>
+  <text x="434" y="149.0" text-anchor="end" fill="#555" font-size="11">bloom 150</text>
+  <line x1="440" y1="40" x2="440" y2="190" stroke="#444"/>
+  <line x1="440" y1="190" x2="690" y2="190" stroke="#444"/>
+  <text x="434" y="50" text-anchor="end" fill="#555" font-size="11">10³ cells/L</text>
+  <text x="450.4" y="205" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="471.2" y="205" text-anchor="middle" fill="#555" font-size="11">F</text>
+  <text x="492.1" y="205" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="512.9" y="205" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="533.8" y="205" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="554.6" y="205" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="575.4" y="205" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="596.2" y="205" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="617.1" y="205" text-anchor="middle" fill="#555" font-size="11">S</text>
+  <text x="637.9" y="205" text-anchor="middle" fill="#555" font-size="11">O</text>
+  <text x="658.8" y="205" text-anchor="middle" fill="#555" font-size="11">N</text>
+  <text x="679.6" y="205" text-anchor="middle" fill="#555" font-size="11">D</text>
+  <polyline points="450.4,184.0 471.2,187.0 492.1,169.0 512.9,100.0 533.8,55.0 554.6,166.0 575.4,181.0 596.2,190.0 617.1,185.5 637.9,179.5 658.8,187.0 679.6,190.0" fill="none" stroke="#333" stroke-width="2"/>
+  <circle cx="450.4" cy="184.0" r="3" fill="#333"/>
+  <circle cx="471.2" cy="187.0" r="3" fill="#333"/>
+  <circle cx="492.1" cy="169.0" r="3" fill="#333"/>
+  <circle cx="512.9" cy="100.0" r="3" fill="#333"/>
+  <circle cx="533.8" cy="55.0" r="3" fill="#333"/>
+  <circle cx="554.6" cy="166.0" r="3" fill="#333"/>
+  <circle cx="575.4" cy="181.0" r="3" fill="#333"/>
+  <circle cx="596.2" cy="190.0" r="3" fill="#333"/>
+  <circle cx="617.1" cy="185.5" r="3" fill="#333"/>
+  <circle cx="637.9" cy="179.5" r="3" fill="#333"/>
+  <circle cx="658.8" cy="187.0" r="3" fill="#333"/>
+  <circle cx="679.6" cy="190.0" r="3" fill="#333"/>
+  <text x="142.0" y="262" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="194.0" y="262" text-anchor="middle" fill="#555" font-size="11">F</text>
+  <text x="246.0" y="262" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="298.0" y="262" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="350.0" y="262" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="402.0" y="262" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="454.0" y="262" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="506.0" y="262" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="558.0" y="262" text-anchor="middle" fill="#555" font-size="11">S</text>
+  <text x="610.0" y="262" text-anchor="middle" fill="#555" font-size="11">O</text>
+  <text x="662.0" y="262" text-anchor="middle" fill="#555" font-size="11">N</text>
+  <text x="714.0" y="262" text-anchor="middle" fill="#555" font-size="11">D</text>
+  <text x="108" y="287" text-anchor="end" fill="#222">Nitrate</text>
+  <rect x="117" y="270" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="142.0" y="287" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="169" y="270" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="194.0" y="287" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="221" y="270" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="246.0" y="287" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="273" y="270" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="298.0" y="287" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="325" y="270" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="350.0" y="287" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="377" y="270" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="402.0" y="287" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="429" y="270" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="454.0" y="287" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="481" y="270" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="506.0" y="287" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="533" y="270" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="558.0" y="287" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="585" y="270" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="610.0" y="287" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="637" y="270" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="662.0" y="287" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="689" y="270" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="714.0" y="287" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <text x="108" y="317" text-anchor="end" fill="#222">Phaeocystis</text>
+  <rect x="117" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="142.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="169" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="194.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="221" y="300" width="50" height="26" rx="3" fill="#e6f3e6"/>
+  <text x="246.0" y="317" text-anchor="middle" fill="#2e7d32" font-size="11.5">low</text>
+  <rect x="273" y="300" width="50" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="298.0" y="317" text-anchor="middle" fill="#1b5e20" font-size="11.5">high</text>
+  <rect x="325" y="300" width="50" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="350.0" y="317" text-anchor="middle" fill="#1b5e20" font-size="11.5">high</text>
+  <rect x="377" y="300" width="50" height="26" rx="3" fill="#e6f3e6"/>
+  <text x="402.0" y="317" text-anchor="middle" fill="#2e7d32" font-size="11.5">low</text>
+  <rect x="429" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="454.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="481" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="506.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="533" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="558.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="585" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="610.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="637" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="662.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="689" y="300" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="714.0" y="317" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <text x="380.0" y="352" text-anchor="middle" fill="#666" font-size="12">One row per month: the categories pylfit learns from.</text>
+</svg>

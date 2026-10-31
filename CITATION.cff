@@ -1,0 +1,97 @@
+# Placeholder: the paper describing pylfit 1.0 and a DOI per release
+# are still to come. Until then, cite the software itself.
+#
+# `authors` lists who wrote pylfit's code, in any version: the same
+# people as AUTHORS.md. The users who shaped pylfit are credited on
+# the docs' Credits page; the people behind the LFIT theory there too,
+# and through their papers, under `references`.
+cff-version: 1.2.0
+message: >-
+  If you use pylfit in your work, please cite it as below. A paper
+  describing pylfit 1.0 will be added here.
+title: pylfit
+type: software
+authors:
+  - family-names: Ribeiro
+    given-names: Tony
+    orcid: "https://orcid.org/0000-0002-1793-2854"
+version: 1.0.0.dev0
+license: GPL-3.0-only
+repository-code: "https://github.com/Tony-sama/pylfit"
+abstract: >-
+  pylfit learns interpretable logic rules from data with algorithms of
+  the Learning From Interpretation Transitions (LFIT) framework.
+keywords:
+  - logic programming
+  - rule learning
+  - interpretable machine learning
+  - Boolean networks
+references:
+  - type: article
+    title: Learning from interpretation transition
+    authors:
+      - family-names: Inoue
+        given-names: Katsumi
+      - family-names: Ribeiro
+        given-names: Tony
+      - family-names: Sakama
+        given-names: Chiaki
+    journal: Machine Learning
+    volume: 94
+    issue: 1
+    start: 51
+    end: 79
+    year: 2014
+    doi: 10.1007/s10994-013-5353-8
+  - type: conference-paper
+    title: Learning dynamics with synchronous, asynchronous and general semantics
+    authors:
+      - family-names: Ribeiro
+        given-names: Tony
+      - family-names: Folschette
+        given-names: Maxime
+      - family-names: Magnin
+        given-names: Morgan
+      - family-names: Roux
+        given-names: Olivier
+      - family-names: Inoue
+        given-names: Katsumi
+    collection-title: "Inductive Logic Programming (ILP 2018), Lecture Notes in Computer Science 11105"
+    start: 118
+    end: 140
+    year: 2018
+    doi: 10.1007/978-3-319-99960-9_8
+  - type: article
+    title: Learning any memory-less discrete semantics for dynamical systems represented by logic programs
+    authors:
+      - family-names: Ribeiro
+        given-names: Tony
+      - family-names: Folschette
+        given-names: Maxime
+      - family-names: Magnin
+        given-names: Morgan
+      - family-names: Inoue
+        given-names: Katsumi
+    journal: Machine Learning
+    volume: 111
+    issue: 10
+    start: 3593
+    end: 3670
+    year: 2022
+    doi: 10.1007/s10994-021-06105-4
+  - type: conference-paper
+    title: Polynomial algorithm for learning from interpretation transition
+    authors:
+      - family-names: Ribeiro
+        given-names: Tony
+      - family-names: Folschette
+        given-names: Maxime
+      - family-names: Magnin
+        given-names: Morgan
+      - family-names: Inoue
+        given-names: Katsumi
+    conference:
+      name: 1st International Joint Conference on Learning and Reasoning (IJCLR 2021)
+    year: 2021
+    notes: Late-breaking abstract.
+    url: "https://hal.science/hal-03347026"

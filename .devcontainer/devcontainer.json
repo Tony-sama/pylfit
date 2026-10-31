@@ -1,0 +1,36 @@
+// A ready development environment for contributors, opened with VS Code's
+// "Reopen in Container": Python 3.11, the oldest pylfit supports, with the
+// development install from CONTRIBUTING.md already run, Ruff
+// formatting on save and .editorconfig applied. Not needed to use
+// pylfit: `pip install pylfit` is.
+{
+  "name": "pylfit",
+  "image": "mcr.microsoft.com/devcontainers/python:3-3.11-trixie",
+
+  // The two setup commands in CONTRIBUTING.md: the editable install with
+  // its dev and docs extras, then the commit-message hook.
+  "postCreateCommand": "pip install -e '.[dev,docs]' && git config core.hooksPath .githooks",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "EditorConfig.EditorConfig"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        }
+      }
+    }
+  }
+}

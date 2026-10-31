@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 215" width="760" height="215" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>The simulated path from 000, every gene updated at once</title>
+  <rect width="760" height="215" rx="8" fill="#ffffff"/>
+  <rect x="40" y="30" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="68.0" y="50" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">000</text>
+  <line x1="98.0" y1="45.0" x2="146.0" y2="45.0" stroke="#444" stroke-width="1.5"/>
+  <polygon points="155.0,45.0 146.0,50.0 146.0,40.0" fill="#444"/>
+  <rect x="158" y="30" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="186.0" y="50" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">100</text>
+  <line x1="216.0" y1="45.0" x2="264.0" y2="45.0" stroke="#444" stroke-width="1.5"/>
+  <polygon points="273.0,45.0 264.0,50.0 264.0,40.0" fill="#444"/>
+  <rect x="276" y="30" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="304.0" y="50" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">110</text>
+  <line x1="334.0" y1="45.0" x2="382.0" y2="45.0" stroke="#444" stroke-width="1.5"/>
+  <polygon points="391.0,45.0 382.0,50.0 382.0,40.0" fill="#444"/>
+  <rect x="394" y="30" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="422.0" y="50" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">111</text>
+  <line x1="452.0" y1="45.0" x2="500.0" y2="45.0" stroke="#444" stroke-width="1.5"/>
+  <polygon points="509.0,45.0 500.0,50.0 500.0,40.0" fill="#444"/>
+  <rect x="512" y="30" width="56" height="30" rx="4" fill="#dbe9f6" stroke="#2c6fad" stroke-width="1.5"/>
+  <text x="540.0" y="50" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">011</text>
+  <line x1="570.0" y1="45.0" x2="618.0" y2="45.0" stroke="#444" stroke-width="1.5"/>
+  <polygon points="627.0,45.0 618.0,50.0 618.0,40.0" fill="#444"/>
+  <rect x="630" y="30" width="56" height="30" rx="4" fill="#fde8c8" stroke="#c76b00" stroke-width="2"/>
+  <text x="658.0" y="50" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">001</text>
+  <rect x="470" y="125" width="56" height="30" rx="4" fill="#f4f4f4" stroke="#888" stroke-width="1.5"/>
+  <text x="498.0" y="145" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">000</text>
+  <line x1="658.0" y1="62.0" x2="506.4" y2="118.8" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <polygon points="498.0,122.0 504.7,114.2 508.2,123.5" fill="#888"/>
+  <rect x="540" y="125" width="56" height="30" rx="4" fill="#f4f4f4" stroke="#888" stroke-width="1.5"/>
+  <text x="568.0" y="145" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">001</text>
+  <line x1="658.0" y1="62.0" x2="575.5" y2="117.0" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <polygon points="568.0,122.0 572.7,112.8 578.3,121.2" fill="#888"/>
+  <rect x="610" y="125" width="56" height="30" rx="4" fill="#f4f4f4" stroke="#888" stroke-width="1.5"/>
+  <text x="638.0" y="145" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">100</text>
+  <line x1="658.0" y1="62.0" x2="640.8" y2="113.5" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <polygon points="638.0,122.0 636.1,111.9 645.6,115.0" fill="#888"/>
+  <rect x="680" y="125" width="56" height="30" rx="4" fill="#f4f4f4" stroke="#888" stroke-width="1.5"/>
+  <text x="708.0" y="145" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="15" fill="#222">101</text>
+  <line x1="658.0" y1="62.0" x2="702.2" y2="115.1" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <polygon points="708.0,122.0 698.4,118.3 706.1,111.9" fill="#888"/>
+  <text x="456" y="145" text-anchor="end" fill="#444">4 possible next states</text>
+  <text x="380.0" y="201" text-anchor="middle" fill="#666" font-size="12">Every gene updated at once: one next state at each step until 001, then four.</text>
+</svg>

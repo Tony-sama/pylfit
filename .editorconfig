@@ -1,0 +1,27 @@
+# Editor settings matching what the checks expect: UTF-8, LF line
+# endings (as `.gitattributes` stores them), a final newline, no
+# trailing spaces, four-space Python at ruff's 88 columns.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 88
+
+[*.toml]
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json,cff}]
+indent_style = space
+indent_size = 2
+
+[*.{js,css,svg}]
+indent_style = space
+indent_size = 2

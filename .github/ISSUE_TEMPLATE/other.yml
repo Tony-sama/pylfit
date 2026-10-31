@@ -1,0 +1,32 @@
+name: Question, idea or docs problem
+description: Ask how to do something, suggest a feature, or point out something wrong or missing in the docs.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search the [existing issues](https://github.com/Tony-sama/pylfit/issues?q=is%3Aissue)
+        first, in case it has come up already.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this about
+      options:
+        - A question
+        - A feature or a change
+        - The documentation
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Details
+      description: |
+        What you are trying to do and where you got stuck; what you would like and why; or which page, docstring or example is wrong or unclear. For a new algorithm or semantics, give the paper it comes from.
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code
+      description: Optional. What you have tried, or a sketch of the call you have in mind.
+      render: python

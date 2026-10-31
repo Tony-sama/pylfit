@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" width="600" height="300" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>The regulation read from the rules</title>
+  <rect width="600" height="300" rx="8" fill="#ffffff"/>
+  <path d="M 321.3 77.0 Q 384.8 121.7 412.1 178.1" fill="none" stroke="#2e7d32" stroke-width="2.2"/>
+  <polygon points="416.9,188.0 405.9,178.9 416.7,173.7" fill="#2e7d32"/>
+  <text x="382.5" y="121.1" text-anchor="start" fill="#2e7d32" font-size="12.5">activates</text>
+  <path d="M 404.5 220.1 Q 300.0 241.0 210.2 223.0" fill="none" stroke="#2e7d32" stroke-width="2.2"/>
+  <polygon points="199.4,220.9 213.3,217.5 211.0,229.3" fill="#2e7d32"/>
+  <text x="300.0" y="252.0" text-anchor="middle" fill="#2e7d32" font-size="12.5">activates</text>
+  <path d="M 181.3 191.6 Q 215.2 121.7 275.5 79.3" fill="none" stroke="#b03a2e" stroke-width="2.2"/>
+  <line x1="280.1" y1="85.8" x2="270.9" y2="72.7" stroke="#b03a2e" stroke-width="4"/>
+  <text x="217.5" y="121.1" text-anchor="end" fill="#b03a2e" font-size="12.5">represses</text>
+  <path d="M 408.7 200.0 Q 345.2 155.3 313.1 89.0" fill="none" stroke="#999" stroke-width="2.2" stroke-dasharray="5 4"/>
+  <line x1="320.3" y1="85.5" x2="305.9" y2="92.5" stroke="#999" stroke-width="4"/>
+  <text x="347.5" y="163.9" text-anchor="end" fill="#999" font-size="12.5">represses?</text>
+  <path d="M 148.7 200.1 C 80 160 80 270 140.1 235.0" fill="none" stroke="#999" stroke-width="2.2" stroke-dasharray="5 4"/>
+  <polygon points="148.7,229.9 142.8,239.7 137.3,230.2" fill="#999"/>
+  <text x="112" y="168" text-anchor="middle" fill="#999" font-size="12.5">maintains itself?</text>
+  <circle cx="300" cy="62" r="26" fill="#f4f4f4" stroke="#444" stroke-width="1.5"/>
+  <text x="300" y="68" text-anchor="middle" font-size="17" font-weight="bold" fill="#222">A</text>
+  <circle cx="430" cy="215" r="26" fill="#f4f4f4" stroke="#444" stroke-width="1.5"/>
+  <text x="430" y="221" text-anchor="middle" font-size="17" font-weight="bold" fill="#222">B</text>
+  <circle cx="170" cy="215" r="26" fill="#f4f4f4" stroke="#444" stroke-width="1.5"/>
+  <text x="170" y="221" text-anchor="middle" font-size="17" font-weight="bold" fill="#222">C</text>
+  <text x="300.0" y="286" text-anchor="middle" fill="#666" font-size="12">Solid: a rule and its reversed partner. Dashed: a rule without one.</text>
+</svg>

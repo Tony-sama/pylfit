@@ -1,0 +1,4 @@
+# Store every text file with LF line endings and check it out with LF
+# on every platform, so a Windows clone (core.autocrlf) neither gets
+# CRLF nor commits it back. Git tells text from binary (text=auto).
+* text=auto eol=lf

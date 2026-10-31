@@ -1,0 +1,233 @@
+[build-system]
+# 1.27 is the first hatchling to write `license` below as an SPDX
+# `License-Expression` with the license file; older ones build without
+# error but write the outdated `License` field instead.
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pylfit"
+version = "1.0.0.dev0"
+description = "Learn interpretable logic rules from data (LFIT-family algorithms)."
+readme = "README.md"
+requires-python = ">=3.11"
+# The same people as AUTHORS.md and CITATION.cff, in the same order.
+authors = [
+    { name = "Tony Ribeiro", email = "tonyribeiro.contact@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+keywords = [
+    "rule learning",
+    "inductive logic programming",
+    "learning from interpretation transition",
+    "LFIT",
+    "Boolean networks",
+    "interpretable machine learning",
+    "symbolic AI",
+]
+# An SPDX expression (PEP 639), which replaces the license classifier.
+license = "GPL-3.0-only"
+# docs/contributing/standards.md says why each floor is where it is
+# and what moves it: Python older than SPEC 0 asks, on purpose; pandas
+# and NumPy at SPEC 0's two years. pylfit imports NumPy itself, so it
+# names the version it needs.
+dependencies = [
+    "pandas>=2.3",
+    "numpy>=2.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/Tony-sama/pylfit"
+Repository = "https://github.com/Tony-sama/pylfit"
+Issues = "https://github.com/Tony-sama/pylfit/issues"
+Documentation = "https://tony-sama.github.io/pylfit/"
+Changelog = "https://tony-sama.github.io/pylfit/changelog.html"
+
+[project.optional-dependencies]
+# Only needed to build the docs/ site (Sphinx), not to build or use
+# the package itself.
+docs = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "sphinx-gallery",
+]
+# Testing and linting: the checks CONTRIBUTING.md lists.
+# `ruff` is bounded to one minor series on purpose: it is the formatter,
+# and its output changes between minors (0.16 joins parenthesized
+# expressions that earlier versions split), so an unbounded range makes
+# `ruff format --check` fail on untouched files after an unrelated
+# upgrade. Widen deliberately, reformatting in the same commit.
+dev = [
+    "pytest>=9",
+    "ruff>=0.17,<0.18",
+    "pydoclint",
+    "interrogate",
+    "mypy",
+    "pandas-stubs",
+    "codespell",
+    "pytest-cov",
+]
+
+[tool.hatch.build.targets.sdist]
+# The sdist keeps what building, testing and reading the package needs
+# (src, tests, docs, examples). These only serve a git checkout.
+exclude = [
+    "/.devcontainer",
+    "/.github",
+    "/.githooks",
+]
+
+[tool.pytest]
+# pytest's own TOML table (pytest 9), with native types; the older
+# `[tool.pytest.ini_options]` takes strings only.
+# `strict` makes an unknown marker or setting, an xfail that passes,
+# and an ambiguous parametrize id errors rather than silent no-ops; it
+# needs pytest 9.
+minversion = "9"
+strict = true
+# `-ra`: a one-line reason for every test not passed, at the end.
+# Warnings are errors, so an unclosed file or a deprecation in a
+# dependency fails here first. One exception: the uncovered-rows
+# warning, which three examples show on purpose (the testing page
+# names them). A test that expects a warning asserts it with
+# `pytest.warns`, which sees it whatever the filters.
+filterwarnings = [
+    "error",
+    "ignore:GULA.*matched by no rule of their head:UserWarning",
+]
+log_level = "INFO"
+# `src` for the docstring examples (`--doctest-modules`); `docs` and
+# the README for the `>>>` sessions on the pages (`--doctest-glob`).
+testpaths = ["tests", "src", "docs", "README.md"]
+pythonpath = ["src"]
+markers = [
+    "slow: slow tests, deselected by default (run with `pytest -m slow`)",
+]
+addopts = [
+    "-ra",
+    "-m", "not slow",
+    "--doctest-modules",
+    "--doctest-glob=*.md",
+    "--ignore=docs/conf.py",
+]
+# The docs build's output and sphinx-gallery's generated copies of
+# `examples/` would otherwise be collected, and run, as tests. The rest
+# is pytest's own default list, which setting this replaces.
+norecursedirs = [
+    "_build",
+    "auto_examples",
+    "*.egg",
+    ".*",
+    "_darcs",
+    "build",
+    "CVS",
+    "dist",
+    "node_modules",
+    "venv",
+    "{arch}",
+]
+
+[tool.pydoclint]
+style = "google"
+# Type hints live in signatures only, never repeated in docstrings.
+arg-type-hints-in-docstring = false
+check-return-types = false
+check-yield-types = false
+# `__init__` args are documented on `__init__`; Sphinx merges the two
+# docstrings (`autoclass_content = "both"`).
+allow-init-docstring = true
+# `Attributes:` sections list properties, which this check reads as
+# missing class attributes.
+check-class-attributes = false
+# Exceptions a docstring rightly documents but pydoclint can't see,
+# because a called helper raises them (or `payload[key]` does). A new
+# finding not in this file fails. A pydoclint release that rewords a
+# message fails on every entry: regenerate the file with
+# `pydoclint --generate-baseline=True src` and check that its diff
+# only rewords.
+baseline = ".pydoclint-baseline.txt"
+
+[tool.interrogate]
+fail-under = 100
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = true
+ignore-init-method = true
+# `@overload` signatures are typing-only; the implementation they
+# describe carries the docstring.
+ignore-overloaded-functions = true
+
+[tool.mypy]
+# The package ships `py.typed`, so its hints are what users' type
+# checkers see; CI keeps them passing. `pandas-stubs` types pandas.
+files = ["src", "tests/typing"]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+# `redundant-expr` is left off: it flags the `isinstance` checks that
+# give a caller without a type checker a clear `TypeError`, which are
+# deliberate.
+enable_error_code = ["ignore-without-code", "truthy-bool"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+# pyflakes (F) + pycodestyle (E/W) + isort (I) + pyupgrade (UP), the
+# last keeping type hints in the 3.11 form (`dict[str, set[str]]`,
+# `str | None`) rather than `typing.Dict`/`Optional`. TID252 bans
+# relative imports: PEP 8 recommends absolute ones. B, flake8-bugbear,
+# flags likely bugs; its B905 asks every `zip` to say whether unequal
+# lengths are an error, and here they always are (`strict=True`).
+# PT, flake8-pytest-style, keeps the tests in pytest's idiom; its
+# PT011 asks a `pytest.raises` of a broad exception for a `match=`.
+select = ["E", "F", "W", "I", "UP", "TID252", "B", "PT"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.format]
+# Ruff's formatter is Black-compatible by design; no extra config
+# needed beyond line-length above.
+
+[tool.codespell]
+# Generated output, and vendored networks whose gene names read
+# as typos. Hidden paths (`.git`, `.venv`, tool caches) are skipped
+# by default.
+skip = "./docs/_build,./docs/auto_examples,./tests/data"
+# An author's surname in a docstring's References.
+ignore-words-list = "wille"
+
+[tool.repo-review]
+# `sp-repo-review` checks the Scientific Python Development Guide, by
+# hand before a release. These are the standards page's deliberate
+# departures: no pre-commit config or task runner (PY006, PY007), dev
+# tools as an extra rather than a group (PP006), mypy's redundant-expr
+# off (MY105), zizmor run by hand rather than in CI (SEC001).
+ignore = ["PY006", "PY007", "PP006", "MY105", "SEC001"]
+
+[tool.coverage.run]
+# `pytest --cov`: line and branch coverage of the package alone.
+source = ["pylfit"]
+branch = true
+
+[tool.coverage.report]
+# CI fails below this. Three lines stay uncovered: the n_jobs worker
+# functions, which run in child processes coverage does not trace.
+fail_under = 99
+show_missing = true
+skip_covered = true

@@ -1,0 +1,60 @@
+name: Bug report
+description: pylfit raises an error, or gives a result you believe is wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. Before you start:
+
+        - Check the bug happens with the latest release
+          (`pip install --upgrade pylfit`). Fixes go into the latest
+          release only, and 0.x (`pylfit<1`) is no longer maintained.
+        - Search the [existing issues](https://github.com/Tony-sama/pylfit/issues?q=is%3Aissue)
+          for the same problem.
+        - For a security problem, don't open an issue: follow the
+          [security policy](https://github.com/Tony-sama/pylfit/security/policy).
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you did, and what went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Code to reproduce it
+      description: |
+        A short, self-contained script someone else can paste and run.
+        Build the data in the script (a small `pandas.DataFrame` is
+        usually enough) rather than reading a file only you have.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or error
+      description: The full traceback, or the output you got. It is shown as code, so paste it as is.
+      render: text
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: The result you expected instead, and why if it isn't obvious, for example the rule a learner should have found.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Versions
+      description: |
+        Paste the output of:
+
+        ```
+        python -c "import importlib.metadata as m, platform, sys; print('pylfit', m.version('pylfit')); print('pandas', m.version('pandas')); print('numpy', m.version('numpy')); print('Python', sys.version); print(platform.platform())"
+        ```
+      render: text
+    validations:
+      required: true

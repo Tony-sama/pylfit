@@ -1,0 +1,37 @@
+# A check that can break with no change to this repository: a link the
+# docs cite goes dead. Once a month, and on demand from the Actions
+# tab. It blocks nothing; a failure is a notice to fix the link before
+# a reader hits it. On a public repository GitHub turns a schedule off
+# after 60 days without activity, emailing first; turn it back on from
+# the Actions tab.
+name: Monthly
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"  # the 1st of each month, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    name: every link in the docs resolves
+    runs-on: ubuntu-latest
+    # About 4 minutes; a server that never answers shouldn't hold the
+    # run for GitHub's default of 6 hours.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -e ".[docs]"
+
+      - name: Check the links
+        run: sphinx-build -b linkcheck docs docs/_build/linkcheck

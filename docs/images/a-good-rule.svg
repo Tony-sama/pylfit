@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 195" width="760" height="195" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>A rule matching two months of monitoring data</title>
+  <rect width="760" height="195" rx="8" fill="#ffffff"/>
+  <text x="142.0" y="30" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="194.0" y="30" text-anchor="middle" fill="#555" font-size="11">F</text>
+  <text x="246.0" y="30" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="298.0" y="30" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="350.0" y="30" text-anchor="middle" fill="#555" font-size="11">M</text>
+  <text x="402.0" y="30" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="454.0" y="30" text-anchor="middle" fill="#555" font-size="11">J</text>
+  <text x="506.0" y="30" text-anchor="middle" fill="#555" font-size="11">A</text>
+  <text x="558.0" y="30" text-anchor="middle" fill="#555" font-size="11">S</text>
+  <text x="610.0" y="30" text-anchor="middle" fill="#555" font-size="11">O</text>
+  <text x="662.0" y="30" text-anchor="middle" fill="#555" font-size="11">N</text>
+  <text x="714.0" y="30" text-anchor="middle" fill="#555" font-size="11">D</text>
+  <text x="108" y="57" text-anchor="end" fill="#222">temperature</text>
+  <rect x="117" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="142.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="169" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="194.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="221" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="246.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="273" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="298.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="325" y="40" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="350.0" y="57" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="377" y="40" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="402.0" y="57" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="429" y="40" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="454.0" y="57" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="481" y="40" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="506.0" y="57" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="533" y="40" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="558.0" y="57" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="585" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="610.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="637" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="662.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="689" y="40" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="714.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <text x="108" y="87" text-anchor="end" fill="#222">nitrate</text>
+  <rect x="117" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="142.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="169" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="194.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="221" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="246.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="273" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="298.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="325" y="70" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="350.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="377" y="70" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="402.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="429" y="70" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="454.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="481" y="70" width="50" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="506.0" y="87" text-anchor="middle" fill="#a05a00" font-size="11.5">?</text>
+  <rect x="533" y="70" width="50" height="26" rx="3" fill="#e3eef8"/>
+  <text x="558.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="11.5">low</text>
+  <rect x="585" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="610.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="637" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="662.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <rect x="689" y="70" width="50" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="714.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="11.5">high</text>
+  <text x="108" y="117" text-anchor="end" fill="#222">species</text>
+  <rect x="117" y="100" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="142.0" y="117" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="169" y="100" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="194.0" y="117" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="221" y="100" width="50" height="26" rx="3" fill="#e6f3e6"/>
+  <text x="246.0" y="117" text-anchor="middle" fill="#2e7d32" font-size="11.5">low</text>
+  <rect x="273" y="100" width="50" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="298.0" y="117" text-anchor="middle" fill="#1b5e20" font-size="11.5">high</text>
+  <rect x="325" y="100" width="50" height="26" rx="3" fill="#e6f3e6"/>
+  <text x="350.0" y="117" text-anchor="middle" fill="#2e7d32" font-size="11.5">low</text>
+  <rect x="377" y="100" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="402.0" y="117" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="429" y="100" width="50" height="26" rx="3" fill="#e6f3e6"/>
+  <text x="454.0" y="117" text-anchor="middle" fill="#2e7d32" font-size="11.5">low</text>
+  <rect x="481" y="100" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="506.0" y="117" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="533" y="100" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="558.0" y="117" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="585" y="100" width="50" height="26" rx="3" fill="#e6f3e6"/>
+  <text x="610.0" y="117" text-anchor="middle" fill="#2e7d32" font-size="11.5">low</text>
+  <rect x="637" y="100" width="50" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="662.0" y="117" text-anchor="middle" fill="#1b5e20" font-size="11.5">high</text>
+  <rect x="689" y="100" width="50" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="714.0" y="117" text-anchor="middle" fill="#888" font-size="11.5">absent</text>
+  <rect x="222" y="71" width="48" height="54" rx="5" fill="none" stroke="#1b5e20" stroke-width="2"/>
+  <rect x="274" y="101" width="48" height="24" rx="5" fill="none" stroke="#1b5e20" stroke-width="2" stroke-dasharray="5 3"/>
+  <path d="M 246.0 127 Q 272 149 294.0 130" fill="none" stroke="#1b5e20" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="310.0" y="148" fill="#1b5e20" font-size="15">✓</text>
+  <rect x="586" y="71" width="48" height="54" rx="5" fill="none" stroke="#1b5e20" stroke-width="2"/>
+  <rect x="638" y="101" width="48" height="24" rx="5" fill="none" stroke="#1b5e20" stroke-width="2" stroke-dasharray="5 3"/>
+  <path d="M 610.0 127 Q 636 149 658.0 130" fill="none" stroke="#1b5e20" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="674.0" y="148" fill="#1b5e20" font-size="15">✓</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1b5e20"/></marker></defs>
+  <text x="380.0" y="165" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, monospace" fill="#1b5e20" font-size="13.5">species_next(high) :- nitrate(high), species(low).</text>
+  <text x="380.0" y="185" text-anchor="middle" fill="#666" font-size="12">It matches in March and October; both times the species is high the next month.</text>
+</svg>

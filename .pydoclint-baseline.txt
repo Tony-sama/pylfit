@@ -1,0 +1,36 @@
+src/pylfit/_dataset.py
+    DOC503: Method `Dataset.check_values` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['TypeError', 'ValueError']. Raised exceptions in the body: ['ValueError'].
+    DOC502: Method `Dataset.domains` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `Dataset.negatives` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `Dataset.positives` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+--------------------
+src/pylfit/_metrics.py
+    DOC502: Function `accuracy_by_target` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC503: Function `coverage` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['TypeError', 'ValueError']. Raised exceptions in the body: ['ValueError'].
+    DOC503: Function `rule_recovery` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['KeyError', 'TypeError', 'ValueError']. Raised exceptions in the body: ['ValueError'].
+--------------------
+src/pylfit/algorithms/_brute_force.py
+    DOC502: Method `BruteForce.fit` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+--------------------
+src/pylfit/algorithms/_gula.py
+    DOC503: Method `GULA.fit` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['TypeError', 'ValueError', '~concurrent.futures.process.BrokenProcessPool']. Raised exceptions in the body: ['ValueError'].
+--------------------
+src/pylfit/algorithms/_pride.py
+    DOC502: Method `PRIDE.fit` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+--------------------
+src/pylfit/models/_helpers.py
+    DOC502: Function `dataframe_states` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+--------------------
+src/pylfit/models/_rule_set_model.py
+    DOC503: Method `RuleSetModel.__init__` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['TypeError', 'ValueError']. Raised exceptions in the body: ['TypeError'].
+    DOC502: Method `RuleSetModel.domain` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `RuleSetModel.predict_candidates` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `RuleSetModel.predict_proba` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `RuleSetModel._states` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC503: Method `RuleSetModel.from_file` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['KeyError', 'TypeError', 'ValueError']. Raised exceptions in the body: ['TypeError', 'ValueError'].
+--------------------
+src/pylfit/models/_weighted_rule_set_model.py
+    DOC502: Method `WeightedRuleSetModel.__init__` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `WeightedRuleSetModel.predict_likelihood` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+    DOC502: Method `WeightedRuleSetModel.predict_proba` has a "Raises" section in the docstring, but there are not "raise" statements in the body
+--------------------

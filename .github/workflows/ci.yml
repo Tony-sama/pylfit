@@ -1,0 +1,250 @@
+# The checks `CONTRIBUTING.md` lists, run on every push and pull request.
+#
+# Separate jobs, so a formatting slip and a broken test report as
+# different failures instead of whichever ran first.
+#
+# Every action is pinned to a commit, with its version in a comment:
+# a tag can be moved to other code, a commit can't. Dependabot
+# (`.github/dependabot.yml`) proposes the updates.
+name: CI
+
+# No branch filter: every branch gets checked, whatever the repo names
+# its default branch. `workflow_dispatch` adds a "Run workflow" button.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# A new push to the same branch makes the previous run's result
+# irrelevant; cancelling it keeps the queue short.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: pytest (${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.dependencies }} dependencies, ${{ matrix.tier }})
+    runs-on: ${{ matrix.os }}
+    # The slowest job takes about 5 minutes. A test stuck in a worker
+    # process (`n_jobs`) would otherwise hold the run, and the site
+    # publish waiting on it, for GitHub's default of 6 hours.
+    timeout-minutes: 30
+    defaults:
+      run:
+        # bash on Windows too, so `-m ""` reaches pytest as an empty
+        # argument, which PowerShell may drop.
+        shell: bash
+    strategy:
+      # Report every job's result. With fail-fast a Windows-only
+      # breakage would cancel the rest and read as a general failure.
+      fail-fast: false
+      matrix:
+        # Linux runs the whole suite, slow tests included, at the oldest
+        # and the newest Python `requires-python = ">=3.11"` allows.
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.15"]
+        # `dependencies` and `tier` are matrix axes of their own: an
+        # `include` that only added a new key would be merged into an
+        # existing job instead of adding one.
+        dependencies: ["latest"]
+        tier: ["all"]
+        include:
+          # One more job at the oldest pandas and NumPy `pyproject.toml`
+          # allows, so raising a floor is a decision, not an accident.
+          - os: ubuntu-latest
+            python-version: "3.11"
+            dependencies: "oldest"
+            tier: "all"
+          # macOS and Windows start worker processes differently
+          # (`n_jobs`), and Windows writes paths and line endings its own
+          # way. The fast tier covers both; the slow tests only repeat
+          # the algorithms on bigger inputs, and in a private repository
+          # these runners cost 10 and 2 times a Linux minute.
+          - os: macos-latest
+            python-version: "3.15"
+            dependencies: "latest"
+            tier: "fast"
+          - os: windows-latest
+            python-version: "3.15"
+            dependencies: "latest"
+            tier: "fast"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Pin pandas and NumPy to the supported floors
+        if: matrix.dependencies == 'oldest'
+        # The `dependencies` floors in `pyproject.toml`, at their first
+        # release; raise them together.
+        run: pip install "pandas==2.3.0" "numpy==2.2.0"
+
+      - name: Run the whole suite, slow tests included, with coverage
+        if: matrix.tier == 'all'
+        # `-m ""` clears the marker filter `addopts` applies locally
+        # (`-m 'not slow'`). The slow tests exist to be run somewhere, and
+        # CI is that somewhere. Eight of them run an `examples/` script end
+        # to end, which is the only thing standing between a broken
+        # example and a newcomer. `addopts` also collects the docstring
+        # examples under `src/` as doctests. `--cov` prints the line and
+        # branch coverage of `src/pylfit` (settings in `pyproject.toml`).
+        run: pytest -m "" -q --cov
+
+      - name: Run the fast tier
+        if: matrix.tier == 'fast'
+        run: pytest -q
+
+  package:
+    name: build, check and test the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Build the sdist and wheel
+        run: |
+          pip install build twine check-wheel-contents
+          python -m build
+
+      - name: Check them
+        # `twine check` reads the metadata as PyPI will (the README must
+        # render); `check-wheel-contents` catches a missing or stray file.
+        run: |
+          twine check --strict dist/*
+          check-wheel-contents dist/*.whl
+
+      - name: Test the installed wheel
+        # Every other job tests the source tree, where a file left out of
+        # the wheel is still there. Here the wheel is installed in a fresh
+        # environment and run from outside the checkout: the docstring
+        # examples of the installed package, then `starter.py`, which
+        # imports the installed package since `src` is not on its path.
+        run: |
+          python -m venv "$RUNNER_TEMP/wheel"
+          "$RUNNER_TEMP/wheel/bin/pip" install dist/*.whl pytest
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/wheel/bin/python" -m pytest -q -p no:cacheprovider \
+            -c /dev/null --doctest-modules --pyargs pylfit
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/wheel/bin/python" examples/starter.py > /dev/null
+
+  lint:
+    name: ruff, pydoclint, interrogate, mypy, codespell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        # Via the `dev` extra, not a bare `pip install ruff`: that extra
+        # pins ruff to one minor series deliberately, because the
+        # formatter's output changes between minors and an unbounded
+        # range would fail `format --check` on files nobody touched.
+        run: pip install -e ".[dev]"
+
+      - name: ruff check
+        run: ruff check .
+
+      - name: ruff format --check
+        run: ruff format --check .
+
+      - name: pydoclint
+        # Docstring Args/Returns/Raises against the signatures; settings
+        # and the accepted-findings baseline are in `pyproject.toml`.
+        run: pydoclint src
+
+      - name: interrogate
+        # Every public object has a docstring (`fail-under = 100`).
+        run: interrogate src
+
+      - name: mypy
+        # The package ships `py.typed`: its type hints are part of what
+        # users get, so they have to type-check. Settings in `pyproject.toml`.
+        run: mypy
+
+      - name: codespell
+        # Settings, and what it skips, in `pyproject.toml`.
+        run: codespell
+
+  docs:
+    name: sphinx
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        # `-e .` and not just the extra: `autodoc` imports the package
+        # to read its docstrings, so the build fails without its
+        # dependencies.
+        run: pip install -e ".[docs]"
+
+      - name: Build the site strictly
+        # `-W` turns warnings into errors — a malformed docstring or a
+        # page missing from the toctree fails here rather than shipping;
+        # `-n` adds every cross-reference that doesn't resolve;
+        # `--keep-going` reports every one of them, not just the first.
+        run: sphinx-build -n -W --keep-going -b html docs docs/_build/html
+
+      - name: Keep the site for GitHub Pages
+        # The built site, downloadable from the run's page (a preview for
+        # a pull request), and what the `pages` job publishes.
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/_build/html
+
+  pages:
+    name: publish the site
+    # Only a push to the public repository's default branch publishes:
+    # a pull request, another branch or a private copy (where Pages is
+    # off) never touches the site.
+    if: >-
+      github.repository == 'Tony-sama/pylfit'
+      && github.event_name == 'push'
+      && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: [test, docs]
+    runs-on: ubuntu-latest
+    permissions:
+      # What `deploy-pages` needs, granted to this job alone.
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

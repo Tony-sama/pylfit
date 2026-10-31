@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://tony-sama.github.io/pylfit/
+    about: Tutorials, the API reference and how the algorithms work. Your answer may already be there.
+  - name: Security problem
+    url: https://github.com/Tony-sama/pylfit/security/policy
+    about: Report it privately by email, as the security policy explains, not in a public issue.
+  - name: pylfit 0.x
+    url: https://github.com/Tony-sama/pylfit/tree/v0.5.1
+    about: The 0.x code (pip install "pylfit<1") is no longer maintained; its source stays under the v0.5.1 tag.

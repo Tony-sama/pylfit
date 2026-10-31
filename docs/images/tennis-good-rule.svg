@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 890 255" width="890" height="255" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <title>A rule matching four days of the tennis table</title>
+  <rect width="890" height="255" rx="8" fill="#ffffff"/>
+  <text x="143.0" y="30" text-anchor="middle" fill="#555" font-size="11">1</text>
+  <text x="197.0" y="30" text-anchor="middle" fill="#555" font-size="11">2</text>
+  <text x="251.0" y="30" text-anchor="middle" fill="#555" font-size="11">3</text>
+  <text x="305.0" y="30" text-anchor="middle" fill="#555" font-size="11">4</text>
+  <text x="359.0" y="30" text-anchor="middle" fill="#555" font-size="11">5</text>
+  <text x="413.0" y="30" text-anchor="middle" fill="#555" font-size="11">6</text>
+  <text x="467.0" y="30" text-anchor="middle" fill="#555" font-size="11">7</text>
+  <text x="521.0" y="30" text-anchor="middle" fill="#555" font-size="11">8</text>
+  <text x="575.0" y="30" text-anchor="middle" fill="#555" font-size="11">9</text>
+  <text x="629.0" y="30" text-anchor="middle" fill="#555" font-size="11">10</text>
+  <text x="683.0" y="30" text-anchor="middle" fill="#555" font-size="11">11</text>
+  <text x="737.0" y="30" text-anchor="middle" fill="#555" font-size="11">12</text>
+  <text x="791.0" y="30" text-anchor="middle" fill="#555" font-size="11">13</text>
+  <text x="845.0" y="30" text-anchor="middle" fill="#555" font-size="11">14</text>
+  <text x="108" y="57" text-anchor="end" fill="#222">outlook</text>
+  <rect x="117" y="40" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="143.0" y="57" text-anchor="middle" fill="#a05a00" font-size="10.5">sunny</text>
+  <rect x="171" y="40" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="197.0" y="57" text-anchor="middle" fill="#a05a00" font-size="10.5">sunny</text>
+  <rect x="225" y="40" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="251.0" y="57" text-anchor="middle" fill="#666" font-size="10.5">overcast</text>
+  <rect x="279" y="40" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="305.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="10.5">rain</text>
+  <rect x="333" y="40" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="359.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="10.5">rain</text>
+  <rect x="387" y="40" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="413.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="10.5">rain</text>
+  <rect x="441" y="40" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="467.0" y="57" text-anchor="middle" fill="#666" font-size="10.5">overcast</text>
+  <rect x="495" y="40" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="521.0" y="57" text-anchor="middle" fill="#a05a00" font-size="10.5">sunny</text>
+  <rect x="549" y="40" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="575.0" y="57" text-anchor="middle" fill="#a05a00" font-size="10.5">sunny</text>
+  <rect x="603" y="40" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="629.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="10.5">rain</text>
+  <rect x="657" y="40" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="683.0" y="57" text-anchor="middle" fill="#a05a00" font-size="10.5">sunny</text>
+  <rect x="711" y="40" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="737.0" y="57" text-anchor="middle" fill="#666" font-size="10.5">overcast</text>
+  <rect x="765" y="40" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="791.0" y="57" text-anchor="middle" fill="#666" font-size="10.5">overcast</text>
+  <rect x="819" y="40" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="845.0" y="57" text-anchor="middle" fill="#2c6fad" font-size="10.5">rain</text>
+  <text x="108" y="87" text-anchor="end" fill="#222">temperature</text>
+  <rect x="117" y="70" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="143.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="10.5">hot</text>
+  <rect x="171" y="70" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="197.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="10.5">hot</text>
+  <rect x="225" y="70" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="251.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="10.5">hot</text>
+  <rect x="279" y="70" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="305.0" y="87" text-anchor="middle" fill="#a05a00" font-size="10.5">mild</text>
+  <rect x="333" y="70" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="359.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="10.5">cool</text>
+  <rect x="387" y="70" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="413.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="10.5">cool</text>
+  <rect x="441" y="70" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="467.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="10.5">cool</text>
+  <rect x="495" y="70" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="521.0" y="87" text-anchor="middle" fill="#a05a00" font-size="10.5">mild</text>
+  <rect x="549" y="70" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="575.0" y="87" text-anchor="middle" fill="#2c6fad" font-size="10.5">cool</text>
+  <rect x="603" y="70" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="629.0" y="87" text-anchor="middle" fill="#a05a00" font-size="10.5">mild</text>
+  <rect x="657" y="70" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="683.0" y="87" text-anchor="middle" fill="#a05a00" font-size="10.5">mild</text>
+  <rect x="711" y="70" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="737.0" y="87" text-anchor="middle" fill="#a05a00" font-size="10.5">mild</text>
+  <rect x="765" y="70" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="791.0" y="87" text-anchor="middle" fill="#b03a2e" font-size="10.5">hot</text>
+  <rect x="819" y="70" width="52" height="26" rx="3" fill="#fdf1d6"/>
+  <text x="845.0" y="87" text-anchor="middle" fill="#a05a00" font-size="10.5">mild</text>
+  <text x="108" y="117" text-anchor="end" fill="#222">humidity</text>
+  <rect x="117" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="143.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <rect x="171" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="197.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <rect x="225" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="251.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <rect x="279" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="305.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <rect x="333" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="359.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="387" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="413.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="441" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="467.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="495" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="521.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <rect x="549" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="575.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="603" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="629.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="657" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="683.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="711" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="737.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <rect x="765" y="100" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="791.0" y="117" text-anchor="middle" fill="#2c6fad" font-size="10.5">normal</text>
+  <rect x="819" y="100" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="845.0" y="117" text-anchor="middle" fill="#b03a2e" font-size="10.5">high</text>
+  <text x="108" y="147" text-anchor="end" fill="#222">wind</text>
+  <rect x="117" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="143.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="171" y="130" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="197.0" y="147" text-anchor="middle" fill="#b03a2e" font-size="10.5">strong</text>
+  <rect x="225" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="251.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="279" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="305.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="333" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="359.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="387" y="130" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="413.0" y="147" text-anchor="middle" fill="#b03a2e" font-size="10.5">strong</text>
+  <rect x="441" y="130" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="467.0" y="147" text-anchor="middle" fill="#b03a2e" font-size="10.5">strong</text>
+  <rect x="495" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="521.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="549" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="575.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="603" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="629.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="657" y="130" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="683.0" y="147" text-anchor="middle" fill="#b03a2e" font-size="10.5">strong</text>
+  <rect x="711" y="130" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="737.0" y="147" text-anchor="middle" fill="#b03a2e" font-size="10.5">strong</text>
+  <rect x="765" y="130" width="52" height="26" rx="3" fill="#e3eef8"/>
+  <text x="791.0" y="147" text-anchor="middle" fill="#2c6fad" font-size="10.5">weak</text>
+  <rect x="819" y="130" width="52" height="26" rx="3" fill="#f9e1dd"/>
+  <text x="845.0" y="147" text-anchor="middle" fill="#b03a2e" font-size="10.5">strong</text>
+  <text x="108" y="177" text-anchor="end" fill="#222">play</text>
+  <rect x="117" y="160" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="143.0" y="177" text-anchor="middle" fill="#888" font-size="10.5">no</text>
+  <rect x="171" y="160" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="197.0" y="177" text-anchor="middle" fill="#888" font-size="10.5">no</text>
+  <rect x="225" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="251.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="279" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="305.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="333" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="359.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="387" y="160" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="413.0" y="177" text-anchor="middle" fill="#888" font-size="10.5">no</text>
+  <rect x="441" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="467.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="495" y="160" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="521.0" y="177" text-anchor="middle" fill="#888" font-size="10.5">no</text>
+  <rect x="549" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="575.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="603" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="629.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="657" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="683.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="711" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="737.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="765" y="160" width="52" height="26" rx="3" fill="#a5d6a7"/>
+  <text x="791.0" y="177" text-anchor="middle" fill="#1b5e20" font-size="10.5">yes</text>
+  <rect x="819" y="160" width="52" height="26" rx="3" fill="#f0f0f0"/>
+  <text x="845.0" y="177" text-anchor="middle" fill="#888" font-size="10.5">no</text>
+  <rect x="334" y="101" width="50" height="54" rx="5" fill="none" stroke="#1b5e20" stroke-width="2"/>
+  <rect x="334" y="161" width="50" height="24" rx="5" fill="none" stroke="#1b5e20" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="354.0" y="207" fill="#1b5e20" font-size="15">✓</text>
+  <rect x="550" y="101" width="50" height="54" rx="5" fill="none" stroke="#1b5e20" stroke-width="2"/>
+  <rect x="550" y="161" width="50" height="24" rx="5" fill="none" stroke="#1b5e20" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="570.0" y="207" fill="#1b5e20" font-size="15">✓</text>
+  <rect x="604" y="101" width="50" height="54" rx="5" fill="none" stroke="#1b5e20" stroke-width="2"/>
+  <rect x="604" y="161" width="50" height="24" rx="5" fill="none" stroke="#1b5e20" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="624.0" y="207" fill="#1b5e20" font-size="15">✓</text>
+  <rect x="766" y="101" width="50" height="54" rx="5" fill="none" stroke="#1b5e20" stroke-width="2"/>
+  <rect x="766" y="161" width="50" height="24" rx="5" fill="none" stroke="#1b5e20" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="786.0" y="207" fill="#1b5e20" font-size="15">✓</text>
+  <text x="445.0" y="227" text-anchor="middle" font-family="DejaVu Sans Mono, Menlo, monospace" fill="#1b5e20" font-size="13.5">play(yes) :- humidity(normal), wind(weak).</text>
+  <text x="445.0" y="247" text-anchor="middle" fill="#666" font-size="12">It matches days 5, 9, 10 and 13; on each of them, play is yes.</text>
+</svg>

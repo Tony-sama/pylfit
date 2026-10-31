@@ -1,0 +1,6 @@
+id,smoker,cough,diagnosis
+p1,yes,yes,bronchitis
+p2,no,yes,cold
+p3,yes,no,healthy
+p4,no,no,healthy
+p5,?,no,healthy

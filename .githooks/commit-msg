@@ -1,0 +1,89 @@
+#!/bin/sh
+# Enforces the commit-subject cap of 72 characters. Aim for ~50; only
+# the cap is checked, since a warning that fires on most commits gets
+# ignored.
+#
+# Checked in rather than left in .git/hooks so it survives a fresh
+# clone, but git only runs it once core.hooksPath points here — see
+# CONTRIBUTING.md's development install for the one-line enable.
+
+message_file="$1"
+
+# The message as git will record it: `git commit -v` appends the diff
+# below a scissors line, and the editor template adds comment lines.
+message=$(sed -e '/^# -* >8 -*$/,$d' -e '/^#/d' "$message_file")
+
+# The subject is the first line that is not blank — `git commit -t`
+# and some tooling can put blank lines first.
+subject=$(printf '%s\n' "$message" | sed -e '/^[[:space:]]*$/d' | head -n 1)
+
+# Generated subjects whose length isn't the author's to control.
+case "$subject" in
+    Merge\ * | Revert\ * | fixup!\ * | squash!\ * | amend!\ *)
+        exit 0
+        ;;
+esac
+
+# Characters, not bytes: dash's ${#subject} counts bytes, so "é" would
+# count twice. Dropping UTF-8 continuation bytes (0x80-0xBF) leaves one
+# byte per character, whatever the locale.
+length=$(printf '%s' "$subject" | LC_ALL=C tr -d '\200-\277' | wc -c)
+length=$((length))  # BSD wc pads the count with spaces
+cap=72
+
+if [ "$length" -gt "$cap" ]; then
+    printf '\n' >&2
+    printf 'commit-msg: subject is %d characters, over the %d cap.\n' \
+        "$length" "$cap" >&2
+    printf '\n  %s\n' "$subject" >&2
+    # Ruler marking where the cap falls, so the overflow is visible.
+    printf '  %s^\n' "$(printf '%*s' "$cap" '' | tr ' ' '-')" >&2
+    printf '\nShorten it, or move the detail into the body (one bullet\n' >&2
+    printf 'per change, ~72 columns). To commit anyway: --no-verify.\n\n' >&2
+    exit 1
+fi
+
+# --- Cross-references into the planning notes ---
+#
+# The maintainers' planning notes are kept outside this repo, so sending
+# a reader into one is a dangling pointer, and section names move often
+# enough that the pointer is usually stale by the time anyone follows
+# it. tests/test_repo_hygiene.py enforces the same rule for tracked
+# files, where it can be absolute.
+#
+# Here it can't, and this warns rather than rejects. A commit message
+# may need to name one of these files — "shrink PLAN.md's breakdown" —
+# and that is describing a change, not citing a doc. So only
+# unambiguous pointer phrasing is matched, and the author decides: a
+# check that misfires on honest work teaches --no-verify, which would
+# take the length cap down with it.
+#
+# Must list exactly the names in test_repo_hygiene.py's AGENT_DOCS;
+# a test there fails when the two differ.
+docs='PLAN\.md|DECISIONS\.md|RATIONALE\.md|HANDOFF\.md|IDEAS\.md|TEACHING\.md'
+# Two shapes, both needing a cue — a bare filename is not a match.
+#   1. An explicit send: "see DECISIONS.md", "recorded in PLAN.md".
+#   2. A weaker preposition, but only when a section follows:
+#      "numbers in DECISIONS.md section 4". Without the section clause
+#      this one fires on ordinary prose ("numbers living in PLAN.md
+#      moved to ..."), which is why it is not matched on its own.
+# No comma/semicolon/period between cue and filename, so a match stays
+# inside one clause instead of spanning a sentence boundary.
+send="(see|per|cf\.|refer to|documented in|recorded in|described in)"
+locate="(in|at|under)"
+section="('s)? *(§|section|item)"
+found=$(printf '%s\n' "$message" | grep -Ei \
+    "${send} [^,;.]{0,30}(${docs})|${locate} [^,;.]{0,20}(${docs})${section}" \
+    2>/dev/null)
+
+if [ -n "$found" ]; then
+    printf '\n' >&2
+    printf 'commit-msg: this message points into the planning notes,\n' >&2
+    printf 'which are not part of this repo:\n\n' >&2
+    printf '%s\n' "$found" | sed 's/^/  /' >&2
+    printf '\nNaming a file you changed is fine. Sending a reader into\n' >&2
+    printf 'one is not; state the substance here instead. Warning\n' >&2
+    printf 'only; the commit goes ahead.\n\n' >&2
+fi
+
+exit 0

@@ -1,0 +1,129 @@
+# Actions are pinned to commits, as in `ci.yml`.
+#
+# Publishes to PyPI when a version tag (`v1.0.0`, `v1.0.0.dev0`, ...) is
+# pushed. Nothing else publishes: there is no manual upload script.
+# Once PyPI has the release, a GitHub release is created for the tag,
+# with the same sdist and wheel attached — except for pre-releases.
+#
+# Authentication is PyPI "trusted publishing": PyPI is configured to
+# accept uploads from this workflow file, in this repository, running
+# in the `pypi` environment — so no API token is stored anywhere. The
+# `pypi` environment requires a maintainer's approval, so a pushed tag
+# waits for a click before anything reaches PyPI.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: test and build
+    # Only the public repository is a trusted publisher. In any other
+    # copy (a fork, a private mirror) a pushed tag does nothing.
+    if: github.repository == 'Tony-sama/pylfit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Check the tag matches the package version
+        # A `v1.0.1` tag on a commit whose `pyproject.toml` still says
+        # 1.0.0 would otherwise upload 1.0.0 again (refused by PyPI) or,
+        # worse, upload under a version nobody meant to release.
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match version $version in pyproject.toml"
+            exit 1
+          fi
+
+      - name: Run the whole suite, slow tests included
+        # Same as CI's test job. Repeated here rather than relied on,
+        # because a tag can point at a commit CI never saw green.
+        run: |
+          pip install -e ".[dev]"
+          pytest -m "" -q
+
+      - name: Build the sdist and wheel
+        run: |
+          pip install build
+          python -m build
+
+      - name: Check them
+        # As in CI's build job, and repeated for the same reason as the
+        # suite. A README PyPI can't render would otherwise only fail at
+        # upload, after the deployment was approved.
+        run: |
+          pip install twine check-wheel-contents
+          twine check --strict dist/*
+          check-wheel-contents dist/*.whl
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pylfit
+    permissions:
+      # Lets the job request the short-lived token PyPI's trusted
+      # publishing checks. Granted to this job alone, which runs no
+      # project code — it only uploads what `build` produced.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  github-release:
+    name: create the GitHub release
+    # Only after PyPI accepted the upload, so a GitHub release (and any
+    # archive made from it, such as a Zenodo DOI) always matches a
+    # version that is really on PyPI.
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      # Creating a release writes to the repository. Granted to this
+      # job alone; the token is the one GitHub issues for this run.
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create the release, with the sdist and wheel attached
+        # Pre-releases (`aN`, `bN`, `rcN`, `.devN`) stay tag-only: they
+        # are on PyPI for testing, and a GitHub release would get them
+        # archived as if they were real releases. `--verify-tag` refuses
+        # to create a tag that isn't already on GitHub.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ (a|b|rc|\.dev)[0-9]+$ ]]; then
+            echo "::notice::$GITHUB_REF_NAME is a pre-release: no GitHub release"
+            exit 0
+          fi
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "pylfit ${GITHUB_REF_NAME#v}" \
+            --notes "Changes in this release: https://github.com/$GITHUB_REPOSITORY/blob/master/docs/changelog.md"
