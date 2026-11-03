@@ -203,6 +203,8 @@ class GULA(Algorithm):
         See Also:
             BruteForce: The exhaustive learner ``GULA`` is tested
                 against.
+            PRIDE: Much faster on large data; learns a subset of these
+                rules, complete only over the rows present.
 
         Examples:
             >>> import pandas as pd

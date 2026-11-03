@@ -167,7 +167,7 @@ class PRIDE(Algorithm):
                 ``if __name__ == "__main__":`` guard (see ``n_jobs``).
 
         See Also:
-            GULA: Learns every rule ``PRIDE`` can, and is complete.
+            GULA: Learns every rule, of which ``PRIDE``'s are a subset.
 
         Examples:
             >>> import pandas as pd
