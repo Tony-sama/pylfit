@@ -100,13 +100,18 @@ def partial_dataset():
 # --- minimality beyond the shared fixtures ---
 #
 # test_learners.py checks correctness, completeness and minimality on
-# every conftest.py dataset. All three are exhaustive over their own
-# feature-domain product, which is why completeness holds for PRIDE
-# there — see this file's module docstring and
-# test_pride_can_be_incomplete_on_a_non_exhaustive_dataset below for
-# the general case.
+# the conftest.py datasets in its _FIXTURE_NAMES. All three are
+# exhaustive over their own feature-domain product, which is why
+# completeness holds for PRIDE there — see this file's module
+# docstring and test_pride_can_be_incomplete_on_a_non_exhaustive_dataset
+# below for the general case.
 
-_FIXTURE_NAMES = ["toy_dataset", "nondeterministic_dataset", "degenerate_dataset"]
+_FIXTURE_NAMES = [
+    "toy_dataset",
+    "nondeterministic_dataset",
+    "degenerate_dataset",
+    "support_dataset",
+]
 
 
 def test_minimality_drops_a_condition_the_greedy_choice_left_behind():
