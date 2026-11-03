@@ -409,7 +409,7 @@ class GULA(Algorithm):
         # the runtime, is the same on every run.
         features = sorted(dataset.features)
         negatives = GULA._order_negatives(
-            GULA._distinct(dataset._negative_states(target, value), features),
+            dataset._distinct_negative_states(target, value),
             features,
             negative_order,
             dataset._has_unknowns,

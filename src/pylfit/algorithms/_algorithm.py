@@ -240,7 +240,7 @@ class Algorithm(ABC):
                 # add time.
                 for target, value in todo:
                     dataset._positive_states(target, value)
-                    dataset._negative_states(target, value)
+                    dataset._distinct_negative_states(target, value)
             with ProcessPoolExecutor(
                 workers, initializer=_init_worker, initargs=(dataset,)
             ) as pool:
@@ -532,32 +532,6 @@ class Algorithm(ABC):
         return checked
 
     @staticmethod
-    def _distinct(
-        negatives: Sequence[Mapping[str, str | None]], features: list[str]
-    ) -> list[Mapping[str, str | None]]:
-        """Drops repeated feature states, keeping each one's first occurrence.
-
-        ``Dataset.negatives`` returns one entry per row; a repeated
-        state would be processed again for nothing, since every kept
-        rule is already consistent with it.
-
-        Args:
-            negatives: The head's negatives, one per row.
-            features: The feature names a state is keyed on.
-
-        Returns:
-            Each distinct state once, in first-seen order.
-        """
-        seen: set[tuple[str | None, ...]] = set()
-        distinct = []
-        for negative in negatives:
-            key = tuple(negative[feature] for feature in features)
-            if key not in seen:
-                seen.add(key)
-                distinct.append(negative)
-        return distinct
-
-    @staticmethod
     def _expand_allowed(
         allowed_conditions: Collection[str | tuple[str, str]], dataset: Dataset
     ) -> list[tuple[str, str]]:
@@ -724,9 +698,7 @@ class Algorithm(ABC):
         if not positives:
             return []
         features = dataset.features
-        negatives = Algorithm._distinct(
-            dataset._negative_states(target, value), features
-        )
+        negatives = dataset._distinct_negative_states(target, value)
         restricted = " or ".join(restrictions)
         # Per distinct state, since repeated rows get the same answer.
         causes: dict[tuple[str | None, ...], str | None] = {}

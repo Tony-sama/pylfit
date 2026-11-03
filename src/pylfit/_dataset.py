@@ -697,6 +697,13 @@ class Dataset:
         self._rows_cache: list[dict[str, str | None]] | None = None
         self._positives_cache: dict[tuple[str, str], list[dict[str, str | None]]] = {}
         self._negatives_cache: dict[tuple[str, str], list[dict[str, str | None]]] = {}
+        # Each head's negatives once per distinct state, for the
+        # learners: deduplicating builds a key per row, a third of a
+        # warm `PRIDE` fit on 32,768 rows (0.38 of 1.14 s) when redone
+        # on every fit.
+        self._distinct_negatives_cache: dict[
+            tuple[str, str], list[dict[str, str | None]]
+        ] = {}
 
         # `domain` only depends on `_data` too, same as
         # positives/negatives above — cached per variable for the same
@@ -756,6 +763,7 @@ class Dataset:
         state["_rows_cache"] = None
         state["_positives_cache"] = {}
         state["_negatives_cache"] = {}
+        state["_distinct_negatives_cache"] = {}
         return state
 
     def __len__(self) -> int:
@@ -981,6 +989,41 @@ class Dataset:
                 negative &= ~self._could_be_seen_with(column.eq(value), negative)
             self._negatives_cache[key] = self._states(negative)
         return list(self._negatives_cache[key])
+
+    def _distinct_negative_states(
+        self, target: str, value: str
+    ) -> list[dict[str, str | None]]:
+        """``_negative_states`` with each repeated state dropped.
+
+        A learner would process a repeated state again for nothing,
+        since every rule it keeps is already consistent with it. The
+        first occurrence is kept, so the order is the negatives' own.
+        When nothing repeats, the cache holds the negatives' own list
+        rather than a copy of it.
+
+        Args:
+            target: As in ``negatives``.
+            value: As in ``negatives``.
+
+        Returns:
+            A new list of the cached states, each distinct state once.
+        """
+        key = (target, value)
+        if key not in self._distinct_negatives_cache:
+            negatives = self._negative_states(target, value)
+            seen: set[tuple[str | None, ...]] = set()
+            distinct = []
+            for negative in negatives:
+                state = tuple(negative[feature] for feature in self._features)
+                if state not in seen:
+                    seen.add(state)
+                    distinct.append(negative)
+            self._distinct_negatives_cache[key] = (
+                distinct
+                if len(distinct) < len(negatives)
+                else self._negatives_cache[key]
+            )
+        return list(self._distinct_negatives_cache[key])
 
     def _could_be_seen_with(
         self, positive: pd.Series, candidate: pd.Series

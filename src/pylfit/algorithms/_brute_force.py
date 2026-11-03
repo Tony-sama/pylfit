@@ -173,9 +173,7 @@ class BruteForce(Algorithm):
         head = f"{target}={value}"
         # Each candidate is judged against every negative: a repeated
         # row would only repeat the work.
-        negatives = BruteForce._distinct(
-            dataset._negative_states(target, value), dataset.features
-        )
+        negatives = dataset._distinct_negative_states(target, value)
         total = BruteForce._candidate_count(dataset)
         progress = BruteForce._progress(f"{head}: checking candidates", total)
         kept = []

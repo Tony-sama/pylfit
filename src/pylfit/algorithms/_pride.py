@@ -293,7 +293,7 @@ class PRIDE(Algorithm):
         start = time.perf_counter()
         features = dataset.features
         positives = dataset._positive_states(target, value)
-        negatives = PRIDE._distinct(dataset._negative_states(target, value), features)
+        negatives = dataset._distinct_negative_states(target, value)
         thresholds = (
             0
             if min_support is None

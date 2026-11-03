@@ -1031,6 +1031,42 @@ def test_negatives_all_rows_for_a_value_never_observed(degenerate_dataset):
     assert len(negatives) == len(degenerate_dataset)
 
 
+# --- distinct negatives, for the learners ---
+
+
+def test_distinct_negatives_keep_each_state_once_in_first_seen_order():
+    df = pd.DataFrame(
+        {
+            "a": ["1", "0", "1", "0", "1"],
+            "b": ["0", "0", "0", "0", "1"],
+            "y": ["0", "0", "0", "0", "1"],
+        }
+    )
+    dataset = Dataset(df, features=["a", "b"], targets=["y"])
+    negatives = dataset._negative_states("y", "1")
+    distinct = dataset._distinct_negative_states("y", "1")
+    assert distinct == [{"a": "1", "b": "0"}, {"a": "0", "b": "0"}]
+    assert distinct[0] is negatives[0]
+    assert distinct[1] is negatives[1]
+
+
+def test_distinct_negatives_are_built_once_per_head(toy_dataset, monkeypatch):
+    # A refit reads them from the cache: deduplicating builds a key per
+    # row, a third of a warm fit on a large table when redone each time.
+    first = toy_dataset._distinct_negative_states("y", "1")
+    monkeypatch.setattr(
+        toy_dataset, "_negative_states", lambda *_head: pytest.fail("rebuilt")
+    )
+    assert toy_dataset._distinct_negative_states("y", "1") == first
+
+
+def test_distinct_negatives_share_the_negatives_list_when_none_repeat(toy_dataset):
+    distinct = toy_dataset._distinct_negative_states("y", "1")
+    cached = toy_dataset._distinct_negatives_cache[("y", "1")]
+    assert cached is toy_dataset._negatives_cache[("y", "1")]
+    assert distinct is not cached
+
+
 # --- negatives with unknowns ---
 
 
@@ -1193,10 +1229,12 @@ def test_a_pickled_dataset_leaves_its_row_caches_behind(toy_dataset):
     # times the table's size there, cheaper to rebuild than to send.
     positives = toy_dataset.positives("y", "1")
     negatives = toy_dataset.negatives("y", "1")
+    toy_dataset._distinct_negative_states("y", "1")
     restored = pickle.loads(pickle.dumps(toy_dataset))
     assert restored._rows_cache is None
     assert restored._positives_cache == {}
     assert restored._negatives_cache == {}
+    assert restored._distinct_negatives_cache == {}
     assert toy_dataset._positives_cache
     assert restored.positives("y", "1") == positives
     assert restored.negatives("y", "1") == negatives

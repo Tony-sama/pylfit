@@ -224,6 +224,7 @@ def test_a_parallel_fit_keeps_the_row_caches_only_under_fork(
     }
     assert (set(two_target_dataset._positives_cache) == heads) is kept
     assert (set(two_target_dataset._negatives_cache) == heads) is kept
+    assert (set(two_target_dataset._distinct_negatives_cache) == heads) is kept
 
 
 FIT_FRAME = {
