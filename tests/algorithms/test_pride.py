@@ -134,9 +134,9 @@ def test_minimality_drops_a_condition_the_greedy_choice_left_behind():
 # The real, general invariant (see this file's and _pride.py's module
 # docstrings): every PRIDE rule is individually consistent and
 # irreducible, which is exactly what makes it a rule GULA also finds.
-# Checked directly here rather than just argued in prose — across
-# every conftest.py fixture, multi_target_dataset included, and
-# partial_dataset (defined further down, where PRIDE is also
+# Checked directly here rather than just argued in prose — on the
+# conftest.py fixtures in _FIXTURE_NAMES, on multi_target_dataset,
+# and on partial_dataset (defined above, where PRIDE is also
 # incomplete over the domain product — a separate property, but the
 # subset relationship holds regardless).
 
