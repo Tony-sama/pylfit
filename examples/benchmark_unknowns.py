@@ -109,7 +109,6 @@ from _bnet import generate_transitions
 
 from pylfit import (
     GULA,
-    PRIDE,
     Dataset,
     PylfitWarning,
     WeightedRuleSetModel,
@@ -243,9 +242,13 @@ def fit(train, features, targets, domain, **kw):
         ``(model, seconds)``: the model, and the time ``GULA.fit`` took.
     """
     dataset = Dataset(train, features=features, targets=targets, **kw)
-    # The first fit on a dataset also converts its rows, once; paid here,
-    # untimed, it doesn't count against the arms with more of them.
-    PRIDE.fit(dataset, warn_uncovered=False)
+    # The first fit on a dataset also builds each head's positive and
+    # negative rows, once; built here, untimed, they don't count against
+    # the arms with more rows.
+    for target in dataset.targets:
+        for value in dataset.domain(target):
+            dataset.positives(target, value)
+            dataset.negatives(target, value)
     started = time.perf_counter()
     rules = GULA.fit(dataset, min_support=1, warn_uncovered=False)
     seconds = time.perf_counter() - started

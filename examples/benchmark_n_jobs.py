@@ -72,9 +72,12 @@ def main() -> None:
         f"{len(heads)} heads), {os.cpu_count()} CPUs\n"
     )
 
-    # The first fit on a dataset also prepares its rows, which the
-    # timed fits below would otherwise share unevenly.
-    GULA.fit(dataset, heads=heads[:1])
+    # The first fit on a dataset also builds each head's positive and
+    # negative rows; built here, untimed, so that no head's time below
+    # includes them.
+    for target, value in heads:
+        dataset.positives(target, value)
+        dataset.negatives(target, value)
 
     head_seconds = {}
     for head in heads:

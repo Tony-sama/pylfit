@@ -60,7 +60,7 @@ from pathlib import Path
 
 from _bnet import build_dataset_arguments, influences
 
-from pylfit import GULA, PRIDE, Dataset
+from pylfit import GULA, Dataset
 
 DATA_PATH = (
     Path(__file__).resolve().parent.parent
@@ -83,9 +83,13 @@ def main() -> None:
     """Fit each configuration, time it, and check they all agree."""
     table, features, targets = build_dataset_arguments(DATA_PATH)
     dataset = Dataset(table, features=features, targets=targets)
-    # The first fit on a dataset also converts its rows, once, for every
-    # fit after it. Paid here, untimed, it doesn't count against "raw".
-    PRIDE.fit(dataset)
+    # The first fit on a dataset also builds each head's positive and
+    # negative rows, once, for every fit after it. Built here, untimed,
+    # they don't count against "raw".
+    for target in dataset.targets:
+        for value in dataset.domain(target):
+            dataset.positives(target, value)
+            dataset.negatives(target, value)
 
     print(f"Network: {DATA_PATH.name} ({len(features)} variables, {len(table)} rows)\n")
 

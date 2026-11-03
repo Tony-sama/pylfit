@@ -120,10 +120,14 @@ def run_one(name: str, algorithms: list) -> dict:
     dataset = Dataset(table, features=features, targets=targets)
 
     row = {"network": name, "vars": len(features), "rows": len(table)}
-    # The first fit on a dataset also converts its rows, once, for every
-    # fit after it. An untimed fit pays that here, so the timings below
-    # compare the algorithms and not who happened to run first.
-    PRIDE.fit(dataset)
+    # The first fit on a dataset also builds each head's positive and
+    # negative rows, once, for every fit after it. Built here, untimed,
+    # so the timings below compare the algorithms and not who happened
+    # to run first.
+    for target in dataset.targets:
+        for value in dataset.domain(target):
+            dataset.positives(target, value)
+            dataset.negatives(target, value)
     learned = {}
     for label, algorithm in algorithms:
         started = time.perf_counter()

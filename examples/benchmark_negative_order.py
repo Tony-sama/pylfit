@@ -58,7 +58,7 @@ from pathlib import Path
 import pandas as pd
 from _bnet import build_dataset_arguments
 
-from pylfit import GULA, PRIDE, Dataset, PylfitWarning
+from pylfit import GULA, Dataset, PylfitWarning
 
 EXAMPLES_DIR = Path(__file__).resolve().parent
 
@@ -115,10 +115,13 @@ def main() -> None:
     for name, dataset in datasets().items():
         print(f"{name} ({len(dataset.features)} features):")
 
-        # The first fit on a dataset also prepares its rows, head by
-        # head; without an untimed fit of every head, whichever order
-        # ran first would pay for that.
-        PRIDE.fit(dataset)
+        # The first fit on a dataset also builds each head's positive
+        # and negative rows; built here, untimed, so that whichever
+        # order runs first doesn't pay for them.
+        for target in dataset.targets:
+            for value in dataset.domain(target):
+                dataset.positives(target, value)
+                dataset.negatives(target, value)
 
         baseline_rules = None
         for order in ORDERS:
