@@ -437,8 +437,9 @@ class Rule:
         A rule is more general than another with the same head when its
         conditions are a subset of the other's: it matches every state
         the other matches. The rule-learning literature calls this
-        subsumption. Like ``set.issubset``, the test is not strict: a
-        rule is more general than itself.
+        subsumption. Unlike subsumption, the test is strict, as ``<``
+        between sets: no rule is more general than itself, or than a
+        rule equal to it.
 
         Args:
             other: The rule to compare against.
@@ -457,14 +458,14 @@ class Rule:
             >>> general.is_more_general_than(specific)
             True
             >>> general.is_more_general_than(general)
-            True
+            False
         """
         # A subset test on the items views runs in C; GULA's domination
         # check calls this millions of times, so the type is checked
         # only once the comparison has failed.
         try:
             return (
-                self._head == other._head and self._body.items() <= other._body.items()
+                self._head == other._head and self._body.items() < other._body.items()
             )
         except AttributeError:  # a Rule always has both: other is not one
             raise TypeError(

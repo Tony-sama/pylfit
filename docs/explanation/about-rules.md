@@ -34,11 +34,10 @@ or if `b` is 1, then `y` can be 1.
 
 A rule is more general than another with the same head when its body
 is a subset of the other's: it matches every state the other matches.
-The rule-learning literature calls this subsumption. The relation
-includes equality: a rule is more general than itself. A rule
-dominates another, different rule when it is more general than it, so
-no rule dominates itself; the dominated rule then adds nothing a rule
-set doesn't already have.
+The rule-learning literature calls this subsumption. Unlike
+subsumption, the relation is strict: no rule is more general than
+itself. A rule dominates another when it is more general than it; the
+dominated rule then adds nothing a rule set doesn't already have.
 
 ```pycon
 >>> from pylfit import Rule
@@ -307,8 +306,8 @@ see [About the prediction models](about-models.md).
 | Body | `Rule.body`, a mapping of variable to value |
 | Condition | one entry of the body |
 | Matches | `Rule.matches(state)` |
-| More general, subsumes | `Rule.is_more_general_than`; includes equality |
-| Dominates | is more general than, and differs from; a dominated rule is discarded |
+| More general, subsumes | `Rule.is_more_general_than`; strict, unlike subsumption |
+| Dominates | is more general than; a dominated rule is discarded |
 | Consistent, correct | matches no negative example of its head |
 | Complete (rule set) | every feature state is matched, for each target |
 | Minimal (rule) | consistent, and dropping any condition makes it match a negative example |

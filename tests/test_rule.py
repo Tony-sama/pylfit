@@ -230,9 +230,9 @@ def test_is_more_general_than_false_for_another_head(head):
     assert Rule(head).is_more_general_than(Rule(("y", "1"), {"a": "1"})) is False
 
 
-def test_rule_is_more_general_than_itself():
+def test_rule_is_not_more_general_than_an_equal_rule():
     rule = Rule(head=("y", "1"), body={"a": "0", "b": "1"})
-    assert rule.is_more_general_than(Rule(rule.head, rule.body)) is True
+    assert rule.is_more_general_than(Rule(rule.head, rule.body)) is False
 
 
 def test_is_more_general_than_requires_subset_of_conditions():

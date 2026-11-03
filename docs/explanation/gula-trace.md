@@ -46,8 +46,7 @@ Start from the rule with an empty body. For each negative example,
 take out every rule that matches it, and replace each with its least
 specializations: one more condition, on a feature the rule doesn't
 constrain, with a value the negative doesn't have. Drop a
-specialization that a kept rule already dominates or equals;
-`is_more_general_than` checks both, since it includes equality.
+specialization that a kept rule already dominates.
 
 ```pycon
 >>> def show(rules):
