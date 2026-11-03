@@ -99,6 +99,17 @@ leaves possible for a state it never shows (a state is one combination
 of feature values): the dropped rules are exactly the ones that add
 those possibilities.
 
+A fraction counts per target value: `min_support=0.3` asks a rule for
+30% of its own value's rows, 2 of the 5 `no` days but 3 of the 9 `yes`
+days. A rule two days back is kept for `no` and dropped for `yes`, and
+`fit` warns that one `yes` day is now matched by no rule:
+
+```pycon
+>>> len(GULA.fit(dataset, min_support=0.3))
+6
+
+```
+
 If a fit is slow, pass `verbose=True` to see its progress and an
 estimate of the time left. `min_support=1` usually makes `GULA` much
 faster, since it has fewer rules to keep. `PRIDE` learns a smaller set
