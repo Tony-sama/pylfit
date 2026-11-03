@@ -412,7 +412,10 @@ can be missing.
 
 The three algorithms return rules that match no negative example. When
 some labels are wrong, a rule then carries conditions that only dodge
-a mislabelled row. [`generalize`](../api/generalize.md) runs after any
+a mislabelled row. A wrong feature value that makes a row contradict a
+true rule looks the same to the learner, and is handled the same way
+(measured on full transition tables only).
+[`generalize`](../api/generalize.md) runs after any
 of them and drops those conditions. For each condition of a rule, it
 takes the rows matching the rest of the rule and asks whether those
 with the condition hold the head value more often than those without,
