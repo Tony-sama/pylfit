@@ -8,6 +8,7 @@ Each guide shows how to do one task.
 prepare-data
 load-a-csv
 state-transitions
+check-against-true-rules
 weighted-predictions
 save-and-load
 reproducible-results

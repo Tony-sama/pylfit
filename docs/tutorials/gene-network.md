@@ -362,6 +362,9 @@ ones starting from those states.
 
 - [Learn from state transitions](../how-to/state-transitions.md) covers
   the same steps in brief, for any dynamical system.
+- [Check learned rules against the true
+  ones](../how-to/check-against-true-rules.md) grades the rules
+  themselves when the network is known.
 - [About LFIT rules](../explanation/about-rules.md) explains what the
   learned rules guarantee.
 - [Learn a dynamical system and simulate
