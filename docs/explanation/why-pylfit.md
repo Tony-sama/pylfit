@@ -12,9 +12,11 @@ is the better choice.
   like "what could explain this outcome?", no rule that fits the data is
   left out. That suits small to mid-size problems: `GULA`'s worst case
   is exponential in the number of features and their domain sizes.
-  `PRIDE` returns some of those rules, enough to cover every row, and
-  its cost doesn't grow with the domain sizes: on the soybean data, 35
-  features, it fits in under 0.01 s against 1.3 s for `GULA`. See
+  `PRIDE` returns some of those rules, enough to cover every row. Its
+  cost is polynomial in the size of the data (Ribeiro et al., IJCLR
+  2021, [hal-03347026](https://hal.science/hal-03347026)) and doesn't
+  grow with the domain sizes: on the soybean data, 35 features, it
+  fits in under 0.01 s against 1.3 s for `GULA`. See
   [Prepare your data](../how-to/prepare-data.md#keep-the-problem-a-comfortable-size)
   for measured sizes.
 - It also gives short rule sets, near the true ones.

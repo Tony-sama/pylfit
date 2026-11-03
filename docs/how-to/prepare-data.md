@@ -248,10 +248,11 @@ models](../explanation/about-models.md).
 
 `GULA`'s cost grows with the number of features and the size of their
 domains far more than with the number of rows; the worst case is
-exponential. `PRIDE` grows much more slowly. Measured on the data the
-scripts in `examples/` use, the 15-variable network timed on its own,
-a fit on a `Dataset` already fitted once (the first fit also prepares
-its rows):
+exponential. `PRIDE`'s is polynomial in the size of the data (Ribeiro
+et al., IJCLR 2021, [hal-03347026](https://hal.science/hal-03347026))
+and grows much more slowly. Measured on the data the scripts in
+`examples/` use, the 15-variable network timed on its own, a fit on a
+`Dataset` already fitted once (the first fit also prepares its rows):
 
 | Data | `GULA.fit` | `PRIDE.fit` |
 | --- | --- | --- |
