@@ -107,11 +107,13 @@ class PRIDE(Algorithm):
                 most positives still to cover, then feature order); a
                 seed with no such condition, or whose rebuilt rule still
                 falls short, gets no rule. Every rule kept is one of
-                ``GULA``'s with the same threshold, and with ``1`` the
-                rules are those of a run without it.
+                ``GULA``'s with the same threshold. ``1`` changes
+                nothing, since every rule matches its seed, unlike on
+                ``GULA``, where it drops the rules matching no row.
             min_possible_support: As ``min_support``, counting a row as
                 a match when each condition holds or falls on an
-                unknown, as in ``GULA.fit``. Both can be set.
+                unknown, as in ``GULA.fit``; ``1`` changes nothing here
+                either. Both can be set.
             try_all_conditions: If True, each seed also gets one rule
                 per condition it can take (its known values, within
                 ``allowed_conditions``), built with that condition put
