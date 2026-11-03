@@ -619,10 +619,13 @@ On a 16-CPU Linux machine, on the full transition table of a random
 15-variable Boolean network (32,768 rows, 30 heads), `GULA` took
 15.2 s with `n_jobs=1`, 4.2 s with 4 and 1.9 s with 16; `PRIDE` took
 1.2 s, 0.4 s and 0.3 s. These are fits after a first fit with
-`n_jobs=1` on the same `Dataset`, which builds its row caches and
-takes about a second more on a table this size. A parallel fit builds
-them only in its worker processes, where they are lost when it ends,
-so it pays that second each time. On a 12-variable network `GULA`
+`n_jobs=1` on the same `Dataset`, so that each figure times the fit
+alone: a first fit also builds the dataset's row caches, about a second
+more on a table this size. That warm-up is how the figures were taken,
+not a step to copy. A parallel fit builds the caches in its worker
+processes, in parallel, so its first fit is already as fast as the
+next: with 16 processes, 0.3 s for `PRIDE` against 2.1 s for a first
+fit with `n_jobs=1`. On a 12-variable network `GULA`
 gained little past 4 processes (0.83 s, then 0.70 s with 8), as one
 head took 0.64 s alone: no `n_jobs` brings a fit below its slowest
 head ([the benchmark_n_jobs
