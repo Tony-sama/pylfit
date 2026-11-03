@@ -35,6 +35,17 @@ At 10 variables ``GULA`` takes about ten times ``PRIDE``'s time; at
 variable, so both grow; ``GULA`` grows faster. Where ``GULA`` takes
 seconds, ``PRIDE`` is the algorithm to start with.
 
+**Further still, only ``PRIDE`` runs.** A third table times it on
+networks of 23, 40 and 103 variables, too large for a full table: the
+smallest would have 2**23 rows, 8.4 million, and hundreds of gigabytes
+of memory. Each is sampled instead: 10,000 distinct states with their
+successors for the first two, 1000 for the third. ``PRIDE`` fits each
+in a second or two. ``GULA``, on the same rows of the first two, was
+stopped unfinished after three hours and two hours. With no ``GULA``
+rules to compare against, the script checks ``PRIDE``'s against the
+rows: none matches a row with another value of its target, and every
+row is matched by a rule for its own.
+
 **Every run checks itself, which is why the slow algorithm is still
 here.** ``BruteForce`` and ``GULA`` both return *every* minimal rule
 consistent with the data, so on identical input they must return
@@ -63,16 +74,16 @@ if "__file__" not in globals():
 import time
 from pathlib import Path
 
-from _bnet import build_dataset_arguments
+from _bnet import build_dataset_arguments, feature_target_columns, sample_transitions
 
-from pylfit import GULA, PRIDE, BruteForce, Dataset
+from pylfit import GULA, PRIDE, BruteForce, Dataset, coverage
 
 #: Networks to run, smallest first. Drawn from the corpus the test
 #: suite vendors. The last one carries the whole point — it is where
 #: `BruteForce` first costs seconds rather than milliseconds — and it
-#: is also most of the runtime, so the script stays about ten seconds
-#: overall. Larger networks sit in the same directory; adding one is a
-#: one-line change, and `BruteForce` is what will stop you.
+#: is also most of this table's time, about ten seconds. Larger
+#: networks sit in the same directory; adding one is a one-line change,
+#: and `BruteForce` is what will stop you.
 NETWORKS = [
     "n3s1c1a",
     "n3s1c1b",
@@ -90,6 +101,15 @@ LARGER_NETWORKS = [
     "krumsiek_myeloid",
     "tournier_apoptosis",
     "saadatpour_guardcell",
+]
+
+#: Networks too large for a full table, with the number of distinct
+#: states sampled from each, timed with `PRIDE` alone. `jaoude_thdiff`
+#: takes 1000: its 10,000 rows take 14 s to fit and 6 GB of memory.
+SAMPLED_NETWORKS = [
+    ("mendoza_thelper", 10_000),
+    ("klamt_tcr", 10_000),
+    ("jaoude_thdiff", 1_000),
 ]
 
 #: The vendored networks live with the regression suite that also
@@ -180,13 +200,76 @@ def print_table(networks: list[str], algorithms: list) -> None:
     print()
 
 
+def run_sampled(name: str, rows: int) -> dict:
+    """Fit `PRIDE` on sampled states of one network and check its rules.
+
+    Args:
+        name: Network filename stem, e.g. ``"klamt_tcr"``.
+        rows: Number of distinct states to sample.
+
+    Returns:
+        A row of results: network name, variable count, row count,
+        `PRIDE`'s time and its rule count.
+
+    Raises:
+        AssertionError: If a rule matches a row of another value of its
+            target, or a row matches no rule of its own.
+    """
+    path = DATA_DIR / f"{name}.bnet"
+    table = sample_transitions(path, rows)
+    features, targets = feature_target_columns(path)
+    dataset = Dataset(table, features=features, targets=targets)
+    for target in dataset.targets:
+        for value in dataset.domain(target):
+            dataset.positives(target, value)
+            dataset.negatives(target, value)
+
+    started = time.perf_counter()
+    rules = PRIDE.fit(dataset)
+    elapsed = time.perf_counter() - started
+
+    # Without GULA to compare against, the rules are checked against
+    # the rows themselves: none matches a negative, all cover every row.
+    for rule in rules:
+        target, value = rule.head
+        wrong = [row for row in dataset.negatives(target, value) if rule.matches(row)]
+        assert not wrong, f"{name}: {rule} matches {len(wrong)} negative row(s)."
+    shares = coverage(dataset, rules)
+    uncovered = {head: share for head, share in shares.items() if share < 1}
+    assert not uncovered, f"{name}: rows no rule matches, per head: {uncovered}."
+
+    return {
+        "network": name,
+        "vars": len(features),
+        "rows": len(table),
+        "PRIDE_s": elapsed,
+        "pride_rules": len(rules),
+    }
+
+
+def print_sampled_table() -> None:
+    """Run `PRIDE` on each sampled network and print one table."""
+    header = f"{'network':<22}{'vars':>5}{'rows':>7}{'PRIDE rules':>13}"
+    header += f"{'PRIDE (s)':>15}"
+    print(header)
+    print("-" * len(header))
+    for name, rows in SAMPLED_NETWORKS:
+        row = run_sampled(name, rows)
+        line = f"{row['network']:<22}{row['vars']:>5}{row['rows']:>7}"
+        line += f"{row['pride_rules']:>13}{row['PRIDE_s']:>15.4f}"
+        print(line)
+    print()
+
+
 def main() -> None:
     """Run every network: all three algorithms, then the larger ones."""
     print_table(NETWORKS, ALGORITHMS)
     print("BruteForce and GULA agreed on every network, as they must.")
     print("PRIDE found no rule the other two missed.\n")
     print_table(LARGER_NETWORKS, ALGORITHMS[1:])
-    print("PRIDE found no rule GULA missed.")
+    print("PRIDE found no rule GULA missed.\n")
+    print_sampled_table()
+    print("PRIDE's rules match no negative row and cover every row.")
 
 
 if __name__ == "__main__":

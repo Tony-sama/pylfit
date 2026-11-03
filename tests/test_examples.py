@@ -111,11 +111,14 @@ def test_benchmark_bnet_runs_and_its_checks_hold():
     """The boolean-network example, across every network it lists.
 
     Exiting zero means ``BruteForce`` and ``GULA`` agreed on each
-    network, and ``PRIDE`` returned no rule ``GULA`` did not find.
+    network, ``PRIDE`` returned no rule ``GULA`` did not find, and on
+    the sampled networks ``PRIDE``'s rules matched no negative row and
+    covered every row.
     """
     result = run_example("benchmark_bnet.py")
     assert_ran_clean(result, "benchmark_bnet.py")
     assert "BruteForce and GULA agreed on every network" in result.stdout
+    assert "match no negative row and cover every row" in result.stdout
 
 
 def test_benchmark_influence_runs_and_its_checks_hold():

@@ -35,6 +35,7 @@ import re
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 # Only these characters are permitted in a factor expression before it
@@ -142,6 +143,52 @@ def generate_transitions(path: str | Path) -> pd.DataFrame:
 
     columns = [f"{var}_t" for var in variables] + [f"{var}_t+1" for var in variables]
     return pd.DataFrame(rows, columns=columns)
+
+
+def sample_transitions(path: str | Path, rows: int, seed: int = 0) -> pd.DataFrame:
+    """Sample distinct states of a `.bnet` network, each with its successor.
+
+    For networks too large for `generate_transitions`: `rows` distinct
+    states drawn uniformly at random, the same columns and values.
+    Twice `rows` random states are drawn, the duplicates dropped, and
+    `rows` of the rest kept in a random order.
+
+    Args:
+        path: Path to a `.bnet` file.
+        rows: Number of distinct states to keep.
+        seed: Seed of the NumPy generator; the same seed gives the same
+            rows.
+
+    Returns:
+        A `DataFrame` like `generate_transitions`', with `rows` rows.
+
+    Raises:
+        ValueError: If fewer than `rows` distinct states came up, as on
+            a network with few states; use `generate_transitions` there.
+    """
+    factors = parse_bnet_file(path)
+    variables = sorted(factors)
+    compiled = {var: compile_factor(factors[var]) for var in variables}
+
+    rng = np.random.default_rng(seed)
+    states = np.unique(rng.random((rows * 2, len(variables))) < 0.5, axis=0)
+    if len(states) < rows:
+        raise ValueError(
+            f"{Path(path).name}: {len(states)} distinct states came up, "
+            f"not {rows}; use generate_transitions"
+        )
+    states = states[rng.permutation(len(states))[:rows]]
+
+    records = []
+    for combo in states.tolist():
+        state = dict(zip(variables, combo, strict=True))
+        next_state = {var: compiled[var](state) for var in variables}
+        row = {f"{var}_t": str(state[var]) for var in variables}
+        row.update({f"{var}_t+1": str(next_state[var]) for var in variables})
+        records.append(row)
+
+    columns = [f"{var}_t" for var in variables] + [f"{var}_t+1" for var in variables]
+    return pd.DataFrame(records, columns=columns)
 
 
 def num_variables(path: str | Path) -> int:

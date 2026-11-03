@@ -1,0 +1,37 @@
+targets, factors
+
+# transcribed for pylfit from
+# Mendoza, L. & Xenarios, I. "A method for the generation of standardized qualitative dynamical systems of regulatory networks." Theoretical Biology and Medical Modelling 3 (2006): 13. https://doi.org/10.1186/1742-4682-3-13
+#
+# The discrete system of the paper's Equation 2, with one difference:
+# IL12R reads IL12 & !STAT6, where Equation 2 prints IL12 alone. The
+# paper's text has STAT6 down-regulate IL-12R and its Table 7 counts
+# four feedback circuits through that inhibition; with it, this file
+# has the paper's 27 circuits (24 positive, 3 negative), without it 23.
+# The four inputs (IFNb, IL12, IL18, TCR) are constant 0, as in the
+# paper. Its three steady states (Th0, Th1, Th2, Table 1) are fixed
+# points here.
+
+TCR, 0
+NFAT, (TCR)
+IFNb, 0
+IFNbR, (IFNb)
+IL18, 0
+IL18R, (IL18 & !STAT6)
+IRAK, (IL18R)
+SOCS1, (Tbet) | (STAT1)
+IL12, 0
+IL12R, (IL12 & !STAT6)
+STAT4, (IL12R & !GATA3)
+Tbet, (Tbet & !GATA3) | (STAT1 & !GATA3)
+IFNg, (NFAT & !STAT3) | (IRAK & !STAT3) | (STAT4 & !STAT3) | (Tbet & !STAT3)
+IFNgR, (IFNg)
+JAK1, (IFNgR & !SOCS1)
+STAT1, (IFNbR) | (JAK1)
+IL4, (GATA3 & !STAT1)
+IL4R, (IL4 & !SOCS1)
+STAT6, (IL4R)
+GATA3, (STAT6 & !Tbet) | (GATA3 & !Tbet)
+IL10, (GATA3)
+IL10R, (IL10)
+STAT3, (IL10R)

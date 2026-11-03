@@ -1,8 +1,8 @@
 """Regression tests on Boolean networks: the three algorithms agree.
 
 Correctness, completeness, minimality and agreement between the
-algorithms, checked over 16 of the 18 networks vendored from
-PyBoolNet.
+algorithms, checked over 16 of the 21 networks in ``tests/data/bnet/``;
+the other five have 15 variables or more.
 
 Data is generated on the fly (``examples/_bnet.py``, loaded by path)
 from the vendored ``.bnet`` files in ``tests/data/bnet/`` rather than

@@ -8,7 +8,7 @@ six examples: `benchmark_bnet.py`, `benchmark_influence.py`,
 
 ## Source and license
 
-All 18 files are taken from the model repository of **PyBoolNet**
+20 of the 21 files are taken from the model repository of **PyBoolNet**
 ([hklarner/pyboolnet](https://github.com/hklarner/pyboolnet)):
 
 > Klarner, H., Streck, A. & Siebert, H. "PyBoolNet: a python package
@@ -21,6 +21,14 @@ version is stated, and its repository carries no license file). These
 files keep that license; they are not covered by this repository's
 GPL-3.0 `LICENSE`. They are redistributed unmodified apart from
 whitespace.
+
+`mendoza_thelper.bnet` is pylfit's own transcription of the T-helper
+cell differentiation network of Mendoza, L. & Xenarios, I. "A method
+for the generation of standardized qualitative dynamical systems of
+regulatory networks." *Theoretical Biology and Medical Modelling* 3
+(2006): 13. <https://doi.org/10.1186/1742-4682-3-13>. It is covered by
+this repository's `LICENSE`. Its leading comment gives the one place
+it departs from the paper's printed equations, and why.
 
 ## Citations
 
