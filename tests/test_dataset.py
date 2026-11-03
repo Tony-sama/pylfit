@@ -377,6 +377,15 @@ def test_an_unused_fractional_category_is_not_a_value():
 # a domain value, handed out as None in every feature state.
 
 
+def test_each_value_is_held_by_one_object():
+    # `astype(str)` on an integer column makes a separate `str` per cell.
+    df = pd.DataFrame({"a": [0, 1, None, 1], "y": [0, 1, 0, 1]})
+    dataset = Dataset(df, features=["a"], targets=["y"])
+    values = [row["a"] for row in dataset._rows()]
+    assert values == ["0", "1", None, "1"]
+    assert values[1] is values[3]
+
+
 @pytest.mark.parametrize("missing", [float("nan"), None])
 def test_missing_feature_value_is_unknown(missing):
     df = pd.DataFrame({"a": ["0", missing, "1"], "y": ["0", "1", "0"]})
