@@ -66,3 +66,7 @@ to the code, never only in a file the reader may not have:
 Write the substance inline instead. `tests/test_repo_hygiene.py` fails
 on either; `.githooks/commit-msg` warns on a planning-note name in a
 commit message.
+
+Commits: one logical change each, with messages in Conventional
+Commits form (`fix(pride): ...`); "Write commits" in `CONTRIBUTING.md`
+has the rules.

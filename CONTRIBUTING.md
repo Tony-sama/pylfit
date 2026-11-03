@@ -76,6 +76,33 @@ script in `examples/` for the examples gallery, which adds about a
 minute and a half, most of it in the benchmarks; later builds rerun
 only the scripts that changed. A script that fails, fails the build.
 
+## Write commits
+
+Make each commit one logical change: a fix together with its test,
+docstring and docs, but never two unrelated changes in one commit. Each
+commit passes the checks below on its own, so that it can be reverted
+alone and `git bisect` can test it.
+
+Commit messages follow [Conventional
+Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+
+```text
+fix(generalize): p-value exactly 1 on a full tail
+
+When every table is in the sum the p-value is 1, but rounding gave
+0.9999999999999998 on macOS, failing the docstring's own example.
+```
+
+The subject is `type(scope): summary`. The type is one of `feat`,
+`fix`, `docs`, `test`, `refactor`, `perf`, `style`, `build`, `ci`,
+`chore` or `revert`; the scope, optional, is the part of pylfit
+touched (`pride`, `dataset`, `models`...). Write the summary in the
+imperative ("add", not "added"), in about 50 characters; the hook
+rejects a subject over 72. Mark a change that breaks the public API
+with `!` after the type or scope (`feat(dataset)!: ...`) and say in the
+body what users must change. The body, wrapped at 72 columns, says why
+the change was made.
+
 ## Before opening a pull request
 
 Make sure these pass; CI runs the same ones:
