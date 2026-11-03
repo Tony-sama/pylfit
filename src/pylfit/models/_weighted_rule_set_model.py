@@ -526,9 +526,7 @@ class WeightedRuleSetModel(RuleSetModel):
         cache (the ``negatives`` term sums the other-value partitions),
         so no per-row ``Series`` is built; what is *not* cached is the
         combined wrong-value count per head, re-summed for every rule
-        sharing it. A cache of that would be a fair optimization if
-        scoring gets slow on a large dataset with many rules — measure
-        before adding it.
+        sharing it.
 
         Args:
             dataset: The dataset to score every rule in ``self.rules``
