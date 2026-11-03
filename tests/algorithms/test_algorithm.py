@@ -99,7 +99,7 @@ def test_n_jobs_counts_the_cpus_this_process_may_use(monkeypatch, n_jobs, proces
     # Python 3.11 and 3.12 lack os.process_cpu_count; Linux then reads
     # the affinity mask, and other systems os.cpu_count.
     monkeypatch.delattr(os, "process_cpu_count", raising=False)
-    monkeypatch.setattr(os, "sched_getaffinity", lambda pid: {0, 1, 2}, raising=False)
+    monkeypatch.setattr(os, "sched_getaffinity", lambda _pid: {0, 1, 2}, raising=False)
     assert Algorithm._resolve_n_jobs(n_jobs) == processes
     monkeypatch.delattr(os, "sched_getaffinity")
     monkeypatch.setattr(os, "cpu_count", lambda: 3)

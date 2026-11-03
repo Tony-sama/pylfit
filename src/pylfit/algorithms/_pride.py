@@ -252,7 +252,7 @@ class PRIDE(Algorithm):
         )
 
     @staticmethod
-    def _fit_target_value(
+    def _fit_target_value(  # noqa: C901
         dataset: Dataset,
         target: str,
         value: str,
@@ -465,7 +465,7 @@ class PRIDE(Algorithm):
         return exact >= thresholds[0] and possible >= thresholds[1]
 
     @staticmethod
-    def _covering_rule(
+    def _covering_rule(  # noqa: C901
         target: str,
         value: str,
         seed: _State,

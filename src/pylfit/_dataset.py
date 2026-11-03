@@ -478,9 +478,8 @@ class Dataset:
                 column = column.astype(object)
             if pd.api.types.is_float_dtype(column):
                 column = column.astype("Int64")
-            elif column.dtype == object:
-                if len(Dataset._float_values(column)):
-                    column = column.map(_as_text, na_action="ignore")
+            elif column.dtype == object and len(Dataset._float_values(column)):
+                column = column.map(_as_text, na_action="ignore")
             return column.astype(str).where(known)
 
         return dataframe.apply(convert)

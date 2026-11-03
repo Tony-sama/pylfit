@@ -129,7 +129,7 @@ def test_windows_caps_the_processes_at_61(monkeypatch, platform, expected):
     assert Algorithm._resolve_n_jobs(-29) == expected
 
 
-def _later_heads_first(dataset, target, value, verbose):
+def _later_heads_first(_dataset, target, value, _verbose):
     """Learns nothing, slower for lower values; one row uncovered."""
     time.sleep(0.2 * (2 - int(value)))
     return [], [((target, value), {"a": value}, "unknown values")]
@@ -146,7 +146,7 @@ def test_n_jobs_joins_the_results_in_head_order():
     assert listed == ["  y=0", "  y=1", "  y=2"]
 
 
-def _fail_first_head(dataset, target, value, verbose, *, directory):
+def _fail_first_head(_dataset, _target, value, _verbose, *, directory):
     """Fails on the first head; leaves a file named after each other."""
     if value == "00":
         raise RuntimeError("the first head failed")
@@ -172,7 +172,7 @@ def test_a_failed_head_cancels_the_heads_still_queued(tmp_path):
     assert len(list(tmp_path.iterdir())) < 10
 
 
-def _die(dataset, target, value, verbose):
+def _die(_dataset, _target, _value, _verbose):
     """Ends its worker abruptly, as running out of memory can."""
     os._exit(1)
 
@@ -191,7 +191,7 @@ def test_a_pool_that_fails_on_submit_names_the_likely_causes(
     # the real case runs in
     # test_a_script_needs_the_main_guard_under_spawn below, in a child
     # process coverage does not trace.
-    def fail(*args, **kwargs):
+    def fail(*_args, **_kwargs):
         raise error
 
     monkeypatch.setattr(ProcessPoolExecutor, "submit", fail)

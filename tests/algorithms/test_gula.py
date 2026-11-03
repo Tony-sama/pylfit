@@ -490,8 +490,9 @@ def test_similarity_puts_the_most_typical_negative_first():
     given = ["000", "111", "110", "101", "011"]
     negatives = [dict(zip(features, row, strict=True)) for row in given]
     ordered = GULA._order_negatives(negatives, features, "similarity", False)
-    assert ["".join(state.values()) for state in ordered][0] == "111"
-    assert ["".join(state.values()) for state in ordered][-1] == "000"
+    texts = ["".join(state.values()) for state in ordered]
+    assert texts[0] == "111"
+    assert texts[-1] == "000"
 
 
 def test_verbose_counts_each_distinct_negative_once(capsys):

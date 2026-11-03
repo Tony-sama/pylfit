@@ -195,7 +195,28 @@ line-length = 88
 # lengths are an error, and here they always are (`strict=True`).
 # PT, flake8-pytest-style, keeps the tests in pytest's idiom; its
 # PT011 asks a `pytest.raises` of a broad exception for a `match=`.
-select = ["E", "F", "W", "I", "UP", "TID252", "B", "PT"]
+# C90, mccabe, caps the branches of a function (see below). SIM, RET,
+# PIE, C4, PERF, FURB, N, ARG and RUF keep idioms the code already
+# follows: simpler conditions and returns, comprehensions, PEP 8 names,
+# no unused argument (a stub prefixes the ones it takes only to match
+# a signature with `_`), no stale `noqa`.
+select = [
+    "E", "F", "W", "I", "UP", "TID252", "B", "PT",
+    "C90", "SIM", "RET", "PIE", "C4", "PERF", "FURB", "N", "ARG", "RUF",
+]
+# RUF022 would sort `__all__`, which is grouped by topic on purpose.
+# RUF005 prefers `(*a, x, *b)` to `a + (x,) + b`; the examples keep the
+# `+`, which reads more plainly to a newcomer.
+ignore = ["RUF022", "RUF005"]
+# The en dash of a range, as in the docs' "2019–2026".
+allowed-confusables = ["–"]
+
+[tool.ruff.lint.mccabe]
+# A ceiling for new code, not a target. The learners' per-head loops,
+# `_fit_target_value` of `GULA` and `PRIDE` and `PRIDE`'s
+# `_covering_rule`, are above it and say so with `# noqa: C901`: they
+# are the hot path, and splitting them changes only with a benchmark.
+max-complexity = 15
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

@@ -35,7 +35,7 @@ extensions = [
 ]
 
 
-def _defining_module_docs(app, what, name, obj, options, lines):
+def _defining_module_docs(_app, what, name, _obj, _options, lines):
     """Gives a constant ``pylfit`` re-exports its own ``#:`` comment.
 
     The API pages document constants under ``pylfit``, where users import
@@ -71,7 +71,7 @@ def setup(app):
 # reappears and `-W` fails the build.
 import sphinx_gallery.gen_gallery as _gallery  # noqa: E402
 
-_gallery.get_subsections = lambda *args, **kwargs: []
+_gallery.get_subsections = lambda *_args, **_kwargs: []
 
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",

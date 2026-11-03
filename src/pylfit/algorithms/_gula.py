@@ -337,7 +337,7 @@ class GULA(Algorithm):
         return rules, uncovered
 
     @staticmethod
-    def _fit_target_value(
+    def _fit_target_value(  # noqa: C901
         dataset: Dataset,
         target: str,
         value: str,

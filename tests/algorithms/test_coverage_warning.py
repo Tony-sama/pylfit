@@ -101,7 +101,7 @@ def test_an_empty_allowed_list_still_warns(algorithm):
 @pytest.mark.parametrize("algorithm", ALL_ALGORITHMS)
 def test_warn_uncovered_false_skips_the_scan(algorithm, inseparable_dataset):
     # The scan costs time; turning the warning off is the way out of it.
-    def scan(*args, **kwargs):
+    def scan(*_args, **_kwargs):
         raise AssertionError("scanned for uncovered rows")
 
     with mock.patch.object(Algorithm, "_uncovered", scan):
