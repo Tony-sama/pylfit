@@ -891,7 +891,7 @@ def test_a_negative_seed_is_refused(toy_model):
         toy_model.predict(frame, random_state=-1)
 
 
-def test_rules_with_the_same_text_save_in_a_fixed_order(tmp_path):
+def test_rules_with_the_same_text_save_in_a_fixed_order():
     # "a(0), b" as a variable name makes the second rule print as the
     # first.
     frame = pd.DataFrame(
