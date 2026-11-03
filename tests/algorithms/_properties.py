@@ -1,8 +1,8 @@
 """Rule-set properties the algorithms' tests check on every fixture.
 
 Correctness, completeness and minimality, as the algorithms' module
-docstrings define them, written once for ``test_brute_force.py``,
-``test_gula.py``, ``test_pride.py`` and ``test_boolean_networks.py``.
+docstrings define them, written once for ``test_learners.py`` and
+``test_boolean_networks.py``.
 Each takes the dataset and the rules learned from it and fails with
 the first offending rule or state.
 """

@@ -101,10 +101,11 @@ correct, gets tests of what it does promise, and no comparison.
    `tests/test_public_api.py` checks the two agree.
 3. Tests, in `tests/algorithms/test_<name>.py`, using the shared
    fixtures (see [Testing](testing.md)). If it promises correctness,
-   completeness or minimality, add it to the checks in
+   completeness or minimality, add it to `LEARNERS` in
+   `tests/algorithms/test_learners.py` and to the checks in
    `tests/algorithms/test_boolean_networks.py`; add it to `ALGORITHMS`
-   in `tests/algorithms/test_n_jobs.py` too. Both name each algorithm
-   they run; nothing is picked up automatically.
+   in `tests/algorithms/test_n_jobs.py` too. Each names the algorithms
+   it runs; nothing is picked up automatically.
 4. An API page, `docs/api/algorithms/<name>.md`, modeled on
    `gula.md`: its module docstring through `.. automodule::` with
    `:no-members:` and `:no-index:` (the module is private), then the
@@ -120,6 +121,6 @@ correct, gets tests of what it does promise, and no comparison.
    rules from `pyproject.toml`; write type hints in the Python 3.11
    form, `list[Rule]` and `str | None`, as the existing signatures do.
 
-The existing tests show the pattern: `tests/algorithms/test_gula.py`
-and `test_pride.py` use the shared fixtures, one test per property,
-and a comparison with `BruteForce` on every fixture.
+The existing tests show the pattern: `tests/algorithms/test_learners.py`
+checks each property on every shared fixture, for every learner, and
+`test_gula.py` compares `GULA` with `BruteForce` on each of them.

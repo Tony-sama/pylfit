@@ -46,8 +46,8 @@ def toy_rules():
     """The four rules every algorithm learns from ``toy_dataset``.
 
     ``BruteForce``, ``GULA`` and ``PRIDE`` alike. Derived by hand in
-    ``test_brute_force.py``, and built by hand here so the model tests
-    depend on no algorithm.
+    ``tests/algorithms/test_learners.py``, and built by hand here so the
+    model tests depend on no algorithm.
     """
     return [
         Rule(head=("y", "1"), body={"b": "1"}),

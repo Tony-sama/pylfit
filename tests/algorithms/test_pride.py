@@ -1,8 +1,8 @@
 """Tests for ``PRIDE``: its guarantees, its parts, and ``GULA``.
 
 The generic-property tests (correctness/completeness/minimality) are
-``test_gula.py``'s, but ``PRIDE`` is **not** documented to compute the
-same unique minimal, complete rule set ``BruteForce``/``GULA`` do
+``test_learners.py``'s, but ``PRIDE`` is **not** documented to compute
+the same unique minimal, complete rule set ``BruteForce``/``GULA`` do
 (``_pride.py``'s module docstring lists what it promises instead).
 Two distinct, provable relationships:
 
@@ -42,13 +42,6 @@ import pandas as pd
 import pytest
 
 from pylfit import GULA, PRIDE, Dataset, PylfitWarning, Rule
-from tests.algorithms._properties import (
-    assert_complete,
-    assert_correct,
-    assert_heads_in_domain,
-    assert_irreducible,
-    assert_not_dominated,
-)
 from tests.algorithms._tables import as_question_marks, blanked_frame
 
 # The coverage warning fires whenever an option or unknown values leave
@@ -56,63 +49,7 @@ from tests.algorithms._tables import as_question_marks, blanked_frame
 # warning itself is tested in test_coverage_warning.py.
 pytestmark = pytest.mark.filterwarnings("ignore:.*matched by no rule of their head")
 
-# --- fit() return shape ---
-#
-# fit(dataset) -> list[Rule], sorted, no duplicates; stateless — no
-# dependency on models/ at all, not even RuleSetModel. A caller wanting
-# a model wraps the result explicitly, e.g.
-# RuleSetModel(dataset, PRIDE.fit(dataset)).
-
-
-def test_fit_returns_rules_sorted_by_text_without_duplicates(toy_dataset):
-    rules = PRIDE.fit(toy_dataset)
-    assert isinstance(rules, list)
-    assert rules
-    assert rules == sorted(set(rules))
-    assert all(isinstance(rule, Rule) for rule in rules)
-
-
-# --- toy_dataset: same exact rule set as BruteForce/GULA ---
-#
-# toy_dataset is a full factorial over 3 binary features (8 rows) —
-# exhaustive, so PRIDE's positives-only coverage already spans the
-# whole domain product. Expected set reused verbatim from
-# test_gula.py, confirmed identical by
-# test_pride_and_gula_learn_the_same_rules_on_these_fixtures below.
-
-
-def test_toy_dataset_exact_rule_set(toy_dataset):
-    rules = PRIDE.fit(toy_dataset)
-    expected = {
-        Rule(head=("y", "1"), body={"b": "1"}),
-        Rule(head=("y", "1"), body={"a": "0", "c": "1"}),
-        Rule(head=("y", "0"), body={"b": "0", "c": "0"}),
-        Rule(head=("y", "0"), body={"a": "1", "b": "0"}),
-    }
-    assert set(rules) == expected
-
-
-# --- degenerate_dataset: target never varies ---
-
-
-def test_degenerate_dataset_yields_the_single_empty_body_rule(degenerate_dataset):
-    rules = PRIDE.fit(degenerate_dataset)
-    assert rules == [Rule(head=("y", "1"), body={})]
-
-
-# --- nondeterministic_dataset: the "complete guarantee" case ---
-
-
-def test_nondeterministic_target_value_with_no_negatives_gets_the_empty_body_rule(
-    nondeterministic_dataset,
-):
-    # Same scenario as test_gula.py's equivalent test: a=0 has both
-    # y=0 and y=1 rows, a=1 has only y=1, so dataset.negatives("y",
-    # "1") is empty — the seed rule for y=1 never needs specializing.
-    assert nondeterministic_dataset.negatives("y", "1") == []
-    rules = PRIDE.fit(nondeterministic_dataset)
-    y1_rules = [rule for rule in rules if rule.head == ("y", "1")]
-    assert y1_rules == [Rule(head=("y", "1"), body={})]
+# --- nondeterministic_dataset: a head with no negatives ---
 
 
 @pytest.mark.parametrize("option", ["min_support", "min_possible_support"])
@@ -128,29 +65,6 @@ def test_a_head_with_no_negatives_gets_no_rule_below_the_threshold(
     with pytest.warns(PylfitWarning):
         gula = GULA.fit(nondeterministic_dataset, **{option: 3})
     assert not [rule for rule in gula if rule.head == ("y", "1")]
-
-
-def test_nondeterministic_target_value_with_negatives_gets_a_specific_rule(
-    nondeterministic_dataset,
-):
-    assert nondeterministic_dataset.negatives("y", "0") != []
-    rules = PRIDE.fit(nondeterministic_dataset)
-    y0_rules = [rule for rule in rules if rule.head == ("y", "0")]
-    assert y0_rules == [Rule(head=("y", "0"), body={"a": "0"})]
-
-
-# --- multi-target: targets learned independently ---
-
-
-def test_targets_are_learned_independently(multi_target_dataset):
-    rules = PRIDE.fit(multi_target_dataset)
-    heads = {rule.head for rule in rules}
-    assert heads == {("y1", "0"), ("y1", "1"), ("y2", "0"), ("y2", "1")}
-    by_head = {rule.head: rule for rule in rules}
-    assert by_head[("y1", "1")].body == {"a": "1"}
-    assert by_head[("y1", "0")].body == {"a": "0"}
-    assert by_head[("y2", "1")].body == {"a": "0"}
-    assert by_head[("y2", "0")].body == {"a": "1"}
 
 
 @pytest.fixture
@@ -183,49 +97,16 @@ def partial_dataset():
     return Dataset(df, features=["a", "b"], targets=["y"])
 
 
-# --- generic properties, checked against every conftest.py dataset ---
+# --- minimality beyond the shared fixtures ---
 #
-# All three datasets happen to be exhaustive over their own feature-
-# domain product (every combination present as some row), which is
-# exactly why the completeness test below holds for PRIDE too — see
-# this file's module docstring and
+# test_learners.py checks correctness, completeness and minimality on
+# every conftest.py dataset. All three are exhaustive over their own
+# feature-domain product, which is why completeness holds for PRIDE
+# there — see this file's module docstring and
 # test_pride_can_be_incomplete_on_a_non_exhaustive_dataset below for
 # the general case.
 
 _FIXTURE_NAMES = ["toy_dataset", "nondeterministic_dataset", "degenerate_dataset"]
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_every_rule_head_value_is_in_the_targets_domain(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_heads_in_domain(dataset, PRIDE.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_correctness_no_rule_matches_a_negative(fixture_name, request):
-    # Unlike completeness, this holds unconditionally — PRIDE's
-    # minimization pass never keeps a rule that matches a negative,
-    # exhaustive dataset or not.
-    dataset = request.getfixturevalue(fixture_name)
-    assert_correct(dataset, PRIDE.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_completeness_every_feature_state_is_matched_per_target(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_complete(dataset, PRIDE.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_minimality_no_rule_is_dominated_by_another(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_not_dominated(dataset, PRIDE.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_minimality_no_condition_can_be_dropped(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_irreducible(dataset, PRIDE.fit(dataset))
 
 
 def test_minimality_drops_a_condition_the_greedy_choice_left_behind():

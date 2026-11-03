@@ -4,11 +4,11 @@ Both algorithms are documented (``_gula.py``/``_brute_force.py`` module
 docstrings) to compute *every* minimal, consistent rule for a given
 dataset — a set that is fully determined by the data, so two correct
 algorithms must agree on it exactly, not just produce equally-valid
-alternatives. The file checks that agreement on every shared fixture,
-and correctness, completeness and minimality as ``test_brute_force.py``
-does. The rest tests ``GULA``'s options: ``heads``,
-``allowed_conditions``, ``min_support``, ``negative_order``,
-``min_possible_support``, and unknown values.
+alternatives. The file checks that agreement on every shared fixture;
+correctness, completeness and minimality, and the cases every learner
+shares, are in ``test_learners.py``. The rest tests ``GULA``'s
+options: ``heads``, ``allowed_conditions``, ``min_support``,
+``negative_order``, ``min_possible_support``, and unknown values.
 """
 
 import inspect
@@ -18,101 +18,12 @@ import pandas as pd
 import pytest
 
 from pylfit import GULA, PRIDE, BruteForce, Dataset, Rule
-from tests.algorithms._properties import (
-    assert_complete,
-    assert_correct,
-    assert_heads_in_domain,
-    assert_irreducible,
-    assert_not_dominated,
-)
 from tests.algorithms._tables import as_question_marks, blanked_frame
 
 # The coverage warning fires whenever an option or unknown values leave
 # a positive row uncovered, which these tests do on purpose; the
 # warning itself is tested in test_coverage_warning.py.
 pytestmark = pytest.mark.filterwarnings("ignore:.*matched by no rule of their head")
-
-# --- fit() return shape ---
-#
-# fit(dataset) -> list[Rule], sorted, no duplicates; stateless — no
-# dependency on models/ at all, not even RuleSetModel. A caller wanting
-# a model wraps the result explicitly, e.g.
-# RuleSetModel(dataset, GULA.fit(dataset)).
-
-
-def test_fit_returns_rules_sorted_by_text_without_duplicates(toy_dataset):
-    rules = GULA.fit(toy_dataset)
-    assert isinstance(rules, list)
-    assert rules
-    assert rules == sorted(set(rules))
-    assert all(isinstance(rule, Rule) for rule in rules)
-
-
-# --- toy_dataset: same hand-checked exact rule set as BruteForce ---
-#
-# See the comment above test_brute_force.py's exact-rule-set test for
-# the by-hand derivation — reused verbatim here since both algorithms
-# are documented to learn the same set of every minimal rule.
-
-
-def test_toy_dataset_exact_rule_set(toy_dataset):
-    rules = GULA.fit(toy_dataset)
-    expected = {
-        Rule(head=("y", "1"), body={"b": "1"}),
-        Rule(head=("y", "1"), body={"a": "0", "c": "1"}),
-        Rule(head=("y", "0"), body={"b": "0", "c": "0"}),
-        Rule(head=("y", "0"), body={"a": "1", "b": "0"}),
-    }
-    assert set(rules) == expected
-
-
-# --- degenerate_dataset: target never varies ---
-
-
-def test_degenerate_dataset_yields_the_single_empty_body_rule(degenerate_dataset):
-    rules = GULA.fit(degenerate_dataset)
-    assert rules == [Rule(head=("y", "1"), body={})]
-
-
-# --- nondeterministic_dataset: the "complete guarantee" case ---
-
-
-def test_nondeterministic_target_value_with_no_negatives_gets_the_empty_body_rule(
-    nondeterministic_dataset,
-):
-    # Same scenario as test_brute_force.py's equivalent test: a=0 has
-    # both y=0 and y=1 rows, a=1 has only y=1, so dataset.negatives(
-    # "y", "1") is empty — GULA's starting rule for y=1 never gets
-    # specialized away from, since there's no negative example to
-    # trigger it.
-    assert nondeterministic_dataset.negatives("y", "1") == []
-    rules = GULA.fit(nondeterministic_dataset)
-    y1_rules = [rule for rule in rules if rule.head == ("y", "1")]
-    assert y1_rules == [Rule(head=("y", "1"), body={})]
-
-
-def test_nondeterministic_target_value_with_negatives_gets_a_specific_rule(
-    nondeterministic_dataset,
-):
-    assert nondeterministic_dataset.negatives("y", "0") != []
-    rules = GULA.fit(nondeterministic_dataset)
-    y0_rules = [rule for rule in rules if rule.head == ("y", "0")]
-    assert y0_rules == [Rule(head=("y", "0"), body={"a": "0"})]
-
-
-# --- multi-target: targets learned independently ---
-
-
-def test_targets_are_learned_independently(multi_target_dataset):
-    rules = GULA.fit(multi_target_dataset)
-    heads = {rule.head for rule in rules}
-    assert heads == {("y1", "0"), ("y1", "1"), ("y2", "0"), ("y2", "1")}
-    by_head = {rule.head: rule for rule in rules}
-    assert by_head[("y1", "1")].body == {"a": "1"}
-    assert by_head[("y1", "0")].body == {"a": "0"}
-    assert by_head[("y2", "1")].body == {"a": "0"}
-    assert by_head[("y2", "0")].body == {"a": "1"}
-
 
 # --- heads: learning only some (target, value) pairs ---
 
@@ -410,10 +321,11 @@ def test_support_thresholds_take_a_numpy_integer(support_dataset, option):
 def test_min_support_drops_an_untouched_general_rule_that_fails_threshold(
     nondeterministic_dataset,
 ):
-    # y=1 has no negatives at all (see the equivalent test above), so
-    # its general rule is never specialized against — confirms the
-    # filter also applies to that never-touched starting rule, not
-    # just candidates produced by specialization.
+    # y=1 has no negatives at all (see test_learners.py's
+    # nondeterministic tests), so its general rule is never
+    # specialized against — confirms the filter also applies to that
+    # never-touched starting rule, not just candidates produced by
+    # specialization.
     assert nondeterministic_dataset.negatives("y", "1") == []
     assert len(nondeterministic_dataset.positives("y", "1")) == 2
     rules = GULA.fit(nondeterministic_dataset, min_support=3)
@@ -646,46 +558,13 @@ def test_min_possible_support_rejects_invalid_values(support_dataset, threshold,
         GULA.fit(support_dataset, min_possible_support=threshold)
 
 
-# --- generic properties, checked against every fixture ---
-
-_FIXTURE_NAMES = ["toy_dataset", "nondeterministic_dataset", "degenerate_dataset"]
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_every_rule_head_value_is_in_the_targets_domain(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_heads_in_domain(dataset, GULA.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_correctness_no_rule_matches_a_negative(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_correct(dataset, GULA.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_completeness_every_feature_state_is_matched_per_target(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_complete(dataset, GULA.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_minimality_no_rule_is_dominated_by_another(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_not_dominated(dataset, GULA.fit(dataset))
-
-
-@pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
-def test_minimality_no_condition_can_be_dropped(fixture_name, request):
-    dataset = request.getfixturevalue(fixture_name)
-    assert_irreducible(dataset, GULA.fit(dataset))
-
-
 # --- the BruteForce-vs-GULA cross-check, on every fixture ---
 #
 # Both algorithms compute every minimal, consistent rule (module
 # docstrings), so the two rule sets must be equal exactly, not just
 # equally-valid alternatives.
+
+_FIXTURE_NAMES = ["toy_dataset", "nondeterministic_dataset", "degenerate_dataset"]
 
 
 @pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)

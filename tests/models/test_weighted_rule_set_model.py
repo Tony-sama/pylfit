@@ -15,7 +15,7 @@ in ``test_rule_set_model.py`` — ``WeightedRuleSetModel`` inherits
 
 Two kinds of setup are used:
 - ``toy_dataset`` + the four rules ``BruteForce`` is independently
-  known to learn from it (see ``test_brute_force.py``), for tests that
+  known to learn from it (see ``test_learners.py``), for tests that
   want realistic, dataset-derived scores.
 - Hand-built rules with counts set directly (``_set_score``), for tests
   that need exact, contrived numbers — most notably the vote's, which
