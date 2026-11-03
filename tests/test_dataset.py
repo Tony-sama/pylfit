@@ -956,6 +956,15 @@ def test_domain_and_the_states_hand_out_copies(toy_dataset):
     assert toy_dataset._negative_states("y", "1")
 
 
+def test_every_head_shares_one_dict_per_row(toy_dataset):
+    # A copy per head made the caches about 450 bytes per row and head
+    # on 15 features. Here the rows of y=1 are the negatives of y=0.
+    positives = toy_dataset._positive_states("y", "1")
+    negatives = toy_dataset._negative_states("y", "0")
+    assert len(positives) == len(negatives)
+    assert all(p is n for p, n in zip(positives, negatives, strict=True))
+
+
 # --- positives and negatives: a non-deterministic target ---
 
 
@@ -1176,6 +1185,7 @@ def test_a_pickled_dataset_leaves_its_row_caches_behind(toy_dataset):
     positives = toy_dataset.positives("y", "1")
     negatives = toy_dataset.negatives("y", "1")
     restored = pickle.loads(pickle.dumps(toy_dataset))
+    assert restored._rows_cache is None
     assert restored._positives_cache == {}
     assert restored._negatives_cache == {}
     assert toy_dataset._positives_cache

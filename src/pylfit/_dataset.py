@@ -679,9 +679,13 @@ class Dataset:
         # value) for the lifetime of this Dataset — callers
         # (algorithms, model scoring) typically re-derive the same
         # head's positives/negatives many times. Cached as plain `dict`
-        # rows rather than `pandas.Series`: cheaper to build
-        # (`to_dict("records")`) and lighter to hold, and `Rule.matches`
-        # only ever needs `.get`.
+        # rows rather than `pandas.Series`: cheaper to build and lighter
+        # to hold, and `Rule.matches` only ever needs `.get`. Each row's
+        # `dict` is built once, in `_rows`, and every head's list holds
+        # that same object: a copy per head, about 450 bytes per row and
+        # head on 15 features, held 444 MB on 32,768 rows against 14 MB
+        # shared.
+        self._rows_cache: list[dict[str, str | None]] | None = None
         self._positives_cache: dict[tuple[str, str], list[dict[str, str | None]]] = {}
         self._negatives_cache: dict[tuple[str, str], list[dict[str, str | None]]] = {}
 
@@ -729,16 +733,18 @@ class Dataset:
     def __getstate__(self) -> dict[str, object]:
         """Pickles the dataset without its row caches.
 
-        ``n_jobs`` sends the dataset to every worker process. After a
-        fit the cached rows of every head are many times the size of the
-        table itself (65 MB against 2 MB on 32,768 rows and 15
-        variables), slower to send than to rebuild in the worker.
+        ``n_jobs`` sends the dataset to every worker process, one after
+        another. After a fit the cached rows are several times the size
+        of the table itself (9 MB against 2 MB on 32,768 rows and 15
+        variables), and each worker rebuilds only those of its own
+        heads, in parallel with the others.
 
         Returns:
-            The instance's attributes, the positive and negative row
+            The instance's attributes, the row, positive and negative
             caches emptied.
         """
         state = self.__dict__.copy()
+        state["_rows_cache"] = None
         state["_positives_cache"] = {}
         state["_negatives_cache"] = {}
         return state
@@ -1098,17 +1104,30 @@ class Dataset:
 
         Returns:
             One ``dict`` per selected row, in row order, mapping every
-            feature to its value or to ``None``.
+            feature to its value or to ``None``: the ones ``_rows``
+            holds, shared with every other head's list.
         """
-        rows = self._data.loc[mask, self._features]
-        if self._has_unknowns:
-            rows = rows.astype(object).where(rows.notna(), None)
-        # One `zip` over each column's list rather than
-        # `to_dict("records")`, which boxes every cell: about 2.5 times
-        # faster on a large table, where this runs once per head on a
-        # first fit.
-        columns = [rows[feature].tolist() for feature in self._features]
-        return [
-            dict(zip(self._features, values, strict=True))
-            for values in zip(*columns, strict=True)
-        ]
+        rows = self._rows()
+        return [rows[index] for index in np.flatnonzero(mask.to_numpy(dtype=bool))]
+
+    def _rows(self) -> list[dict[str, str | None]]:
+        """Returns every row's feature state, built on the first call.
+
+        Returns:
+            One ``dict`` per row, in row order, mapping every feature to
+            its value or to ``None``. The cached list itself: a caller
+            must not change it or its dicts.
+        """
+        if self._rows_cache is None:
+            rows = self._data[self._features]
+            if self._has_unknowns:
+                rows = rows.astype(object).where(rows.notna(), None)
+            # One `zip` over each column's list rather than
+            # `to_dict("records")`, which boxes every cell: about 2.5
+            # times faster on a large table.
+            columns = [rows[feature].tolist() for feature in self._features]
+            self._rows_cache = [
+                dict(zip(self._features, values, strict=True))
+                for values in zip(*columns, strict=True)
+            ]
+        return self._rows_cache

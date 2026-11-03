@@ -175,7 +175,7 @@ per value. In practice:
 1.0's `GULA` learns the same rules as 0.5.1's, faster but with more
 memory. On the full transition table of a 10-variable Boolean network
 (1024 rows), 1.0 took 0.2 s against 0.35 s for 0.5.1, and the fit
-added about 3 MB of memory against 0.3 MB.
+added about 0.5 MB of memory against 0.3 MB.
 
 ## No equivalent in 1.0
 

@@ -37,11 +37,11 @@ seconds, ``PRIDE`` is the algorithm to start with.
 
 **Further still, only ``PRIDE`` runs.** A third table times it on
 networks of 23, 40 and 103 variables, too large for a full table: the
-smallest would have 2**23 rows, 8.4 million, and hundreds of gigabytes
-of memory. Each is sampled instead: 10,000 distinct states with their
-successors for the first two, 1000 for the third. ``PRIDE`` fits each
-in a second or two. ``GULA``, on the same rows of the first two, was
-stopped unfinished after three hours and two hours. With no ``GULA``
+smallest would have 2**23 rows, 8.4 million. Each is sampled instead:
+10,000 distinct states with their successors for the first two, 1000
+for the third. ``PRIDE`` fits each in a second or two. ``GULA``, on
+the same rows of the first two, was stopped unfinished after three
+hours and two hours. With no ``GULA``
 rules to compare against, the script checks ``PRIDE``'s against the
 rows: none matches a row with another value of its target, and every
 row is matched by a rule for its own.
@@ -105,7 +105,7 @@ LARGER_NETWORKS = [
 
 #: Networks too large for a full table, with the number of distinct
 #: states sampled from each, timed with `PRIDE` alone. `jaoude_thdiff`
-#: takes 1000: its 10,000 rows take 14 s to fit and 6 GB of memory.
+#: takes 1000: its 10,000 rows take 12 s to fit.
 SAMPLED_NETWORKS = [
     ("mendoza_thelper", 10_000),
     ("klamt_tcr", 10_000),
