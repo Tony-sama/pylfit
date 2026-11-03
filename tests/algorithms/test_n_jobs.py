@@ -208,6 +208,24 @@ def test_the_main_guard_is_named_only_where_workers_import_the_script(
     assert ("__main__" in _broken_pool_message()) is named
 
 
+@pytest.mark.parametrize(("method", "kept"), [("fork", True), ("spawn", False)])
+def test_a_parallel_fit_keeps_the_row_caches_only_under_fork(
+    monkeypatch, two_target_dataset, method, kept
+):
+    # Only the method this process reports is patched: the pool starts
+    # its workers as it always does. The uncovered-row warning would
+    # count every head's positives here too.
+    monkeypatch.setattr(multiprocessing, "get_start_method", lambda: method)
+    GULA.fit(two_target_dataset, n_jobs=2, warn_uncovered=False)
+    heads = {
+        (target, value)
+        for target in two_target_dataset.targets
+        for value in two_target_dataset.domain(target)
+    }
+    assert (set(two_target_dataset._positives_cache) == heads) is kept
+    assert (set(two_target_dataset._negatives_cache) == heads) is kept
+
+
 FIT_FRAME = {
     "a": ["0", "1", "0", "1"],
     "b": ["0", "0", "1", "1"],

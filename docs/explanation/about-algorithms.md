@@ -622,9 +622,9 @@ On a 16-CPU Linux machine, on the full transition table of a random
 `n_jobs=1` on the same `Dataset`, so that each figure times the fit
 alone: a first fit also builds the dataset's row caches, a fraction of
 a second more on a table this size. That warm-up is how the figures
-were taken, not a step to copy. A parallel fit builds the caches in its
-worker processes, in parallel, so its first fit is already as fast as
-the next. On a 12-variable network `GULA`
+were taken, not a step to copy. A parallel fit builds the caches
+before it starts its processes, which inherit them, and keeps them
+for the next fit. On a 12-variable network `GULA`
 gained little past 4 processes (0.83 s, then 0.70 s with 8), as one
 head took 0.64 s alone: no `n_jobs` brings a fit below its slowest
 head ([the benchmark_n_jobs

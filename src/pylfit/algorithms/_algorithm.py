@@ -191,7 +191,9 @@ class Algorithm(ABC):
         every run. With ``n_jobs`` other than 1, heads are learned in
         worker processes, each given the dataset once; each worker
         learns silently, and with ``verbose`` this process prints a line
-        per head as it finishes.
+        per head as it finishes. Under the ``fork`` start method, the
+        dataset's row caches are built here first, so that the workers
+        inherit them and the next fit finds them.
 
         Args:
             dataset: The dataset to learn from.
@@ -229,6 +231,16 @@ class Algorithm(ABC):
         if workers <= 1:
             results = [learn(dataset, target, value, verbose) for target, value in todo]
         else:
+            if multiprocessing.get_start_method() == "fork":
+                # Workers copied from this process inherit the row
+                # caches built here, and this process keeps them for
+                # the next fit; built in the workers, they would be
+                # lost with the pool. Other start methods send the
+                # dataset without its caches, so there it would only
+                # add time.
+                for target, value in todo:
+                    dataset._positive_states(target, value)
+                    dataset._negative_states(target, value)
             with ProcessPoolExecutor(
                 workers, initializer=_init_worker, initargs=(dataset,)
             ) as pool:
