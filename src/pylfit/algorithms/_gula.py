@@ -5,12 +5,12 @@ and specializes a rule only when it matches a negative example (a
 feature state the target never takes that value in), one condition at
 a time.
 
-On an unrestricted run over states with no unknown value, the learned
-rule set is:
+On an unrestricted run, the learned rule set is:
 
 - correct: no rule matches a negative example of its own head.
-- complete: for each target, every feature state is matched by at
-  least one rule.
+- complete: for each target, every combination of the features'
+  domain values is matched by at least one rule, whatever the unknowns
+  in the data.
 - minimal: dropping any condition from a rule makes it match a
   negative example.
 
