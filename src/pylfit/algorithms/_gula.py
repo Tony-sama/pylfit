@@ -54,8 +54,6 @@ from collections.abc import Collection, Mapping, Sequence
 from functools import partial
 from typing import Literal, get_args
 
-import numpy as np
-
 from pylfit._dataset import Dataset, _check_dataset
 from pylfit._progress import duration
 from pylfit._rule import Rule
@@ -439,23 +437,23 @@ class GULA(Algorithm):
 
         tracking = min_support is not None
         tracking_possible = min_possible_support is not None
-        positives = (
-            dataset._positive_states(target, value)
-            if tracking or tracking_possible
-            else []
-        )
+        positive_rows = dataset._positive_rows(target, value)
         min_count = (
-            GULA._resolve_min_support(min_support, len(positives))
+            GULA._resolve_min_support(min_support, len(positive_rows))
             if min_support is not None
             else 0
         )
         min_possible_count = (
-            GULA._resolve_min_support(min_possible_support, len(positives))
+            GULA._resolve_min_support(min_possible_support, len(positive_rows))
             if min_possible_support is not None
             else 0
         )
-        matching, unknown = GULA._support_masks(positives, features)
-        everyone = (1 << len(positives)) - 1
+        matching, unknown = (
+            dataset._condition_masks(positive_rows)
+            if tracking or tracking_possible
+            else ({}, {})
+        )
+        everyone = (1 << len(positive_rows)) - 1
 
         conditions = (
             pool
@@ -480,7 +478,7 @@ class GULA(Algorithm):
         # Each condition mapped to the bodies, as bits, of the kept
         # rules that use it.
         by_condition: dict[tuple[str, str], set[int]] = {}
-        if len(positives) >= max(min_count, min_possible_count):
+        if len(positive_rows) >= max(min_count, min_possible_count):
             # The empty body matches every positive, and has no
             # condition to index.
             kept.append(
@@ -535,13 +533,13 @@ class GULA(Algorithm):
                             continue
                         candidate_matched = None
                         if matched is not None:
-                            candidate_matched = matched & matching.get(condition, 0)
+                            candidate_matched = matched & matching[condition]
                             if candidate_matched.bit_count() < min_count:
                                 continue
                         candidate_possible = None
                         if possible is not None:
                             candidate_possible = possible & (
-                                matching.get(condition, 0) | unknown[condition[0]]
+                                matching[condition] | unknown[condition[0]]
                             )
                             if candidate_possible.bit_count() < min_possible_count:
                                 continue
@@ -576,43 +574,6 @@ class GULA(Algorithm):
             )
 
         return rules
-
-    @staticmethod
-    def _support_masks(
-        positives: Sequence[Mapping[str, str | None]], features: list[str]
-    ) -> tuple[dict[tuple[str, str], int], dict[str, int]]:
-        """Marks one head's positives by condition, as bits of an ``int``.
-
-        Bit ``i`` stands for ``positives[i]``, so a rule's support is the
-        AND of its conditions' masks, counted by ``int.bit_count``: on
-        32,768 rows this tracks ``min_support=1`` in about a fifth of the
-        time a list of row indices filtered per condition takes.
-
-        Args:
-            positives: The head's positives, in the order the bits
-                follow.
-            features: The features to build masks for.
-
-        Returns:
-            The positives holding each ``(feature, value)`` seen among
-            them, then per feature those where it is unknown. A value no
-            positive holds has no entry.
-        """
-        matching: dict[tuple[str, str], int] = {}
-        unknown: dict[str, int] = {}
-        for feature in features:
-            values = [state[feature] for state in positives]
-            column = np.array(values, dtype=object)
-            missing = np.array([value is None for value in values], dtype=bool)
-            unknown[feature] = GULA._bits(missing)
-            for value in sorted(set(column[~missing].tolist())):
-                matching[(feature, value)] = GULA._bits(column == value)
-        return matching, unknown
-
-    @staticmethod
-    def _bits(rows: np.ndarray) -> int:
-        """A boolean array as an ``int`` whose bit ``i`` is ``rows[i]``."""
-        return int.from_bytes(np.packbits(rows, bitorder="little").tobytes(), "little")
 
     @staticmethod
     def _split_conditions(

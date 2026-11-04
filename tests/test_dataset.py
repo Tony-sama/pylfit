@@ -1050,6 +1050,57 @@ def test_distinct_negatives_keep_each_state_once_in_first_seen_order():
     assert distinct[1] is negatives[1]
 
 
+def _rows_with_repeats_and_unknowns():
+    return Dataset(
+        pd.DataFrame(
+            {
+                "a": ["0", "1", "0", None, "1"],
+                "b": ["1", "1", "1", "0", None],
+                "y": ["0", "1", "0", "0", "1"],
+            }
+        ),
+        features=["a", "b"],
+        targets=["y"],
+    )
+
+
+def test_row_numbers_follow_the_states_they_stand_for():
+    dataset = _rows_with_repeats_and_unknowns()
+    rows = dataset._rows()
+    positive_rows = dataset._positive_rows("y", "1")
+    negative_rows = dataset._negative_rows("y", "1")
+    distinct_rows = dataset._distinct_negative_rows("y", "1")
+    assert positive_rows.tolist() == [1, 4]
+    assert negative_rows.tolist() == [0, 2, 3]
+    assert distinct_rows.tolist() == [0, 3]
+    assert [rows[i] for i in positive_rows] == dataset._positive_states("y", "1")
+    assert [rows[i] for i in negative_rows] == dataset._negative_states("y", "1")
+    assert [rows[i] for i in distinct_rows] == dataset._distinct_negative_states(
+        "y", "1"
+    )
+
+
+def test_condition_masks_give_bit_i_to_the_ith_row_asked_for():
+    dataset = _rows_with_repeats_and_unknowns()
+    matching, unknown = dataset._condition_masks(np.array([4, 0, 3]))
+    assert matching == {
+        ("a", "0"): 0b010,
+        ("a", "1"): 0b001,
+        ("b", "0"): 0b100,
+        ("b", "1"): 0b010,
+    }
+    assert unknown == {"a": 0b100, "b": 0b001}
+
+
+def test_condition_masks_hold_every_value_of_a_domain_for_no_rows():
+    dataset = _rows_with_repeats_and_unknowns()
+    matching, unknown = dataset._condition_masks(np.array([], dtype=int))
+    assert matching == dict.fromkeys(
+        [("a", "0"), ("a", "1"), ("b", "0"), ("b", "1")], 0
+    )
+    assert unknown == {"a": 0, "b": 0}
+
+
 def test_distinct_negatives_are_built_once_per_head(toy_dataset, monkeypatch):
     # A refit reads them from the cache: deduplicating builds a key per
     # row, a third of a warm fit on a large table when redone each time.
@@ -1235,6 +1286,10 @@ def test_a_pickled_dataset_leaves_its_row_caches_behind(toy_dataset):
     assert restored._positives_cache == {}
     assert restored._negatives_cache == {}
     assert restored._distinct_negatives_cache == {}
+    assert restored._positive_rows_cache == {}
+    assert restored._negative_rows_cache == {}
+    assert restored._distinct_negative_rows_cache == {}
+    assert restored._codes_cache == {}
     assert toy_dataset._positives_cache
     assert restored.positives("y", "1") == positives
     assert restored.negatives("y", "1") == negatives
