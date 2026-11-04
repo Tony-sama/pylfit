@@ -152,6 +152,18 @@ def test_a_complex_column_is_not_numeric_here():
         assert find_missing_stand_ins(pd.DataFrame({"z": z})).empty
 
 
+@pytest.mark.parametrize(
+    "values",
+    [
+        pd.to_datetime([0, 120, 135, 110, 160, 140], unit="s"),
+        pd.to_timedelta([0, 120, 135, 110, 160, 140], unit="s"),
+        pd.Series(pd.to_timedelta([0, 120, 135, 110, 160, 140])).astype(object),
+    ],
+)
+def test_a_date_or_a_duration_is_not_a_number_here(values):
+    assert find_missing_stand_ins(pd.DataFrame({"a": values})).empty
+
+
 def test_stand_ins_are_left_out_before_the_zero_check():
     df = pd.DataFrame({"pressure": ["120", "?", "135", "0", "110", "160"]})
     assert _findings(find_missing_stand_ins(df)) == [

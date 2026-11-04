@@ -10,6 +10,7 @@ points them out, so you can decide.
 Why it works this way: :doc:`/explanation/about-data`.
 """
 
+import datetime
 from collections.abc import Iterable, Set
 from typing import Literal
 
@@ -43,6 +44,18 @@ Issue = Literal["stand_in", "far_zero"]
 # checked: with fewer, quartiles say nothing, and a column of two
 # values, such as 0/1, is Boolean-like, where a zero is half the data.
 _MIN_NONZERO_VALUES = 3
+
+# Values on no number line, whatever ``pandas.to_numeric`` makes of them:
+# it would read a complex number's real part, so 7j as zero, and a date
+# or a duration as its count of nanoseconds, so 1970-01-01 as zero.
+_NOT_NUMBERS = (
+    complex,
+    np.complexfloating,
+    datetime.date,
+    datetime.timedelta,
+    np.datetime64,
+    np.timedelta64,
+)
 
 
 def _check_collection(name: str, argument: object) -> None:
@@ -100,7 +113,8 @@ def find_missing_stand_ins(
       to record a measurement nobody took. A column looks numeric when
       every known value that isn't a stand-in reads as a finite number,
       ``"0"`` included, so a table read with ``dtype=str`` is checked
-      too; a ``True`` or ``False`` is not a number here.
+      too; a ``True`` or ``False``, a date or a duration is not a number
+      here.
       "Far" is outside Tukey's fences of the column's non-zero values,
       ``Q1 - 1.5 * IQR`` to ``Q3 + 1.5 * IQR``, the usual rule for an
       outlier [Tukey1977]_. A column with fewer than three distinct
@@ -277,9 +291,7 @@ def _far_zeros(counts: pd.Series, values: pd.Series) -> list[tuple[object, int]]
     if counts.empty:
         return []
     distinct = pd.Series(counts.index.to_numpy(dtype=object))
-    # A complex number is not a reading on a line: casting it to float
-    # would drop its imaginary part, and read 7j as zero.
-    if any(isinstance(value, complex | np.complexfloating) for value in distinct):
+    if any(isinstance(value, _NOT_NUMBERS) for value in distinct):
         return []
     numbers = pd.to_numeric(distinct, errors="coerce").to_numpy(dtype=float)
     if not np.isfinite(numbers).all():
