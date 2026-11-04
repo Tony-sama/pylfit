@@ -50,7 +50,7 @@ References:
 
 import time
 from collections import Counter
-from collections.abc import Collection, Iterator, Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from functools import partial
 from typing import Literal, get_args
 
@@ -66,14 +66,22 @@ from pylfit.algorithms._algorithm import (
     Uncovered,
 )
 
-#: A kept rule paired with its conditions as bits (one bit per
-#: condition this head can use), then the positives (bit ``i`` for its
-#: head's ``positives[i]``) it matches exactly, then those it possibly
-#: matches (an unknown counted as satisfying any condition) — each of
-#: the last two ``None`` when its threshold, ``min_support`` or
-#: ``min_possible_support``, is unset and that support isn't tracked at
-#: all.
-_Tracked = tuple[Rule, int, int | None, int | None]
+#: A ``(feature, value)`` condition.
+_Condition = tuple[str, str]
+
+#: A kept rule, before it is a ``Rule``: its conditions as bits (one bit
+#: per condition this head can use), the features they test as bits (one
+#: bit per feature), the conditions themselves, then the positives (bit
+#: ``i`` for its head's ``positives[i]``) it matches exactly, then those
+#: it possibly matches (an unknown counted as satisfying any condition)
+#: — each of the last two ``None`` when its threshold, ``min_support``
+#: or ``min_possible_support``, is unset and that support isn't tracked
+#: at all.
+_Tracked = tuple[int, int, tuple[_Condition, ...], int | None, int | None]
+
+#: A feature, its bit, and the conditions on it a rule may use, each
+#: with its bit.
+_Usable = tuple[str, int, list[tuple[_Condition, int]]]
 
 #: The orders ``fit`` can process negatives in; see its docstring.
 NegativeOrder = Literal["similarity", "lexicographic", "unordered"]
@@ -370,11 +378,13 @@ class GULA(Algorithm):
         never dominate each other, since the rules they come from don't,
         so each is checked against the rules kept before that negative.
 
-        Each body is also held as an ``int``, one bit per condition, so
-        a domination test is one AND and the check runs before the
-        candidate is built: only the specializations that pass become
-        a ``Rule``. On the published networks most are dominated, and
-        building them was half of the fit.
+        The loop builds no ``Rule``: each body is held as the bits of an
+        ``int``, one per condition, and each negative as the bits of the
+        conditions it satisfies. A rule matches a negative when its bits
+        are all among those, and a domination test is one AND.
+        Only the rules returned are built, at the end: on the published
+        networks most specializations are dominated, and building them
+        was half of the fit.
 
         With ``min_support`` set, support is tracked incrementally:
         every rule carries the positives it matches as the bits of an
@@ -457,6 +467,14 @@ class GULA(Algorithm):
             ]
         )
         bit = {condition: 1 << i for i, condition in enumerate(conditions)}
+        per_feature: dict[str, list[tuple[_Condition, int]]] = {}
+        for condition, condition_bit in bit.items():
+            per_feature.setdefault(condition[0], []).append((condition, condition_bit))
+        usable: list[_Usable] = [
+            (feature, 1 << i, per_feature[feature])
+            for i, feature in enumerate(dataset.features)
+            if feature in per_feature
+        ]
 
         kept: list[_Tracked] = []
         # Each condition mapped to the bodies, as bits, of the kept
@@ -467,8 +485,9 @@ class GULA(Algorithm):
             # condition to index.
             kept.append(
                 (
-                    Rule(head=(target, value)),
                     0,
+                    0,
+                    (),
                     everyone if tracking else None,
                     everyone if tracking_possible else None,
                 )
@@ -477,66 +496,77 @@ class GULA(Algorithm):
         total = len(negatives)
         progress = GULA._progress(f"{target}={value}: processing negatives", total)
         for step, negative in enumerate(negatives, start=1):
+            satisfied, violated = GULA._split_conditions(negative, usable)
             still_consistent: list[_Tracked] = []
             inconsistent: list[_Tracked] = []
             for entry in kept:
-                if entry[0].matches(negative):
+                if entry[0] & satisfied == entry[0]:
                     inconsistent.append(entry)
                 else:
                     still_consistent.append(entry)
             kept = still_consistent
-            for rule, body, _, _ in inconsistent:
-                for condition in rule.body.items():
+            for body, _, body_conditions, _, _ in inconsistent:
+                for condition in body_conditions:
                     by_condition[condition].discard(body)
 
             newly_kept: list[_Tracked] = []
-            for rule, body, matched, possible in inconsistent:
-                for condition in GULA._specializing_conditions(
-                    rule, negative, dataset, pool
-                ):
-                    # Domination first: its cost doesn't grow with the
-                    # rows, while the support filters below AND masks
-                    # as long as the positives. Both only skip, so the
-                    # order changes the time, never the rules. No kept
-                    # body equals the candidate's: that rule would be
-                    # dominated by `rule`, kept alongside it. So the
-                    # subset test is a strict one.
-                    candidate_body = body | bit[condition]
-                    if any(
-                        other & candidate_body == other
-                        for other in by_condition.get(condition, ())
-                    ):
+            for body, tested, body_conditions, matched, possible in inconsistent:
+                for feature_bit, options in violated:
+                    # Features the rule already tests are skipped: since
+                    # it matches the negative, its condition there
+                    # agrees with the negative, so that feature offers
+                    # no new way to disagree with it.
+                    if tested & feature_bit:
                         continue
-                    candidate_matched = None
-                    if matched is not None:
-                        candidate_matched = matched & matching.get(condition, 0)
-                        if candidate_matched.bit_count() < min_count:
+                    for condition, condition_bit in options:
+                        # Domination first: its cost doesn't grow with
+                        # the rows, while the support filters below AND
+                        # masks as long as the positives. Both only
+                        # skip, so the order changes the time, never the
+                        # rules. No kept body equals the candidate's:
+                        # that rule would be dominated by the one
+                        # specialized, kept alongside it. So the subset
+                        # test is a strict one.
+                        candidate_body = body | condition_bit
+                        if any(
+                            other & candidate_body == other
+                            for other in by_condition.get(condition, ())
+                        ):
                             continue
-                    candidate_possible = None
-                    if possible is not None:
-                        candidate_possible = possible & (
-                            matching.get(condition, 0) | unknown[condition[0]]
+                        candidate_matched = None
+                        if matched is not None:
+                            candidate_matched = matched & matching.get(condition, 0)
+                            if candidate_matched.bit_count() < min_count:
+                                continue
+                        candidate_possible = None
+                        if possible is not None:
+                            candidate_possible = possible & (
+                                matching.get(condition, 0) | unknown[condition[0]]
+                            )
+                            if candidate_possible.bit_count() < min_possible_count:
+                                continue
+                        newly_kept.append(
+                            (
+                                candidate_body,
+                                tested | feature_bit,
+                                (*body_conditions, condition),
+                                candidate_matched,
+                                candidate_possible,
+                            )
                         )
-                        if candidate_possible.bit_count() < min_possible_count:
-                            continue
-                    newly_kept.append(
-                        (
-                            rule.with_condition(*condition),
-                            candidate_body,
-                            candidate_matched,
-                            candidate_possible,
-                        )
-                    )
 
             for entry in newly_kept:
                 kept.append(entry)
-                for condition in entry[0].body.items():
-                    by_condition.setdefault(condition, set()).add(entry[1])
+                for condition in entry[2]:
+                    by_condition.setdefault(condition, set()).add(entry[0])
 
             if verbose:
                 progress.update(step)
 
-        rules = [rule for rule, _, _, _ in kept]
+        rules = [
+            Rule((target, value), dict(body_conditions))
+            for _, _, body_conditions, _, _ in kept
+        ]
 
         if verbose:
             elapsed = time.perf_counter() - start
@@ -585,61 +615,42 @@ class GULA(Algorithm):
         return int.from_bytes(np.packbits(rows, bitorder="little").tobytes(), "little")
 
     @staticmethod
-    def _specializing_conditions(
-        rule: Rule,
-        negative: Mapping[str, str | None],
-        dataset: Dataset,
-        pool: list[tuple[str, str]] | None = None,
-    ) -> list[tuple[str, str]]:
-        """Lists the conditions of a rule's minimal specializations.
+    def _split_conditions(
+        negative: Mapping[str, str | None], usable: list[_Usable]
+    ) -> tuple[int, list[tuple[int, list[tuple[_Condition, int]]]]]:
+        """Splits a head's conditions by what a negative does to them.
 
-        For every feature ``rule`` doesn't already have a condition on,
-        one condition fixing that feature to a domain value other than
-        the negative's — added, the smallest possible change that makes
-        the rule stop matching ``negative``. Features already
-        constrained are skipped: since ``rule`` matches ``negative``,
-        any existing condition already agrees with ``negative``'s value
-        there, so it offers no new way to disagree with it.
+        A condition the negative violates is what a minimal
+        specialization adds: added to a rule matching the negative, it
+        is the smallest possible change that makes the rule stop
+        matching. An unknown value satisfies no condition, so it
+        violates every condition on its feature.
 
-        With a ``pool`` of allowed conditions, candidates are drawn from
-        it instead of every feature's full domain — a smaller pool, not
-        a different rule. If nothing usable is left, this returns an
-        empty list and ``rule`` is dropped with nothing to replace it —
-        expected under restricted search, see ``fit``.
+        With a pool of allowed conditions, ``usable`` holds only those.
+        A rule with nothing usable left is dropped with nothing to
+        replace it — expected under restricted search, see ``fit``.
 
         Args:
-            rule: The rule to specialize. Assumed to match ``negative``.
-            negative: The feature state to stop matching.
-            dataset: Used to look up feature domains when ``pool`` is
-                ``None``.
-            pool: This head's allowed ``(feature, value)`` pairs, from
-                ``_expand_allowed``, or ``None`` for unrestricted.
+            negative: The feature state to split by.
+            usable: This head's conditions, per feature.
 
         Returns:
-            The ``(feature, value)`` conditions whose addition makes
-            ``rule`` stop matching ``negative``. Only the conditions:
-            ``_fit_target_value`` builds a rule from the few that
-            survive its domination check.
+            The bits of the conditions ``negative`` satisfies, then each
+            feature's bit with the conditions on it ``negative``
+            violates, each with its bit.
         """
-        if pool is None:
-            # `domain` is sorted, so the order is the same on every run.
-            # Features `rule` already constrains are filtered before
-            # their domain is read, since they would only be skipped
-            # below.
-            candidate_pairs: Iterator[tuple[str, str]] = (
-                (feature, candidate_value)
-                for feature in dataset.features
-                if not rule.has_condition(feature)
-                for candidate_value in dataset.domain(feature)
-            )
-        else:
-            candidate_pairs = iter(pool)
-
-        return [
-            (feature, candidate_value)
-            for feature, candidate_value in candidate_pairs
-            if not rule.has_condition(feature) and candidate_value != negative[feature]
-        ]
+        satisfied = 0
+        violated = []
+        for feature, feature_bit, options in usable:
+            value = negative[feature]
+            others = []
+            for option in options:
+                if option[0][1] == value:
+                    satisfied |= option[1]
+                else:
+                    others.append(option)
+            violated.append((feature_bit, others))
+        return satisfied, violated
 
     @staticmethod
     def _order_negatives(
