@@ -36,12 +36,14 @@ Also tested: ``_minimize`` and ``_covering_rule``, row order and
 
 import random
 import warnings
+from collections import defaultdict
 from itertools import product
 
 import pandas as pd
 import pytest
 
 from pylfit import GULA, PRIDE, Dataset, PylfitWarning, Rule
+from pylfit.algorithms._pride import _Rows
 from tests.algorithms._tables import as_question_marks, blanked_frame
 
 # The coverage warning fires whenever an option or unknown values leave
@@ -286,9 +288,33 @@ def _minimize_by_rescanning(rule, negatives, features):
     return rule
 
 
-def test_minimize_rescans_only_negatives_meeting_every_needed_condition():
-    # a is needed (the first negative violates it alone), so the third
-    # negative, which violates a, is never rescanned. The second
+def _rows(negatives, positives=()):
+    """A head's ``_Rows`` from states, as ``Dataset`` would mark them."""
+
+    def masks(states):
+        marked = defaultdict(int)
+        for i, state in enumerate(states):
+            for condition in state.items():
+                marked[condition] |= 1 << i
+        return marked
+
+    unknown = defaultdict(int)
+    for i, state in enumerate(positives):
+        for feature, value in state.items():
+            if value is None:
+                unknown[feature] |= 1 << i
+    return _Rows(
+        negatives,
+        masks(negatives),
+        (1 << len(negatives)) - 1,
+        masks(positives),
+        unknown,
+        (1 << len(positives)) - 1,
+    )
+
+
+def test_minimize_keeps_a_condition_a_drop_made_needed():
+    # a is needed (the first negative violates it alone). The second
     # violates b and c only: b can go, then c can't.
     rule = Rule(head=("y", "1"), body={"a": "1", "b": "1", "c": "1"})
     negatives = [
@@ -296,7 +322,7 @@ def test_minimize_rescans_only_negatives_meeting_every_needed_condition():
         {"a": "1", "b": "0", "c": "0"},
         {"a": "0", "b": "0", "c": "0"},
     ]
-    rule = PRIDE._minimize(rule, negatives, ["a", "b", "c"])
+    rule = PRIDE._minimize(rule, _rows(negatives), ["a", "b", "c"])
     assert rule.body == {"a": "1", "c": "1"}
 
 
@@ -317,7 +343,8 @@ def test_minimize_drops_what_rescanning_every_negative_drops(seed):
     body = {feature: seed_state[feature] for feature in shuffled}
     expected = Rule(head=("y", "1"), body=dict(body))
     expected = _minimize_by_rescanning(expected, negatives, shuffled)
-    rule = PRIDE._minimize(Rule(head=("y", "1"), body=dict(body)), negatives, shuffled)
+    rule = Rule(head=("y", "1"), body=dict(body))
+    rule = PRIDE._minimize(rule, _rows(negatives), shuffled)
     # dict equality: the order conditions end up in carries no meaning.
     assert rule.body == expected.body
 
@@ -329,7 +356,7 @@ def test_covering_rule_grows_on_the_first_disagreeing_feature(toy_dataset):
     # Nothing uncovered to keep matching: the first feature wins.
     seed = {"a": "0", "b": "0", "c": "1"}
     negative = {"a": "0", "b": "1", "c": "0"}
-    rule = PRIDE._covering_rule("y", "1", seed, [negative], toy_dataset.features)
+    rule = PRIDE._covering_rule("y", "1", seed, _rows([negative]), toy_dataset.features)
     assert rule == Rule(head=("y", "1"), body={"b": "0"})
 
 
@@ -337,13 +364,14 @@ def test_covering_rule_grows_on_the_feature_keeping_most_uncovered(toy_dataset):
     seed = {"a": "0", "b": "0", "c": "1"}
     negative = {"a": "0", "b": "1", "c": "0"}
     # b(0) keeps one of these, c(1) keeps two.
-    uncovered = [
+    positives = [
         {"a": "1", "b": "1", "c": "1"},
         {"a": "1", "b": "0", "c": "1"},
         {"a": "1", "b": "1", "c": "0"},
     ]
+    rows = _rows([negative], positives)
     rule = PRIDE._covering_rule(
-        "y", "1", seed, [negative], toy_dataset.features, uncovered=uncovered
+        "y", "1", seed, rows, toy_dataset.features, uncovered=rows.every_positive
     )
     assert rule == Rule(head=("y", "1"), body={"c": "1"})
 
@@ -351,9 +379,9 @@ def test_covering_rule_grows_on_the_feature_keeping_most_uncovered(toy_dataset):
 def test_covering_rule_ties_go_to_the_first_feature(toy_dataset):
     seed = {"a": "0", "b": "0", "c": "1"}
     negative = {"a": "0", "b": "1", "c": "0"}
-    uncovered = [{"a": "1", "b": "0", "c": "1"}]
+    rows = _rows([negative], [{"a": "1", "b": "0", "c": "1"}])
     rule = PRIDE._covering_rule(
-        "y", "1", seed, [negative], toy_dataset.features, uncovered=uncovered
+        "y", "1", seed, rows, toy_dataset.features, uncovered=rows.every_positive
     )
     assert rule == Rule(head=("y", "1"), body={"b": "0"})
 
@@ -362,7 +390,7 @@ def test_covering_rule_starts_from_the_forced_condition(toy_dataset):
     seed = {"a": "0", "b": "0", "c": "1"}
     negative = {"a": "0", "b": "1", "c": "0"}
     rule = PRIDE._covering_rule(
-        "y", "1", seed, [negative], toy_dataset.features, forced=("c", "1")
+        "y", "1", seed, _rows([negative]), toy_dataset.features, forced=("c", "1")
     )
     assert rule == Rule(head=("y", "1"), body={"c": "1"})
 
@@ -373,7 +401,7 @@ def test_minimize_tries_the_last_feature_last():
     negatives = [{"a": "0", "b": "0"}]
     for last, kept in ((None, {"b": "1"}), ("a", {"a": "1"})):
         rule = Rule(head=("y", "1"), body={"a": "1", "b": "1"})
-        rule = PRIDE._minimize(rule, negatives, ["a", "b"], last=last)
+        rule = PRIDE._minimize(rule, _rows(negatives), ["a", "b"], last=last)
         assert rule.body == kept
 
 
@@ -383,7 +411,7 @@ def test_minimize_tries_conditions_in_feature_order():
     negatives = [{"a": "0", "b": "0"}]
     for features, kept in ((["a", "b"], {"b": "1"}), (["b", "a"], {"a": "1"})):
         rule = Rule(head=("y", "1"), body={"a": "1", "b": "1"})
-        assert PRIDE._minimize(rule, negatives, features).body == kept
+        assert PRIDE._minimize(rule, _rows(negatives), features).body == kept
 
 
 def test_renaming_the_variables_does_not_change_the_rules():
@@ -414,7 +442,8 @@ def test_covering_rule_is_none_when_no_feature_separates_seed_and_negative(
     seed = {"a": "0", "b": None, "c": "1"}
     negative = {"a": "0", "b": "1", "c": "1"}
     assert (
-        PRIDE._covering_rule("y", "1", seed, [negative], toy_dataset.features) is None
+        PRIDE._covering_rule("y", "1", seed, _rows([negative]), toy_dataset.features)
+        is None
     )
 
 
