@@ -217,19 +217,33 @@ def test_a_large_slightly_impure_value_outranks_a_tiny_clean_one(toy_dataset):
     assert model.predict(df, random_state=0) == [{"y": "1"}]
 
 
-def test_predict_proba_falls_back_to_uniform_when_all_likelihoods_zero(toy_dataset):
-    # The vote scores a zero-positive value at exactly 0, so the whole
-    # target sums to 0 and there is nothing to normalize by.
+def test_rules_without_positives_are_no_evidence(toy_dataset):
     rule_1 = Rule(head=("y", "1"), body={})
     rule_0 = Rule(head=("y", "0"), body={})
     model = _hand_scored(toy_dataset, {rule_1: (0, 4), rule_0: (0, 6)})
 
-    likelihoods = model.predict_likelihood({"a": "0", "b": "0", "c": "0"})
-    assert likelihoods["y"] == {"1": 0.0, "0": 0.0}
+    assert model.predict_likelihood({"a": "0", "b": "0", "c": "0"}) == {"y": {}}
 
     probabilities = model.predict_proba({"a": "0", "b": "0", "c": "0"})
     assert probabilities["y"]["1"] == pytest.approx(0.5)
     assert probabilities["y"]["0"] == pytest.approx(0.5)
+
+
+def test_a_rule_wrong_on_every_row_gets_no_share_of_its_own():
+    df = pd.DataFrame({"a": ["0", "0", "1", "1"], "y": ["0", "0", "1", "1"]})
+    dataset = Dataset(df, features=["a"], targets=["y"])
+    model = WeightedRuleSetModel(dataset, [Rule.from_string("y(0) :- a(1).")])
+    assert model.get_score(next(iter(model.rules))) == (0, 2)
+    assert model.predict_proba({"a": "1"}) == {"y": {"0": 0.5, "1": 0.5}}
+
+
+def test_a_rule_without_positives_is_not_a_fallback_candidate():
+    df = pd.DataFrame({"a": ["0", "1"], "b": ["0", "1"], "y": ["0", "1"]})
+    dataset = Dataset(df, features=["a", "b"], targets=["y"])
+    rule = Rule.from_string("y(0) :- a(1), b(1).")
+    model = WeightedRuleSetModel(dataset, [rule])
+    assert model.get_score(rule) == (0, 1)
+    assert model.predict_likelihood({"a": None, "b": "1"}) == {"y": {}}
 
 
 def test_predict_breaks_an_equal_score_tie_randomly(toy_dataset):
@@ -883,14 +897,14 @@ def test_a_target_with_an_empty_domain_gets_no_probabilities():
     assert model.predict_proba({"a": "0"}) == {"y": {}}
 
 
-def test_vote_shares_are_uniform_over_the_candidates_when_every_vote_is_zero():
+def test_vote_shares_are_uniform_over_the_domain_when_no_rule_has_positives():
     df = pd.DataFrame({"a": ["0", "1", "1", "0"], "y": ["A", "B", "B", "C"]})
     dataset = Dataset(df, features=["a"], targets=["y"], assume_nondeterministic=True)
     # Both rules are wrong on every row they match: (0, 2) each.
     rules = [Rule.from_string("y(A) :- a(1)."), Rule.from_string("y(C) :- a(1).")]
     model = WeightedRuleSetModel(dataset, rules)
     proba = model.predict_proba({"a": "1"})
-    assert proba == {"y": {"A": 0.5, "B": 0.0, "C": 0.5}}
+    assert proba["y"] == pytest.approx({"A": 1 / 3, "B": 1 / 3, "C": 1 / 3})
 
 
 @pytest.mark.parametrize("share", [-0.5, True, 7])

@@ -66,7 +66,7 @@ def _vote(rule_scores: _RuleScores) -> float:
            with CN2: some recent improvements. In Machine Learning —
            EWSL-91, 151-163. https://doi.org/10.1007/BFb0017011
     """
-    return math.fsum(p * p / (p + n) for p, n in rule_scores if p + n)
+    return math.fsum(p * p / (p + n) for p, n in rule_scores)
 
 
 def _counts(positives: object, negatives: object) -> tuple[int, int]:
@@ -248,7 +248,7 @@ class WeightedRuleSetModel(RuleSetModel):
         For each value, each rule that concludes it and matches
         ``state`` votes ``p * p / (p + n)``, support times precision,
         from its positives ``p`` and negatives ``n``, and the votes are
-        summed; a rule scored ``(0, 0)`` doesn't count. A value's
+        summed; a rule with no positives doesn't count. A value's
         negatives lower its score in proportion to its support, so a
         large, slightly noisy value can outrank a small clean one. On
         deterministic data, ``BruteForce``, ``GULA`` and ``PRIDE`` learn
@@ -258,7 +258,7 @@ class WeightedRuleSetModel(RuleSetModel):
         An unknown feature value (``None``) never satisfies a condition,
         so a rule testing it doesn't match. With
         ``unknowns="fallback"``, the default, a target that no rule with
-        a nonzero score matches that way is predicted from the rules
+        positives matches that way is predicted from the rules
         that *could* match instead, each weighed by the probability that
         it does: its counts are multiplied by the share, in
         ``value_frequencies``, of each value its conditions on unknowns
@@ -283,8 +283,8 @@ class WeightedRuleSetModel(RuleSetModel):
             A mapping of target to (value -> likelihood), values in
             sorted order: unbounded non-negative weights, comparable
             only within a target. A target with no entries had no
-            matching rule with a nonzero score, nor under ``"fallback"``
-            one that could match. Several entries mean rules for several
+            matching rule with positives, nor under ``"fallback"`` one
+            that could match. Several entries mean rules for several
             values matched. For a DataFrame, a list of those, one per
             row, in row order.
 
@@ -341,7 +341,7 @@ class WeightedRuleSetModel(RuleSetModel):
             if variable not in predictions or not rule.matches(state):
                 continue
             positives, negatives = self._rule_scores[rule]
-            if positives == 0 and negatives == 0:
+            if positives == 0:
                 continue
             supports[variable].setdefault(value, []).append((positives, negatives))
 
@@ -362,7 +362,7 @@ class WeightedRuleSetModel(RuleSetModel):
             for rule in self._rules:
                 variable, value = rule.head
                 score = self._rule_scores[rule]
-                if variable not in unmatched or score == (0, 0):
+                if variable not in unmatched or score[0] == 0:
                     continue
                 weight = match_weight(rule, state, frequencies)
                 if weight > 0:
@@ -406,8 +406,8 @@ class WeightedRuleSetModel(RuleSetModel):
         """Predicts a probability distribution over each target's values.
 
         The evidence of ``predict_likelihood``, normalized to sum to
-        ``1`` for each target. A target for which no rule with a nonzero
-        score matches, nor under ``"fallback"`` could match, is uniform
+        ``1`` for each target. A target for which no rule with positives
+        matches, nor under ``"fallback"`` could match, is uniform
         over its whole domain, as in
         ``RuleSetModel.predict_candidates``; ``predict_likelihood``
         returns nothing for it.
@@ -432,8 +432,7 @@ class WeightedRuleSetModel(RuleSetModel):
             A mapping of target to (value -> probability), summing to
             ``1`` for each target, with every value of the target's
             domain, in sorted order, ``0.0`` where there is no evidence.
-            Empty only for a target whose domain is empty. Uniform over
-            the candidates when every likelihood is ``0``. For a
+            Empty only for a target whose domain is empty. For a
             DataFrame, a list of those, one per row, in row order.
 
         Raises:
@@ -493,7 +492,7 @@ class WeightedRuleSetModel(RuleSetModel):
                 probabilities[target] = dict.fromkeys(domain_values, uniform)
                 continue
             total = math.fsum(value_likelihoods.values())
-            if total == 0:
+            if total == 0:  # votes too small for a float, weighed by chance
                 uniform = 1 / len(value_likelihoods)
                 shares = dict.fromkeys(value_likelihoods, uniform)
             else:

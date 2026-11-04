@@ -53,7 +53,7 @@ matching rules by those counts.
 
 Each matching rule votes `p * p / (p + n)` for its value, from its
 positives `p` and negatives `n`: support times precision. The votes of
-a value's rules add up. A rule without negatives votes its positives,
+a value's rules add up, and a rule with no positives has no vote. A rule without negatives votes its positives,
 so on deterministic data, where the rules `GULA`, `PRIDE` and
 `BruteForce` learn have no negatives, a value's score is its matching
 rules' pooled positives. That total counts a row once per matching
@@ -205,7 +205,7 @@ the same values for a state without unknowns.
 `predict_likelihood` returns these raw scores. `predict_proba`
 normalizes them, gives `0.0` to every value no matching rule concludes,
 and, like `RuleSetModel`, returns a uniform distribution over the
-whole domain for a target that no rule with a nonzero score matches.
+whole domain for a target that no rule with positives matches.
 Its numbers rank the matched values against each other; they are not
 calibrated probabilities. A value whose only matching rule is wrong
 most of the time still gets `1.0` when no other value matches, which
