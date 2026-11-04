@@ -122,8 +122,11 @@ These hold for all three algorithms and every combination of options.
   `allowed_conditions` names a target, feature or value the dataset
   lacks.
 
-- **LEARN-8.** `coverage(dataset, rules)` MUST give, for each head, the
-  share of its positive rows that a rule of that head matches.
+- **LEARN-8.** `coverage(dataset, rules)` MUST map each target of
+  `dataset` and value of its domain, and nothing else, to the share of
+  that head's positive rows that a rule of that head matches. It MUST
+  raise `ValueError` for a rule that concludes on anything but a target
+  of `dataset`, or tests anything but a feature of it.
 
 ### GULA and BruteForce
 
@@ -179,6 +182,32 @@ True
 - **PRIDE-3.** `min_support=1` and `min_possible_support=1` MUST NOT
   change `PRIDE`'s rules.
 
+## Rule post-processing: `generalize`
+
+These hold for every `alpha`, with or without `max_rules`, whatever
+rules are given, unless a statement says otherwise.
+
+- **GEN-1.** `generalize` MUST return a list of distinct rules sorted by
+  text. Each MUST have the head of a given rule and a body that is a
+  subset of a given rule's body of that head.
+- **GEN-2.** Each head of a given rule whose value `dataset` holds MUST
+  keep at least one rule. A rule returned MUST NOT be more general than
+  another rule returned.
+- **GEN-3.** With `alpha` below 1, a returned rule that has a condition
+  MUST match one of its positives, and a model of `dataset` MUST accept
+  the result.
+- **GEN-4.** The result MUST NOT depend on the order of `rules`, on
+  repeated rules, or on the order of the rows.
+- **GEN-5.** `generalize` MUST warn with `PylfitWarning` if and only if
+  `max_rules` is set and it returns more than `max_rules` rules. When
+  `alpha` alone gives at most `max_rules` rules, `max_rules` MUST NOT
+  change the result.
+- **GEN-6.** Without `max_rules`, with `alpha=1`, every rule returned
+  MUST be one of the given rules.
+- **GEN-7.** `generalize` MUST raise `ValueError` for a rule that
+  concludes on anything but a target of `dataset`, or tests anything but
+  a feature of it.
+
 ## Models: `RuleSetModel`, `WeightedRuleSetModel`
 
 - **MODEL-1.** A model's `rules` MUST be the distinct rules it was
@@ -206,8 +235,8 @@ True
   `WeightedRuleSetModel.predict_proba` MUST be them divided by that sum.
   A target with no likelihood entry MUST be uniform over its domain.
 - **MODEL-8.** `predict` MUST give each row and target a value of
-  highest `predict_proba`, ties within a relative `1e-9`; `None` only
-  for a target whose domain is empty.
+  highest `predict_proba`, ties within a relative `1e-9`, each tied
+  value equally likely; `None` only for a target whose domain is empty.
 - **MODEL-9.** `predict` with the same model, rows and `random_state`
   MUST give the same result in every process. A row with one highest
   value MUST get it whatever `random_state`.
@@ -265,6 +294,41 @@ True
 
 ```
 
+## Metrics
+
+- **METRIC-1.** `accuracy_score` MUST be the share of rows with a known
+  actual value whose prediction equals it, both written as DATA-1 writes
+  them; an unknown or `None` prediction is wrong. It MUST raise
+  `ValueError` when `y_true` and `y_pred` differ in length or no actual
+  value is known.
+- **METRIC-2.** `accuracy_by_target` MUST map each target of `targets`,
+  once and in order, to what `accuracy_score` gives for it.
+- **METRIC-3.** Without `states`, `rule_recovery` MUST put each rule in
+  the first of `exact`, `too_specific`, `too_general` and `partial` that
+  it has with a rule of its head on the other side, else in `spurious`
+  or `missing`. `precision` and `recall` MUST be the learned and true
+  shares of `exact` plus `too_specific`. Each side's shares MUST sum to
+  1 up to float rounding, the learned side's being all 0 when no learned
+  rule is given. A rule given twice MUST count once, with `states` too.
+- **METRIC-4.** With `states`, every number `rule_recovery` returns MUST
+  be its mean, over each state and each target of a true rule, between
+  the rules matching that state. It MUST raise `ValueError` when no true
+  rule of a target matches a state.
+
+## Checks: `find_missing_stand_ins`
+
+- **CHECK-1.** `find_missing_stand_ins` MUST report as `"stand_in"`
+  exactly the distinct `str` values of the columns checked whose text,
+  stripped and lower-cased, is that of an entry of `stand_ins`, with
+  their row counts. `stand_ins` MUST default to `DEFAULT_STAND_INS`, a
+  tuple of `str`.
+- **CHECK-2.** The report MUST have the columns `column`, `value`,
+  `count` and `issue`, one row per finding, grouped by column in the
+  order checked. It MUST NOT report a value `pandas.isna` calls missing.
+- **CHECK-3.** `find_missing_stand_ins` MUST NOT change `dataframe`. A
+  `"far_zero"` finding MUST be a number or a text reading 0, never a
+  `bool`.
+
 ## Determinism and warnings
 
 - **RUN-1.** Given the same input, row order and `random_state`,
@@ -281,6 +345,14 @@ Do not rely on the following. Each MAY change in any release.
   condition that triggers them are promised. Match on the class, never
   on the message.
 - **Run time, memory, and the speedup from `n_jobs`.**
+- **Which rules `generalize` returns for a given `alpha`**, and which
+  of a nested pair it keeps. The test and its levels MAY improve. A
+  lower `alpha` usually gives fewer rules and conditions, but not
+  always.
+- **Which `alpha` the `max_rules` search settles on.** It MAY return
+  fewer rules than a larger `alpha` would within the cap.
+- **That `generalize`'s rules are correct, minimal or cover every
+  positive row.** LEARN-2, LEARN-3 and LEARN-6 do not apply to them.
 - **Which correct, minimal rules `PRIDE` returns.** Reordering rows, or
   removing repeated rows, MAY change them. So MAY `try_all_conditions`,
   which does not return a superset of the default run.

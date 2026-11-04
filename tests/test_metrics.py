@@ -70,6 +70,7 @@ def test_accuracy_score_only_looks_at_the_requested_target():
     assert accuracy_score(y_true, y_pred, "y2") == 0.0
 
 
+# SPEC: METRIC-1
 def test_accuracy_score_compares_actual_values_as_strings():
     # `RuleSetModel.predict` returns strings; `y_true` built with
     # `to_dict("records")` from an integer or bool column does not.
@@ -93,6 +94,7 @@ def test_accuracy_score_compares_predicted_values_as_strings(y_pred):
     assert accuracy_score(y_true, y_pred, "y") == 1.0
 
 
+# SPEC: METRIC-1
 @pytest.mark.parametrize("unknown", [None, float("nan"), pd.NA, pd.NaT])
 def test_accuracy_score_counts_an_unknown_prediction_as_incorrect(unknown):
     # A prediction no rule made is a real outcome, not left out of the
@@ -128,6 +130,7 @@ def test_accuracy_score_reads_a_numpy_whole_float_as_its_integer_text():
     assert accuracy_score([{"y": np.float32(1.0)}], [{"y": "1"}], "y") == 1.0
 
 
+# SPEC: METRIC-1
 @pytest.mark.parametrize(
     "unknown", [None, float("nan"), pd.NA, pd.NaT, np.float32("nan")]
 )
@@ -137,6 +140,7 @@ def test_accuracy_score_leaves_out_a_row_with_an_unknown_actual_value(unknown):
     assert accuracy_score(y_true, y_pred, "y") == 0.5
 
 
+# SPEC: METRIC-1
 def test_accuracy_score_with_no_known_actual_value_raises():
     with pytest.raises(ValueError, match="no row of y_true has a known value for 'y'"):
         accuracy_score([{"y": None}], [{"y": "1"}], "y")
@@ -220,6 +224,7 @@ def test_accuracy_score_names_what_it_takes_for_rows(rows):
         accuracy_score([{"y": "1"}], rows, "y")
 
 
+# SPEC: METRIC-1
 def test_accuracy_score_mismatched_lengths_raises():
     y_true = [{"y": "1"}, {"y": "0"}]
     y_pred = [{"y": "1"}]
@@ -241,6 +246,7 @@ def test_accuracy_by_target_returns_one_accuracy_per_target():
     assert accuracy_by_target(y_true, y_pred, ["y1", "y2"]) == {"y1": 1.0, "y2": 0.5}
 
 
+# SPEC: METRIC-2
 def test_accuracy_by_target_matches_calling_accuracy_score_directly():
     y_true = [{"y1": "1", "y2": "0"}, {"y1": "1", "y2": "1"}]
     y_pred = [{"y1": "0", "y2": "0"}, {"y1": "1", "y2": "0"}]
@@ -270,6 +276,7 @@ def test_accuracy_by_target_refuses_targets_it_would_use_up():
     assert accuracy_by_target(y_true, [{"y": "1"}], y_true.columns) == {"y": 1.0}
 
 
+# SPEC: METRIC-2
 def test_accuracy_by_target_takes_a_target_listed_twice(recwarn):
     frame = pd.DataFrame({"y": ["1", "0"]})
     assert accuracy_by_target(frame, [{"y": "1"}, {"y": "0"}], ["y", "y"]) == {"y": 1.0}
@@ -292,11 +299,13 @@ def test_accuracy_by_target_propagates_mismatched_length_error():
 # --- coverage ---
 
 
+# SPEC: LEARN-8
 def test_coverage_is_one_for_every_head_of_an_unrestricted_rule_set(toy_dataset):
     rules = GULA.fit(toy_dataset)
     assert coverage(toy_dataset, rules) == {("y", "0"): 1.0, ("y", "1"): 1.0}
 
 
+# SPEC: LEARN-8
 def test_coverage_of_a_head_without_rules_is_zero(toy_dataset):
     rules = GULA.fit(toy_dataset, heads=[("y", "1")])
     assert coverage(toy_dataset, rules)[("y", "0")] == 0.0
@@ -309,6 +318,7 @@ def test_coverage_does_not_count_a_row_hiding_a_tested_value():
     assert coverage(dataset, rules) == {("y", "0"): 1.0, ("y", "1"): 0.5}
 
 
+# SPEC: LEARN-8
 def test_coverage_refuses_a_rule_on_another_datasets_variables(toy_dataset):
     # ValueError, as a model given the same rules raises.
     with pytest.raises(ValueError, match="'zz', which is not a feature"):
@@ -352,6 +362,7 @@ def test_coverage_refuses_one_rule_as_text(toy_dataset):
 TRUE = Rule.from_string("y(1) :- a(1), b(1).")
 
 
+# SPEC: METRIC-3
 @pytest.mark.parametrize(
     ("learned", "category"),
     [
@@ -370,6 +381,16 @@ def test_rule_recovery_puts_a_pair_in_the_same_category_on_both_sides(
     assert scores["true"][category or "missing"] == 1.0
 
 
+# SPEC: METRIC-3
+def test_rule_recovery_shares_sum_to_1_up_to_rounding():
+    truth = [Rule.from_string(f"y(1) :- a({value}).") for value in range(3)]
+    extra = [Rule.from_string(f"y(1) :- b({value}).") for value in range(7)]
+    scores = rule_recovery(truth, truth[:2] + extra)
+    assert sum(scores["learned"].values()) == pytest.approx(1)
+    assert sum(scores["true"].values()) == pytest.approx(1)
+
+
+# SPEC: METRIC-3
 def test_rule_recovery_counts_a_rule_given_twice_once():
     good, bad = TRUE, Rule.from_string("y(1) :- a(0), c(0).")
     other = Rule.from_string("y(0) :- b(0).")
@@ -378,6 +399,7 @@ def test_rule_recovery_counts_a_rule_given_twice_once():
     assert rule_recovery([good, good, other], [good, bad]) == plain
 
 
+# SPEC: METRIC-3
 def test_rule_recovery_counts_a_rule_given_twice_once_at_a_state():
     state = dict(TRUE.body)
     twin = Rule((TRUE.head[0], "2"), {})
@@ -386,6 +408,7 @@ def test_rule_recovery_counts_a_rule_given_twice_once_at_a_state():
     assert plain["precision"] == 0.5
 
 
+# SPEC: METRIC-4
 def test_rule_recovery_learned_shares_are_means_with_states():
     states = [dict(TRUE.body), dict.fromkeys(TRUE.body, "9")]
     fallback = Rule((TRUE.head[0], "0"), {})
@@ -393,6 +416,7 @@ def test_rule_recovery_learned_shares_are_means_with_states():
     assert sum(scores["learned"].values()) == 0.5
 
 
+# SPEC: METRIC-3
 def test_rule_recovery_precision_and_recall_count_exact_and_too_specific():
     learned = [
         Rule.from_string(text)
@@ -410,6 +434,7 @@ def test_rule_recovery_precision_and_recall_count_exact_and_too_specific():
     assert sum(scores["learned"].values()) == 1.0
 
 
+# SPEC: METRIC-3
 def test_rule_recovery_gives_each_rule_its_best_relation():
     other = Rule.from_string("y(1) :- c(1).")
     scores = rule_recovery([TRUE, other], [TRUE])
@@ -430,6 +455,7 @@ def test_rule_recovery_compares_only_rules_of_the_same_head():
     assert scores["true"]["missing"] == 1.0
 
 
+# SPEC: METRIC-3
 def test_rule_recovery_without_learned_rules_scores_zero():
     scores = rule_recovery([TRUE], [])
     assert scores["precision"] == scores["recall"] == 0.0
@@ -471,6 +497,7 @@ def test_rule_recovery_of_the_true_rules_is_perfect_alone_and_per_state():
     assert per_state["precision"] == per_state["recall"] == 1.0
 
 
+# SPEC: METRIC-4
 def test_rule_recovery_per_state_scores_a_state_no_learned_rule_matches_zero():
     table = _or_table()
     truth = GULA.fit(Dataset(table, features=["a", "b", "c"], targets=["y"]))
@@ -511,6 +538,7 @@ def test_rule_recovery_refuses_a_state_without_a_tested_feature():
         rule_recovery([TRUE], [TRUE], pd.DataFrame({"a": ["1"]}))
 
 
+# SPEC: METRIC-4
 def test_rule_recovery_refuses_a_state_no_true_rule_matches():
     # One true rule is not every minimal rule of the system.
     with pytest.raises(ValueError, match="no true rule on 'y' matches states row 0"):

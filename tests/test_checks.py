@@ -16,6 +16,7 @@ def _findings(report):
 # --- stand-in strings ---
 
 
+# SPEC: CHECK-1
 def test_stand_ins_match_case_insensitively_with_spaces_ignored():
     df = pd.DataFrame({"a": ["x", " ? ", "Null", "NaN", "  ", "Unknown", "x"]})
     assert _findings(find_missing_stand_ins(df)) == [
@@ -27,16 +28,19 @@ def test_stand_ins_match_case_insensitively_with_spaces_ignored():
     ]
 
 
+# SPEC: CHECK-1
 def test_a_stand_in_is_counted_over_its_rows():
     df = pd.DataFrame({"a": ["?", "?", "x", "?"]})
     assert _findings(find_missing_stand_ins(df)) == [("a", "?", 3, "stand_in")]
 
 
+# SPEC: CHECK-2
 def test_real_missing_values_are_not_reported():
     df = pd.DataFrame({"a": ["x", None, float("nan"), "y"]})
     assert find_missing_stand_ins(df).empty
 
 
+# SPEC: CHECK-1
 def test_the_stand_in_list_is_configurable():
     df = pd.DataFrame({"a": ["?", "n.d.", "x"]})
     assert _findings(find_missing_stand_ins(df, stand_ins=["N.D."])) == [
@@ -63,6 +67,7 @@ def test_a_far_zero_in_an_integer_column_is_reported():
     assert _findings(find_missing_stand_ins(df)) == [("pressure", 0, 2, "far_zero")]
 
 
+# SPEC: CHECK-3
 def test_a_far_zero_read_as_text_is_reported_in_each_spelling():
     df = pd.DataFrame({"pressure": ["120", "135", "0", "110", "0.0", "160"]})
     assert _findings(find_missing_stand_ins(df)) == [
@@ -124,6 +129,7 @@ def test_a_column_with_text_is_not_numeric():
     assert find_missing_stand_ins(df).empty
 
 
+# SPEC: CHECK-3
 @pytest.mark.parametrize(
     "values",
     [
@@ -138,6 +144,7 @@ def test_a_column_with_a_bool_or_an_infinity_is_not_numeric(values):
     assert find_missing_stand_ins(pd.DataFrame({"a": values})).empty
 
 
+# SPEC: CHECK-3
 def test_a_numpy_false_is_not_a_zero():
     df = pd.DataFrame(
         {"a": pd.Series([np.False_, 120, 135, 110, 160, 140], dtype=object)}
@@ -152,6 +159,7 @@ def test_a_complex_column_is_not_numeric_here():
         assert find_missing_stand_ins(pd.DataFrame({"z": z})).empty
 
 
+# SPEC: CHECK-3
 @pytest.mark.parametrize(
     "values",
     [
@@ -190,6 +198,7 @@ def test_a_categorical_column_reports_only_its_far_zeros():
 # --- arguments ---
 
 
+# SPEC: CHECK-1
 def test_columns_limits_the_check():
     df = pd.DataFrame({"a": ["?", "x"], "b": ["?", "y"]})
     assert _findings(find_missing_stand_ins(df, columns=["b"])) == [
@@ -251,6 +260,7 @@ def test_options_are_taken_by_name_only():
 # --- the report ---
 
 
+# SPEC: CHECK-2
 def test_an_empty_report_keeps_its_columns():
     report = find_missing_stand_ins(pd.DataFrame({"a": ["x", "y"]}))
     assert list(report.columns) == ["column", "value", "count", "issue"]
@@ -274,3 +284,33 @@ def test_a_nullable_column_reports_a_python_number(dtype):
     (value,) = find_missing_stand_ins(df)["value"]
     assert value == 0
     assert not isinstance(value, np.generic)
+
+
+# SPEC: CHECK-1
+def test_the_default_list_is_the_public_one():
+    values = list(DEFAULT_STAND_INS)
+    report = find_missing_stand_ins(pd.DataFrame({"a": values}))
+    assert isinstance(DEFAULT_STAND_INS, tuple)
+    assert set(report["value"]) == set(values)
+
+
+# SPEC: CHECK-2
+def test_findings_are_grouped_by_column_in_the_order_checked():
+    df = pd.DataFrame({"a": ["?", "x", "?"], "b": ["null", "?", "x"]})
+    report = find_missing_stand_ins(df, columns=["b", "a"])
+    assert list(report.columns) == ["column", "value", "count", "issue"]
+    assert list(report["column"]) == ["b", "b", "a"]
+
+
+# SPEC: CHECK-3
+def test_the_dataframe_is_not_changed():
+    df = pd.DataFrame(
+        {
+            "a": ["?", " NULL ", "x", None],
+            "b": [0, 120, 135, 110],
+            "c": pd.Categorical(["?", "x", "x", "x"]),
+        }
+    )
+    before = df.copy(deep=True)
+    find_missing_stand_ins(df)
+    pd.testing.assert_frame_equal(df, before)

@@ -228,6 +228,17 @@ def test_predict_with_no_rules_at_all_is_uniform_over_the_domain():
     assert drawn == {"0", "1"}
 
 
+# SPEC: MODEL-8
+def test_each_tied_value_is_equally_likely():
+    df = pd.DataFrame({"a": ["0"] * 3, "y": ["p", "q", "r"]})
+    dataset = Dataset(df, features=["a"], targets=["y"], assume_nondeterministic=True)
+    model = RuleSetModel(dataset, [Rule(("y", v), {}) for v in "pqr"])
+    rows = pd.DataFrame({"a": ["0"] * 3000})
+    drawn = [row["y"] for row in model.predict(rows, random_state=0)]
+    # 1000 each, within about four standard deviations of 26.
+    assert all(abs(drawn.count(value) - 1000) < 100 for value in "pqr")
+
+
 def test_predict_breaks_ties_randomly_not_toward_the_smallest(toy_dataset):
     # Every rule carries equal weight, so any multi-candidate case is a
     # tie by construction. Resolving it toward the smallest value would

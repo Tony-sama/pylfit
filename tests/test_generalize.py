@@ -10,6 +10,8 @@ on tables built for each p-value.
 
 import itertools
 import math
+import random
+import warnings
 from fractions import Fraction
 
 import numpy as np
@@ -19,7 +21,7 @@ import pytest
 from pylfit import Dataset, PylfitWarning, Rule, generalize
 from pylfit._generalize import _nested_pairs, fisher_greater
 from pylfit.algorithms import GULA
-from pylfit.models import WeightedRuleSetModel
+from pylfit.models import RuleSetModel, WeightedRuleSetModel
 
 #: ``(table, p)``, with ``p`` from ``scipy.stats.fisher_exact`` 1.17.1.
 SCIPY = [
@@ -184,6 +186,7 @@ def test_alpha_1_keeps_every_condition(dataset):
     assert generalize([rule], dataset, alpha=1) == [rule]
 
 
+# SPEC: GEN-7
 @pytest.mark.parametrize("text", ["y(1) :- d(1).", "w(1) :- a(1).", "a(1) :- b(1)."])
 def test_a_rule_off_the_targets_and_features_is_refused(dataset, text):
     with pytest.raises(ValueError, match="names a variable"):
@@ -348,6 +351,7 @@ def test_max_rules_searches_alpha_on_a_log_scale():
     assert generalize(rules, dataset, max_rules=1) == rules[:1]
 
 
+# SPEC: GEN-5
 def test_max_rules_already_met_changes_nothing(weak_and_strong):
     # alpha is c(1)'s own p-value. A search, which never tries alpha
     # itself, would drop it.
@@ -367,6 +371,7 @@ def test_max_rules_counts_every_target_together():
     assert generalize(rules, dataset, max_rules=2) == [rules[0], rules[2]]
 
 
+# SPEC: GEN-5
 def test_max_rules_out_of_reach_warns_and_returns_the_floor_rules():
     rows = [{"a": a, "y": a} for a in "01"] * 100
     dataset = Dataset(pd.DataFrame(rows), features=["a"], targets=["y"])
@@ -403,3 +408,107 @@ def test_numpy_numbers_are_accepted(weak_and_strong):
         rules, weak_and_strong, alpha=np.float32(0.01), max_rules=np.int64(1)
     )
     assert capped == rules[:1]
+
+
+def _random_case(seed: int) -> tuple[pd.DataFrame, list[Rule]]:
+    """A noisy table, with unknowns, and rules: learned and hand-written."""
+    draw = random.Random(seed)
+    names = ["a", "b", "c", "d"]
+    rows = []
+    for _ in range(draw.choice([1, 8, 40, 120])):
+        row: dict[str, str | None] = {name: draw.choice("01") for name in names}
+        if draw.random() < 0.2:
+            row[draw.choice(names)] = None
+        row["y"] = row["a"] if draw.random() < 0.8 else draw.choice("012")
+        rows.append(row)
+    frame = pd.DataFrame(rows, columns=[*names, "y"]).astype(object)
+    rules = GULA.fit(_case_dataset(frame))
+    for _ in range(4):  # some with a value the table lacks
+        conditions = draw.sample(names, draw.randint(0, 3))
+        body = {name: draw.choice("012") for name in conditions}
+        rules.append(Rule(("y", draw.choice("0123")), body))
+    return frame, rules
+
+
+def _case_dataset(frame: pd.DataFrame) -> Dataset:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return Dataset(frame, features=["a", "b", "c", "d"], targets=["y"])
+
+
+CASES = [(seed, alpha) for seed in range(25) for alpha in (0.001, 0.05, 0.9, 1)]
+
+
+# SPEC: GEN-1
+@pytest.mark.parametrize(("seed", "alpha"), CASES)
+@pytest.mark.parametrize("max_rules", [None, 2])
+def test_the_result_is_sorted_distinct_and_cut_from_the_given_rules(
+    seed, alpha, max_rules
+):
+    frame, rules = _random_case(seed)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", PylfitWarning)
+        found = generalize(
+            rules, _case_dataset(frame), alpha=alpha, max_rules=max_rules
+        )
+    assert found == sorted(set(found), key=str)
+    for rule in found:
+        given = (other for other in rules if other.head == rule.head)
+        conditions = rule.body.items()
+        assert any(conditions <= other.body.items() for other in given)
+
+
+# SPEC: GEN-2
+@pytest.mark.parametrize(("seed", "alpha"), CASES)
+def test_each_head_the_data_holds_keeps_a_rule_and_none_is_broader(seed, alpha):
+    frame, rules = _random_case(seed)
+    dataset = _case_dataset(frame)
+    found = generalize(rules, dataset, alpha=alpha)
+    held = {rule.head for rule in rules if rule.head[1] in dataset.domain("y")}
+    assert held <= {rule.head for rule in found}
+    assert not any(a.is_more_general_than(b) for a in found for b in found)
+
+
+# SPEC: GEN-3
+@pytest.mark.parametrize(("seed", "alpha"), [c for c in CASES if c[1] < 1])
+def test_below_alpha_1_rules_match_a_positive_and_build_a_model(seed, alpha):
+    frame, rules = _random_case(seed)
+    dataset = _case_dataset(frame)
+    found = generalize(rules, dataset, alpha=alpha)
+    for rule in found:
+        if rule.body:
+            assert any(rule.matches(row) for row in dataset.positives(*rule.head))
+    RuleSetModel(dataset, found)
+    WeightedRuleSetModel(dataset, found)
+
+
+# SPEC: GEN-4
+@pytest.mark.parametrize(("seed", "alpha"), CASES)
+def test_the_order_of_rules_and_rows_changes_nothing(seed, alpha):
+    frame, rules = _random_case(seed)
+    found = generalize(rules, _case_dataset(frame), alpha=alpha)
+    shuffled = rules[::-1] + rules[:3]
+    rows = frame.sample(frac=1, random_state=seed)
+    assert generalize(shuffled, _case_dataset(rows), alpha=alpha) == found
+
+
+# SPEC: GEN-5
+def test_a_cap_that_is_met_gives_no_warning(weak_and_strong, recwarn):
+    rules = [_rule("y(1) :- a(1)."), _rule("y(1) :- c(1).")]
+    assert len(generalize(rules, weak_and_strong, max_rules=1)) == 1
+    assert not recwarn.list
+
+
+# SPEC: GEN-6
+@pytest.mark.parametrize("seed", range(25))
+def test_alpha_1_returns_only_given_rules(seed):
+    frame, rules = _random_case(seed)
+    assert set(generalize(rules, _case_dataset(frame), alpha=1)) <= set(rules)
+
+
+# SPEC: GEN-6
+def test_a_cap_can_leave_the_given_rules_at_alpha_1(dataset):
+    # Which is why the promise is without max_rules: the search lowers
+    # alpha.
+    rules = [_rule("y(1) :- a(1), b(0)."), _rule("y(1) :- a(1), b(1).")]
+    assert generalize(rules, dataset, alpha=1, max_rules=1) == [_rule("y(1) :- a(1).")]
