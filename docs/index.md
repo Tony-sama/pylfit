@@ -33,6 +33,7 @@ how-to/index
 explanation/index
 auto_examples/index
 api/index
+guarantees
 contributing/index
 citing
 credits
