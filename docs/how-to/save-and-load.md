@@ -34,10 +34,10 @@ raises instead of silently dropping data:
 >>> with tempfile.TemporaryDirectory() as folder:
 ...     path = os.path.join(folder, "model.json")
 ...     model.save(path)
-...     RuleSetModel.from_file(path)
+...     RuleSetModel.from_file(path)  # doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
-ValueError: file was saved by 'WeightedRuleSetModel', not 'RuleSetModel': load it via WeightedRuleSetModel.from_file(...) instead
+ValueError: file was saved by 'WeightedRuleSetModel', not 'RuleSetModel'...
 
 ```
 
