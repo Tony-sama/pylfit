@@ -2,9 +2,9 @@
 
 Each rule loses, one at a time, the condition the data least needs,
 until every condition left is needed; a rule none of whose conditions
-is needed keeps no condition when no other rule of its head is left,
-and is dropped otherwise. Of two rules left where one is more general
-than the other, one is dropped.
+is needed keeps no condition when no other rule of its head is left and
+the data holds its head value, and is dropped otherwise. Of two rules
+left where one is more general than the other, one is dropped.
 
 A condition ``variable=value`` of a rule is needed when, among the rows
 matching the rest of the rule, those with ``variable=value`` hold the
@@ -241,7 +241,9 @@ def generalize(
     generalization of it and 5% are spurious. On splits of the UCI
     heart disease data, ``GULA``'s ~12000 rules become ~27, and a
     ``WeightedRuleSetModel`` of them scores 0.807 held-out, against
-    0.815. A lower ``alpha`` keeps fewer conditions and rules.
+    0.815. A lower ``alpha`` usually keeps fewer conditions and rules,
+    though not on every table: each level can settle a nested pair
+    differently.
 
     A true rule that matches few rows cannot keep its conditions: those
     rows are too few for the test. On the UCI car evaluation data
@@ -278,10 +280,10 @@ def generalize(
 
     A rule none of whose conditions is needed is dropped when another
     rule of its head is left, and kept with no condition otherwise, so
-    that no value loses every rule. Where that value is common, such as
-    ``0`` on a target that is ``1`` in 3% of rows, dropping all its
-    rules would leave the other value's rules to win every vote they
-    enter. On the 27 network nodes with up to 30% of the training labels
+    that no value of ``dataset`` loses every rule. Where that value is
+    common, such as ``0`` on a target that is ``1`` in 3% of rows,
+    dropping all its rules would leave the other value's rules to win
+    every vote they enter. On the 27 network nodes with up to 30% of the training labels
     flipped, this changes 7 of 675 runs, from ``GULA``'s rules as from
     ``PRIDE``'s: where the rare value's rules won every vote, scoring
     0.27 to 0.57, the rule with no condition now wins them and the
@@ -293,10 +295,12 @@ def generalize(
 
     ``max_rules`` caps the rules returned, every target together, for a
     model of a size you can read: when ``alpha`` keeps more, a search
-    returns the rules at the largest lower ``alpha`` that keeps at most
-    ``max_rules``. One level serves every target, so the conditions a
-    tight cap removes are those with the weakest evidence, on whichever
-    target.
+    for a lower ``alpha`` that keeps at most ``max_rules`` returns the
+    rules there. It halves an interval, so it settles on a level near
+    the largest that fits, not always that one, as the count of rules
+    can rise and fall with ``alpha``. One level serves every target, so
+    the conditions a tight cap removes are those with the weakest
+    evidence, on whichever target.
 
     The cap keeps a model short; it is not a remedy for noisy labels,
     which lowering ``alpha`` is. Under noise ``generalize`` already
@@ -317,8 +321,11 @@ def generalize(
     learned from, to test them on rows they were not fitted to. A rule
     value ``dataset`` lacks matches none of its rows, so its condition
     is never needed and is dropped: ``y(1) :- a(1), b(2).`` becomes
-    ``y(1) :- a(1).`` where ``b`` is never ``2``. The models, which
-    refuse such a rule, accept the result.
+    ``y(1) :- a(1).`` where ``b`` is never ``2``. A rule whose head
+    value ``dataset`` lacks has no row to need any condition, and is
+    dropped: it is no evidence here, unlike a rule of a common value.
+    The models, which refuse such rules, accept the result, unless
+    ``alpha`` is 1: every p-value passes there, so no condition goes.
 
     Args:
         rules: The rules to generalize, from any algorithm or written by
@@ -340,8 +347,9 @@ def generalize(
             not an integer (NumPy numbers count as numbers and
             integers).
         ValueError: If ``alpha`` is not above 0 and at most 1,
-            ``max_rules`` is below 1, or a rule names a variable that is
-            not one of ``dataset``'s features and targets.
+            ``max_rules`` is below 1, or a rule concludes on a variable
+            that is not a target of ``dataset`` or tests one that is not
+            a feature of it.
 
     Warns:
         PylfitWarning: If ``max_rules`` is set and even ``alpha=1e-12``
@@ -418,7 +426,12 @@ def _generalize_all(
     )
     heads = {rule.head for rule in found if rule.body}
     return sorted(
-        (rule for rule in found if rule.body or rule.head not in heads), key=str
+        (
+            rule
+            for rule in found
+            if rule.body or (rule.head not in heads and rows.head(*rule.head)[0])
+        ),
+        key=str,
     )
 
 

@@ -149,6 +149,18 @@ def test_a_value_the_dataset_lacks_matches_no_row(dataset):
     WeightedRuleSetModel(dataset, rules)
 
 
+def test_a_head_value_the_dataset_lacks_loses_its_rule(dataset):
+    # No row to need a condition, and no model would take the rule.
+    rules = [_rule("y(2) :- a(1)."), _rule("y(1) :- a(1), b(1).")]
+    found = generalize(rules, dataset)
+    assert found == [_rule("y(1) :- a(1).")]
+    WeightedRuleSetModel(dataset, found)
+
+
+def test_only_rules_of_a_head_value_the_dataset_lacks_leave_none(dataset):
+    assert generalize([_rule("y(2) :- a(1)."), _rule("y(2) :- .")], dataset) == []
+
+
 def test_the_rules_build_a_model(dataset):
     rules = generalize([_rule("y(1) :- a(1), b(1).")], dataset)
     model = WeightedRuleSetModel(dataset, rules)

@@ -316,10 +316,10 @@ for rule in rules:
 # one at a time, each condition the training patients do not need: a
 # condition is needed when, among the patients matching the rest of the
 # rule, those it holds for have the rule's conclusion significantly more
-# often (a Fisher exact test at ``alpha=0.01``; lower keeps fewer).
-# Rules that become the same are merged, and of a rule and a broader
-# one, the narrow one stays only if the broad rule's patients need its
-# extra conditions, so no rule is a narrower copy of another:
+# often (a Fisher exact test at ``alpha=0.01``; lower usually keeps
+# fewer). Rules that become the same are merged, and of a rule and a
+# broader one, the narrow one stays only if the broad rule's patients
+# need its extra conditions, so no rule is a narrower copy of another:
 #
 # .. code-block:: python
 #
