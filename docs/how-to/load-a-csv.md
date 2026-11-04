@@ -5,7 +5,8 @@ This guide loads a CSV and learns rules from it.
 
 ## Read every column as text
 
-This guide reads a small file of patients:
+This guide reads a small file of patients. Save these lines as
+`patients.csv` in the folder you run Python from:
 
 ```{literalinclude} patients.csv
 :caption: patients.csv
