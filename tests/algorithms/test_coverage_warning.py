@@ -45,6 +45,7 @@ def _silent(call):
         return call()
 
 
+# SPEC: LEARN-6
 @pytest.mark.parametrize("algorithm", ALL_ALGORITHMS)
 def test_no_warning_without_options_on_complete_data(algorithm, toy_dataset):
     _silent(lambda: algorithm.fit(toy_dataset))
@@ -56,6 +57,7 @@ def test_no_warning_with_min_support_one_on_complete_data(algorithm, toy_dataset
     _silent(lambda: algorithm.fit(toy_dataset, min_support=1))
 
 
+# SPEC: GULA-4
 @pytest.mark.parametrize("algorithm", ALL_ALGORITHMS)
 def test_unknowns_that_no_feature_separates_warn(algorithm, inseparable_dataset):
     with pytest.warns(PylfitWarning, match=r"1 of 4 positive rows \(25.0%\)") as record:
@@ -135,6 +137,7 @@ def test_warn_uncovered_false_silences_it(algorithm, inseparable_dataset):
     _silent(lambda: algorithm.fit(inseparable_dataset, warn_uncovered=False))
 
 
+# SPEC: LEARN-8
 @pytest.mark.parametrize("algorithm", ALGORITHMS)
 def test_the_warning_agrees_with_coverage(algorithm, support_dataset):
     with pytest.warns(PylfitWarning, match=r"1 of 10 positive rows \(10\.0%\)"):

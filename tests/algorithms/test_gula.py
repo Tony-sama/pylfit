@@ -28,6 +28,7 @@ pytestmark = pytest.mark.filterwarnings("ignore:.*matched by no rule of their he
 # --- heads: learning only some (target, value) pairs ---
 
 
+# SPEC: LEARN-4
 @pytest.mark.parametrize(
     "heads",
     [
@@ -60,6 +61,7 @@ def test_heads_empty_collection_learns_nothing(toy_dataset):
     assert GULA.fit(toy_dataset, heads=[]) == []
 
 
+# SPEC: LEARN-7
 @pytest.mark.parametrize(
     ("heads", "message"),
     [
@@ -362,6 +364,7 @@ def test_default_negative_order_is_similarity():
     )
 
 
+# SPEC: GULA-8
 @pytest.mark.parametrize("fixture_name", ["toy_dataset", "and_function_dataset"])
 @pytest.mark.parametrize("negative_order", ["similarity", "lexicographic", "unordered"])
 def test_negative_order_never_changes_the_rule_set(
@@ -513,6 +516,7 @@ def test_min_possible_support_keeps_exactly_the_unrestricted_rules_meeting_it(
     assert set(rules) == expected
 
 
+# SPEC: GULA-6
 @pytest.mark.filterwarnings("ignore:Rows with the same feature state")
 @pytest.mark.parametrize("seed", range(4))
 def test_min_support_and_min_possible_support_combine_as_both(seed):
@@ -567,6 +571,7 @@ def test_min_possible_support_rejects_invalid_values(support_dataset, threshold,
 _FIXTURE_NAMES = ["toy_dataset", "nondeterministic_dataset", "degenerate_dataset"]
 
 
+# SPEC: GULA-1
 @pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
 def test_gula_and_brute_force_learn_the_same_rules(fixture_name, request):
     dataset = request.getfixturevalue(fixture_name)

@@ -211,6 +211,7 @@ def test_columns_in_a_set_are_refused():
         find_missing_stand_ins(df, columns={"a", "b"})
 
 
+# SPEC: DATA-10
 @pytest.mark.parametrize("parameter", ["stand_ins", "columns"])
 def test_a_single_string_is_refused(parameter):
     # A str iterates as characters: "null" would check "n", "u", "l".

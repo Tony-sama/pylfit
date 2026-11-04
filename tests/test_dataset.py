@@ -21,6 +21,7 @@ from pylfit import ConflictWarning, Dataset, PylfitWarning, _dataset
 # --- features and targets ---
 
 
+# SPEC: DATA-10
 def test_empty_features_raises():
     df = pd.DataFrame({"a": [0, 1], "y": [0, 1]})
     with pytest.raises(ValueError, match="features"):
@@ -335,6 +336,7 @@ def test_a_whole_float_too_large_for_an_integer_is_refused():
         Dataset(df, ["a"], ["y"])
 
 
+# SPEC: DATA-2
 @pytest.mark.parametrize(
     "column",
     [
@@ -348,6 +350,7 @@ def test_a_fractional_float_is_refused_in_any_column(column):
         Dataset(df, ["a"], ["y"], check_stand_ins=False)
 
 
+# SPEC: DATA-1
 @pytest.mark.parametrize(
     "column",
     [
@@ -363,6 +366,7 @@ def test_a_whole_float_reads_as_its_integer_text_in_any_column(column):
     assert "1.0" not in domain
 
 
+# SPEC: DATA-1
 @pytest.mark.parametrize(
     ("values", "domain"),
     [
@@ -387,6 +391,7 @@ def test_a_whole_float_beside_an_equal_bool_is_read_as_its_integer_text():
     assert dataset.domain("a") == ["1", "True"]
 
 
+# SPEC: DATA-2
 @pytest.mark.parametrize(
     "values",
     [
@@ -427,6 +432,7 @@ def test_each_value_is_held_by_one_object():
     assert values[1] is values[3]
 
 
+# SPEC: DATA-3
 @pytest.mark.parametrize("missing", [float("nan"), None])
 def test_missing_feature_value_is_unknown(missing):
     df = pd.DataFrame({"a": ["0", missing, "1"], "y": ["0", "1", "0"]})
@@ -463,6 +469,7 @@ def test_check_values_accepts_missing_values():
 # --- the max_categories warning ---
 
 
+# SPEC: DATA-9
 def test_integer_column_over_max_categories_warns():
     df = pd.DataFrame({"a": list(range(25)) * 2, "y": [0] * 50})
     with pytest.warns(PylfitWarning, match="continuous"):
@@ -652,6 +659,7 @@ def test_stand_in_warning_points_at_the_caller():
     assert record[0].filename == __file__
 
 
+# SPEC: DATA-9
 def test_check_stand_ins_false_silences_the_warning():
     df = pd.DataFrame({"a": ["0", "?"], "y": ["0", "1"]})
     with warnings.catch_warnings():
@@ -659,6 +667,7 @@ def test_check_stand_ins_false_silences_the_warning():
         Dataset(df, features=["a"], targets=["y"], check_stand_ins=False)
 
 
+# SPEC: DATA-3
 def test_unknowns_are_not_stand_ins():
     df = pd.DataFrame({"a": ["0", None], "y": ["0", "1"]})
     with warnings.catch_warnings():
@@ -669,6 +678,7 @@ def test_unknowns_are_not_stand_ins():
 # --- conflicting_targets and the conflict warning ---
 
 
+# SPEC: DATA-8
 def test_conflicting_targets_empty_for_toy_dataset(toy_dataset):
     assert toy_dataset.conflicting_targets == []
 
@@ -727,6 +737,7 @@ def test_conflict_warning_points_at_the_caller():
     assert record[0].filename == __file__
 
 
+# SPEC: DATA-7
 def test_assume_nondeterministic_silences_the_conflict_warning():
     df = pd.DataFrame({"a": [0, 0], "y": [0, 1]})
     with warnings.catch_warnings():
@@ -734,6 +745,7 @@ def test_assume_nondeterministic_silences_the_conflict_warning():
         Dataset(df, features=["a"], targets=["y"], assume_nondeterministic=True)
 
 
+# SPEC: DATA-8
 def test_no_conflict_no_warning():
     df = pd.DataFrame({"a": [0, 1], "y": [0, 1]})
     with warnings.catch_warnings():
@@ -828,6 +840,7 @@ def test_to_dataframe_gives_the_features_and_targets_as_read():
     assert frame["y"].tolist() == ["1", "0", "1"]
 
 
+# SPEC: DATA-11
 def test_to_dataframe_keeps_the_callers_index_labels():
     # The one place the caller's index comes back (see
     # test_duplicate_index_labels_never_leak), so rows join back.
@@ -866,6 +879,7 @@ def test_to_dataframe_of_an_empty_dataset_has_the_columns_and_no_row():
 # --- domain and domains ---
 
 
+# SPEC: DATA-4
 def test_domain_returns_distinct_values_sorted(toy_dataset):
     assert toy_dataset.domain("a") == ["0", "1"]
     assert toy_dataset.domain("y") == ["0", "1"]
@@ -1018,6 +1032,7 @@ def test_every_head_shares_one_dict_per_row(toy_dataset):
 # --- positives and negatives: a non-deterministic target ---
 
 
+# SPEC: DATA-5
 def test_positives_counts_every_row_with_the_value(nondeterministic_dataset):
     # Rows: (a=0,y=0), (a=0,y=1), (a=1,y=1).
     positives = nondeterministic_dataset.positives("y", "1")
@@ -1175,6 +1190,7 @@ def test_unknown_negative_is_kept_by_default():
     assert dataset.negatives("y", "1") == [{"a": None, "b": "0"}]
 
 
+# SPEC: DATA-6
 def test_identical_partial_states_are_one_state_by_default():
     # Same features unknown, same known values: read as the same state,
     # as a fully known state is, so the y=1 row sets the y=0 one aside.

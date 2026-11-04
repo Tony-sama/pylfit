@@ -8,6 +8,7 @@ import pytest
 from pylfit import GULA, ConflictWarning, Dataset, PylfitWarning, Rule, generalize
 
 
+# SPEC: RUN-2
 def test_the_classes_are_user_warnings():
     assert issubclass(PylfitWarning, UserWarning)
     assert issubclass(ConflictWarning, PylfitWarning)

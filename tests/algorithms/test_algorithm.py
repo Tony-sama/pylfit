@@ -124,6 +124,7 @@ def test_fit_refuses_a_dataframe_whatever_options_come_with_it(algorithm, option
         algorithm.fit(frame, **options)
 
 
+# SPEC: GULA-7
 @pytest.mark.parametrize("algorithm", [GULA, PRIDE])
 def test_allowed_conditions_must_be_a_mapping(toy_dataset, algorithm):
     with pytest.raises(TypeError, match="allowed_conditions must be a mapping"):

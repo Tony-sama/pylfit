@@ -43,6 +43,7 @@ def _fit_and_warnings(algorithm, dataset, **options):
     return rules, [str(w.message) for w in caught]
 
 
+# SPEC: LEARN-5
 @pytest.mark.parametrize("algorithm", ALGORITHMS)
 def test_n_jobs_learns_the_same_rules_and_warnings(algorithm, two_target_dataset):
     sequential = _fit_and_warnings(algorithm, two_target_dataset)

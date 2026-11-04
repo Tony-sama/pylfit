@@ -128,6 +128,7 @@ def test_matches_ignores_missing_variables_the_body_does_not_test():
     assert rule.matches({"a": "0"}) is True
 
 
+# SPEC: RULE-1
 @pytest.mark.parametrize(
     "unknown",
     [
@@ -184,6 +185,7 @@ def test_matches_rejects_a_non_str_value_instead_of_not_matching(value, shown):
         rule.matches({"a": value})
 
 
+# SPEC: RULE-2
 def test_matches_does_not_check_values_after_the_first_failing_condition():
     # The scan stops at the first failure, as the docstring says.
     rule = Rule(head=("y", "1"), body={"a": "1", "b": "1"})
@@ -208,6 +210,7 @@ def test_matches_accepts_duck_typed_state():
 # --- is_more_general_than ---
 
 
+# SPEC: RULE-4
 def test_is_more_general_than_refuses_a_non_rule():
     with pytest.raises(TypeError, match="not a Rule"):
         Rule(("y", "1")).is_more_general_than(("y", "1"))
@@ -318,6 +321,7 @@ def test_a_rule_stays_findable_in_a_set():
     assert rule in rules
 
 
+# SPEC: RULE-3
 def test_copy_module_and_pickle_give_an_equal_rule():
     rule = Rule(head=("y", "1"), body={"a": "0"})
     assert copy.copy(rule) == rule
@@ -417,6 +421,7 @@ def test_from_string_is_case_sensitive_and_order_independent():
     assert Rule.from_string("Y(1) :- A(0).") != Rule(("y", "1"), {"a": "0"})
 
 
+# SPEC: RULE-6
 def test_from_string_round_trips_with_to_string():
     rule = Rule(head=("y", "1"), body={"a": "0", "c": "1"})
     assert Rule.from_string(rule.to_string()) == rule

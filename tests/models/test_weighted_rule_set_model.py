@@ -82,6 +82,7 @@ def test_rules_are_scored_immediately(toy_model, toy_rules):
         assert toy_model.get_score(rule) is not None
 
 
+# SPEC: MODEL-5
 def test_construction_scores_match_hand_derived_values(toy_model):
     scores = {rule.to_string(): toy_model.get_score(rule) for rule in toy_model.rules}
     assert scores["y(1) :- b(1)."] == (4, 0)
@@ -174,6 +175,7 @@ def test_negatives_lower_a_values_likelihood(toy_dataset):
     assert drawn == {"1"}
 
 
+# SPEC: MODEL-7
 def test_predict_proba_renormalizes_likelihoods_that_dont_sum_to_one(toy_dataset):
     rule_1 = Rule(head=("y", "1"), body={})
     rule_0 = Rule(head=("y", "0"), body={})
@@ -229,6 +231,7 @@ def test_rules_without_positives_are_no_evidence(toy_dataset):
     assert probabilities["y"]["0"] == pytest.approx(0.5)
 
 
+# SPEC: MODEL-6
 def test_a_rule_wrong_on_every_row_gets_no_share_of_its_own():
     df = pd.DataFrame({"a": ["0", "0", "1", "1"], "y": ["0", "0", "1", "1"]})
     dataset = Dataset(df, features=["a"], targets=["y"])
@@ -271,6 +274,7 @@ def test_predict_draws_only_among_the_top_scoring_values():
     assert drawn == {"0", "1"}
 
 
+# SPEC: MODEL-6
 def test_zero_zero_rules_dont_contribute(toy_dataset):
     matching_rule = Rule(head=("y", "1"), body={})
     model = _hand_scored(toy_dataset, {matching_rule: (0, 0)})
@@ -605,6 +609,7 @@ def test_repr_is_a_one_line_summary(toy_model):
 # --- DataFrame input to predict_proba / predict_likelihood ---
 
 
+# SPEC: MODEL-10
 def test_predict_proba_on_a_dataframe_is_one_result_per_row(toy_dataset):
     model = WeightedRuleSetModel(toy_dataset, GULA.fit(toy_dataset))
     frame = pd.DataFrame({"a": ["0", "1"], "b": ["1", "0"], "c": ["0", "0"]})
@@ -655,6 +660,7 @@ def _eight_way_tie():
     return dataset, GULA.fit(dataset), values
 
 
+# SPEC: MODEL-4
 @pytest.mark.parametrize("model_class", [RuleSetModel, WeightedRuleSetModel])
 def test_predict_proba_lists_values_in_sorted_order(model_class):
     # Built from sets, whose order varies with PYTHONHASHSEED: eight
@@ -935,3 +941,19 @@ def test_verbose_false_prints_nothing(toy_dataset, toy_rules, capsys):
 def test_verbose_that_is_not_a_bool_is_refused(toy_dataset):
     with pytest.raises(TypeError, match="verbose must be True or False"):
         WeightedRuleSetModel(toy_dataset, [], verbose="no")
+
+
+# SPEC: FILE-5
+@pytest.mark.parametrize(
+    ("model_class", "name"),
+    [
+        (RuleSetModel, "rule_set_model_schema_2.json"),
+        (WeightedRuleSetModel, "weighted_rule_set_model_schema_2.json"),
+    ],
+)
+def test_a_file_saved_by_an_earlier_version_still_loads(model_class, name):
+    # Stored files, never regenerated: a new schema has to keep reading
+    # them, so add a file for it rather than replacing these.
+    path = Path(__file__).resolve().parent.parent / "data" / "models" / name
+    model = model_class.from_file(path)
+    assert model.predict_proba({"a": "1", "b": None})["y"]["1"] == 1.0

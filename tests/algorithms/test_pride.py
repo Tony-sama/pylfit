@@ -497,6 +497,7 @@ def test_try_all_conditions_finds_the_rules_row_order_hid():
         assert PRIDE.fit(dataset, try_all_conditions=True) == gula
 
 
+# SPEC: PRIDE-1
 @pytest.mark.parametrize("seed", range(20))
 def test_try_all_conditions_rules_are_gula_rules_and_cover(seed):
     rng = random.Random(seed)
@@ -546,6 +547,7 @@ def test_pride_unknowns_learn_what_question_marks_without_their_conditions_learn
     )
 
 
+# SPEC: PRIDE-1
 @pytest.mark.filterwarnings("ignore:Rows with the same feature state")
 @pytest.mark.parametrize("seed", range(8))
 @pytest.mark.parametrize(
@@ -566,6 +568,7 @@ def test_pride_rules_with_unknowns_are_gula_rules(seed, options):
     assert set(PRIDE.fit(dataset, **options)) <= set(GULA.fit(dataset, **shared))
 
 
+# SPEC: PRIDE-2
 @pytest.mark.filterwarnings("ignore:Rows with the same feature state")
 @pytest.mark.parametrize("seed", range(8))
 def test_pride_covers_every_positive_but_the_inseparable(seed):
@@ -580,6 +583,7 @@ def test_pride_covers_every_positive_but_the_inseparable(seed):
             assert covered != PRIDE._inseparable(positive, negatives, dataset.features)
 
 
+# SPEC: PRIDE-3
 @pytest.mark.filterwarnings("ignore:Rows with the same feature state")
 @pytest.mark.parametrize("seed", range(4))
 def test_pride_min_support_one_is_plain_pride(seed):

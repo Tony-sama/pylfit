@@ -159,6 +159,7 @@ def _run_gula_pride_check(name: str) -> None:
     )
 
 
+# SPEC: GULA-1
 @pytest.mark.parametrize("name", _FAST_TIER)
 def test_fast_tier_networks(name):
     """<=6 var networks: all three algorithms, fully cross-checked.
@@ -181,6 +182,7 @@ def test_slow_tier_networks(name):
 
 # Pruning leaves positive rows uncovered, as it should; the warning
 # itself is tested in test_coverage_warning.py.
+# SPEC: GULA-5
 @pytest.mark.filterwarnings("ignore:.*matched by no rule of their head")
 @pytest.mark.parametrize("name", _FAST_TIER)
 @pytest.mark.parametrize("fraction", [1.0, 0.5, 0.2])

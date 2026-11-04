@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "model_class": "RuleSetModel",
+  "pylfit_version": "1.0.0.dev0",
+  "features": [
+    "a",
+    "b"
+  ],
+  "targets": [
+    "y"
+  ],
+  "domain": {
+    "a": [
+      "0",
+      "1"
+    ],
+    "b": [
+      "0",
+      "1"
+    ],
+    "y": [
+      "0",
+      "1"
+    ]
+  },
+  "rules": [
+    {
+      "display": "y(0) :- a(0), b(0).",
+      "head": [
+        "y",
+        "0"
+      ],
+      "body": {
+        "a": "0",
+        "b": "0"
+      }
+    },
+    {
+      "display": "y(0) :- a(1), b(1).",
+      "head": [
+        "y",
+        "0"
+      ],
+      "body": {
+        "a": "1",
+        "b": "1"
+      }
+    },
+    {
+      "display": "y(1) :- a(1).",
+      "head": [
+        "y",
+        "1"
+      ],
+      "body": {
+        "a": "1"
+      }
+    },
+    {
+      "display": "y(1) :- b(1).",
+      "head": [
+        "y",
+        "1"
+      ],
+      "body": {
+        "b": "1"
+      }
+    }
+  ]
+}

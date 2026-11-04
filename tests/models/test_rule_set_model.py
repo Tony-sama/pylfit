@@ -91,6 +91,7 @@ def test_features_and_targets_are_read_only(toy_model, name):
 # Equality section below).
 
 
+# SPEC: MODEL-1
 def test_domain_captured_from_dataset_at_construction(toy_model):
     assert toy_model.domain == {
         "a": ["0", "1"],
@@ -171,6 +172,7 @@ def test_a_model_without_rules_is_truthy(toy_dataset):
 # --- predict_candidates / predict_proba: every match a candidate ---
 
 
+# SPEC: MODEL-2
 def test_predict_candidates_single_matching_rule(toy_model):
     # a=0, c=1 matches only "y(1) :- a(0), c(1)." (b=0 rules out
     # "b=1"; a=0 rules out both y=0 rules).
@@ -239,6 +241,7 @@ def test_predict_breaks_ties_randomly_not_toward_the_smallest(toy_dataset):
     assert drawn == {"0", "1"}
 
 
+# SPEC: MODEL-9
 def test_predict_random_state_makes_a_tie_reproducible(toy_dataset):
     rule_1 = Rule(head=("y", "1"), body={})
     rule_0 = Rule(head=("y", "0"), body={})
@@ -285,6 +288,7 @@ def test_predict_missing_feature_column_raises(toy_model):
         toy_model.predict(dataframe)
 
 
+# SPEC: MODEL-11
 def test_predict_target_column_present_raises(toy_model):
     dataframe = pd.DataFrame([{"a": "0", "b": "0", "c": "1", "y": "1"}])
     with pytest.raises(ValueError, match="target column"):
@@ -334,6 +338,7 @@ def unknowns_model():
     return RuleSetModel(dataset, rules)
 
 
+# SPEC: MODEL-3
 def test_fallback_candidates_are_the_values_of_rules_that_could_match(
     unknowns_model,
 ):
@@ -402,6 +407,7 @@ def test_fallback_still_raises_on_a_missing_key(unknowns_model):
 # --- Single-state input: checked as a DataFrame row is ---
 
 
+# SPEC: MODEL-11
 @pytest.mark.parametrize("method", ["predict_candidates", "predict_proba"])
 def test_single_state_out_of_domain_value_raises(toy_model, method):
     with pytest.raises(
@@ -476,6 +482,7 @@ def test_predict_does_not_repeat_the_max_categories_warning():
 # --- Persistence: save / from_file ---
 
 
+# SPEC: FILE-1
 def test_save_from_file_round_trip(toy_model, tmp_path):
     path = tmp_path / "model.json"
     toy_model.save(str(path))
@@ -489,6 +496,7 @@ def test_save_and_from_file_accept_a_path_object(toy_model, tmp_path):
     assert RuleSetModel.from_file(path) == toy_model
 
 
+# SPEC: FILE-3
 def test_saved_file_is_readable_json_with_display_strings(toy_model, tmp_path):
     path = tmp_path / "model.json"
     toy_model.save(str(path))
@@ -510,6 +518,7 @@ def test_saved_file_is_readable_json_with_display_strings(toy_model, tmp_path):
     assert "score" not in rule_entry  # WeightedRuleSetModel-only
 
 
+# SPEC: FILE-2
 def test_from_file_rejects_unknown_schema_version(toy_model, tmp_path):
     path = tmp_path / "model.json"
     toy_model.save(str(path))
@@ -581,6 +590,7 @@ def test_equal_models_from_the_same_dataset_and_rules(toy_dataset, toy_rules):
     assert model_a == model_b
 
 
+# SPEC: MODEL-12
 def test_models_with_different_rules_are_unequal(toy_dataset, toy_rules):
     model_a = RuleSetModel(toy_dataset, toy_rules)
     model_b = RuleSetModel(toy_dataset, toy_rules[:-1])
@@ -813,6 +823,7 @@ def test_from_file_refuses_a_malformed_file(
         RuleSetModel.from_file(path)
 
 
+# SPEC: FILE-4
 def test_equal_models_save_the_same_file(toy_dataset, tmp_path):
     one = RuleSetModel(toy_dataset, [Rule(("y", "1"), {"a": "0", "c": "1"})])
     other = RuleSetModel(toy_dataset, [Rule(("y", "1"), {"c": "1", "a": "0"})])
@@ -828,6 +839,7 @@ def test_equality_with_a_non_model_defers_to_the_other_operand(toy_model):
     assert toy_model == mock.ANY
 
 
+# SPEC: MODEL-8
 def test_a_target_with_an_empty_domain_is_predicted_as_none(toy_dataset):
     model = RuleSetModel(toy_dataset, [])
     model.domain = {**model.domain, "y": set()}
@@ -919,6 +931,7 @@ RuleSetModel(dataset, rules).save(sys.argv[1])
 """
 
 
+# SPEC: FILE-4
 @pytest.mark.slow
 def test_save_writes_the_same_bytes_in_every_process(tmp_path):
     # The domain's sets and the rules' set iterate in an order that

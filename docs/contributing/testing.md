@@ -45,6 +45,10 @@ does.
   the README runs as a doctest. Pages under `docs/how-to/` run from
   that folder, so they read its files by bare name
   (`docs/how-to/conftest.py`).
+- A test that checks a statement of
+  [Behavior guarantees](../guarantees.md) names it in a comment above
+  itself, `# SPEC: GULA-1`. `test_spec_references.py` fails on a name
+  the page doesn't define, and warns about a statement no test names.
 - Some tests guard the project's structure rather than behavior:
   `test_public_api.py` (one import path per public name, every one in
   `__all__`), `test_layering.py` (models and algorithms don't import

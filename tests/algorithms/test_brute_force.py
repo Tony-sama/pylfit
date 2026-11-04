@@ -67,6 +67,7 @@ def test_judge_empty_body_is_minimal_when_there_are_no_negatives():
 # so they must still learn exactly the same rules.
 
 
+# SPEC: GULA-2
 @pytest.mark.filterwarnings("ignore:Rows with the same feature state")
 @pytest.mark.filterwarnings("ignore:.*matched by no rule of their head")
 @pytest.mark.parametrize("seed", range(8))

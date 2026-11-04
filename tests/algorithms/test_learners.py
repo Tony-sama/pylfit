@@ -16,7 +16,7 @@ feature-domain product and has no coverage-redundant rules;
 
 import pytest
 
-from pylfit import GULA, PRIDE, BruteForce, Rule
+from pylfit import GULA, PRIDE, BruteForce, Dataset, Rule
 from tests.algorithms._properties import (
     assert_complete,
     assert_correct,
@@ -24,6 +24,7 @@ from tests.algorithms._properties import (
     assert_irreducible,
     assert_not_dominated,
 )
+from tests.algorithms._tables import blanked_frame
 
 LEARNERS = [BruteForce, GULA, PRIDE]
 
@@ -35,6 +36,7 @@ LEARNERS = [BruteForce, GULA, PRIDE]
 # RuleSetModel(dataset, GULA.fit(dataset)).
 
 
+# SPEC: RULE-5
 @pytest.mark.parametrize("learner", LEARNERS)
 def test_fit_returns_rules_sorted_by_text_without_duplicates(learner, toy_dataset):
     rules = learner.fit(toy_dataset)
@@ -134,6 +136,7 @@ def test_targets_are_learned_independently(learner, multi_target_dataset):
 _FIXTURE_NAMES = ["toy_dataset", "nondeterministic_dataset", "degenerate_dataset"]
 
 
+# SPEC: LEARN-1
 @pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
 @pytest.mark.parametrize("learner", LEARNERS)
 def test_every_rule_head_value_is_in_the_targets_domain(learner, fixture_name, request):
@@ -141,6 +144,7 @@ def test_every_rule_head_value_is_in_the_targets_domain(learner, fixture_name, r
     assert_heads_in_domain(dataset, learner.fit(dataset))
 
 
+# SPEC: LEARN-2
 @pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
 @pytest.mark.parametrize("learner", LEARNERS)
 def test_correctness_no_rule_matches_a_negative(learner, fixture_name, request):
@@ -150,6 +154,7 @@ def test_correctness_no_rule_matches_a_negative(learner, fixture_name, request):
     assert_correct(dataset, learner.fit(dataset))
 
 
+# SPEC: GULA-3
 @pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
 @pytest.mark.parametrize("learner", LEARNERS)
 def test_completeness_every_feature_state_is_matched_per_target(
@@ -166,8 +171,25 @@ def test_minimality_no_rule_is_dominated_by_another(learner, fixture_name, reque
     assert_not_dominated(dataset, learner.fit(dataset))
 
 
+# SPEC: LEARN-3
 @pytest.mark.parametrize("fixture_name", _FIXTURE_NAMES)
 @pytest.mark.parametrize("learner", LEARNERS)
 def test_minimality_no_condition_can_be_dropped(learner, fixture_name, request):
     dataset = request.getfixturevalue(fixture_name)
     assert_irreducible(dataset, learner.fit(dataset))
+
+
+# SPEC: GULA-3
+@pytest.mark.parametrize("learner", [BruteForce, GULA])
+@pytest.mark.parametrize("deterministic", [False, True])
+@pytest.mark.parametrize("seed", range(10))
+def test_completeness_holds_whatever_the_unknowns_in_the_data(
+    learner, deterministic, seed
+):
+    dataset = Dataset(
+        blanked_frame(seed, deterministic=deterministic),
+        features=["a", "b", "c"],
+        targets=["y"],
+        assume_nondeterministic=not deterministic,
+    )
+    assert_complete(dataset, learner.fit(dataset, warn_uncovered=False))

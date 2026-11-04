@@ -168,6 +168,7 @@ if __name__ == "__main__":
 """
 
 
+# SPEC: RUN-1
 def test_every_output_is_the_same_whatever_the_hash_seed(
     outputs_per_hash_seed, tmp_path
 ):
