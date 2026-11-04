@@ -199,7 +199,7 @@ def test_values_are_coerced_to_str():
 def test_dataset_and_the_metrics_write_a_value_alike(value, with_whole_float):
     # A whole float sends the column through the other conversion; both
     # must give the text accuracy_score compares with.
-    others = [1.0] if with_whole_float else ["z"]
+    others = [9.0] if with_whole_float else ["z"]
     df = pd.DataFrame({"a": pd.Series([value, *others], dtype=object), "y": ["0", "1"]})
     dataset = Dataset(df, features=["a"], targets=["y"], check_stand_ins=False)
     assert _dataset._as_text(value) in dataset.domain("a")
@@ -361,6 +361,47 @@ def test_a_whole_float_reads_as_its_integer_text_in_any_column(column):
     domain = Dataset(df, ["a"], ["y"], check_stand_ins=False).domain("a")
     assert "1" in domain
     assert "1.0" not in domain
+
+
+@pytest.mark.parametrize(
+    ("values", "domain"),
+    [
+        ([1, 1.0], ["1"]),
+        ([1.0, 1], ["1"]),
+        ([1, "x", 1.0], ["1", "x"]),
+        ([0, 0.0, 2], ["0", "2"]),
+    ],
+)
+def test_a_whole_float_reads_as_its_integer_text_beside_an_equal_int(values, domain):
+    y = ["0", "1", "0"][: len(values)]
+    df = pd.DataFrame({"a": pd.Series(values, dtype=object), "y": y})
+    dataset = Dataset(
+        df, ["a"], ["y"], check_stand_ins=False, assume_nondeterministic=True
+    )
+    assert dataset.domain("a") == domain
+
+
+def test_a_whole_float_beside_an_equal_bool_is_read_as_its_integer_text():
+    df = pd.DataFrame({"a": pd.Series([True, 1.0], dtype=object), "y": ["0", "1"]})
+    dataset = Dataset(df, ["a"], ["y"], check_stand_ins=False)
+    assert dataset.domain("a") == ["1", "True"]
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        [1, decimal.Decimal(1)],
+        [decimal.Decimal(1), 1],
+        [1, 1 + 0j],
+        [1 + 0j, 1],
+        [2**70, 2.0**70],
+        [2.0**70, 2**70],
+    ],
+)
+def test_a_refused_value_is_refused_beside_an_equal_int(values):
+    df = pd.DataFrame({"a": pd.Series(values, dtype=object), "y": ["0", "1"]})
+    with pytest.raises(ValueError, match="not supported"):
+        Dataset(df, ["a"], ["y"], check_stand_ins=False)
 
 
 def test_an_unused_fractional_category_is_not_a_value():

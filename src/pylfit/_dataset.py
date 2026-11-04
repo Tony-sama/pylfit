@@ -395,8 +395,8 @@ class Dataset:
             column: Any column.
 
         Returns:
-            Its distinct known values, or nothing for another column
-            type.
+            Its distinct known values, values of different types apart
+            even when equal, or nothing for another column type.
         """
         if not (
             isinstance(column.dtype, pd.CategoricalDtype) or column.dtype == object
@@ -404,7 +404,14 @@ class Dataset:
             return []
         known = column.dropna()
         try:
-            return list(known.unique())
+            distinct = list(known.unique())
+            if all(isinstance(value, str) for value in distinct):
+                return distinct
+            # `unique` keeps one of the values that compare equal, so
+            # `1` hides a later `1.0` or `Decimal("1")` from the checks
+            # on what a column holds. Text equals no other type, which
+            # spares a column of strings this pass over every row.
+            return list({(type(value), value): value for value in known}.values())
         except TypeError:  # an unhashable value, such as a list
             return list(known)
 
