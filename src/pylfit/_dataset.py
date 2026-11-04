@@ -374,8 +374,8 @@ class Dataset:
             column: Any column.
 
         Returns:
-            A float column's known values; an ``object`` or ``category``
-            column's known values that are floats; otherwise nothing.
+            A float column's known values; otherwise those known values
+            that are floats, as ``_present_values`` gives them.
         """
         if pd.api.types.is_float_dtype(column):
             return column.dropna().astype(float)
@@ -386,7 +386,7 @@ class Dataset:
 
     @staticmethod
     def _present_values(column: pd.Series) -> list[object]:
-        """Gives an ``object`` or ``category`` column's distinct known values.
+        """Gives the distinct known values of a column that can hold any.
 
         The values present, not a category column's categories: a
         category no row holds, as filtering rows leaves, is no value.
@@ -396,13 +396,22 @@ class Dataset:
 
         Returns:
             Its distinct known values, values of different types apart
-            even when equal, or nothing for another column type.
+            even when equal, or nothing for a column whose type settles
+            what it holds: strings, booleans, integers or floats.
         """
-        if not (
-            isinstance(column.dtype, pd.CategoricalDtype) or column.dtype == object
+        dtype = column.dtype
+        if (
+            isinstance(dtype, pd.StringDtype)
+            or pd.api.types.is_bool_dtype(dtype)
+            or pd.api.types.is_integer_dtype(dtype)
+            or pd.api.types.is_float_dtype(dtype)
         ):
             return []
         known = column.dropna()
+        if not isinstance(column.dtype, pd.CategoricalDtype):
+            # A sparse or Arrow column holds what an `object` one does;
+            # as objects, its values are the Python ones the checks test.
+            known = known.astype(object)
         try:
             distinct = list(known.unique())
             if all(isinstance(value, str) for value in distinct):
@@ -483,10 +492,11 @@ class Dataset:
 
         def convert(column: pd.Series) -> pd.Series:
             known = column.notna()
-            if isinstance(column.dtype, pd.CategoricalDtype):
+            if isinstance(column.dtype, pd.CategoricalDtype | pd.SparseDtype):
                 # pandas 3 writes a category column with a missing value
                 # through floats: 1 as "1.0", the interval (0, 30] as
-                # "(0.0, 30.0]". As objects, each keeps its own text.
+                # "(0.0, 30.0]". As objects, each keeps its own text, and
+                # a sparse column reads as the plain one it stands for.
                 column = column.astype(object)
             if pd.api.types.is_float_dtype(column):
                 column = column.astype("Int64")

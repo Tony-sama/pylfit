@@ -409,6 +409,57 @@ def test_a_refused_value_is_refused_beside_an_equal_int(values):
         Dataset(df, ["a"], ["y"], check_stand_ins=False)
 
 
+# SPEC: DATA-2
+@pytest.mark.parametrize(
+    "value",
+    [b"a", datetime.date(2020, 1, 1), decimal.Decimal("1.5")],
+)
+def test_a_refused_value_is_refused_in_a_sparse_column(value):
+    column = pd.arrays.SparseArray([value, value], fill_value=None, dtype=object)
+    df = pd.DataFrame({"a": column, "y": ["0", "1"]})
+    with pytest.raises(ValueError, match="not supported"):
+        Dataset(df, ["a"], ["y"], check_stand_ins=False)
+
+
+# SPEC: DATA-2
+@pytest.mark.parametrize(
+    ("value", "arrow_type"),
+    [
+        (b"a", "binary"),
+        (b"a", "large_binary"),
+        (datetime.time(1), "time64"),
+        (datetime.timedelta(1), "duration"),
+        (decimal.Decimal("1.5"), "decimal128"),
+    ],
+)
+def test_a_refused_value_is_refused_in_an_arrow_column(value, arrow_type):
+    pyarrow = pytest.importorskip("pyarrow")
+    types = {
+        "binary": pyarrow.binary(),
+        "large_binary": pyarrow.large_binary(),
+        "time64": pyarrow.time64("us"),
+        "duration": pyarrow.duration("s"),
+        "decimal128": pyarrow.decimal128(5, 2),
+    }
+    column = pd.array([value, value], dtype=pd.ArrowDtype(types[arrow_type]))
+    df = pd.DataFrame({"a": column, "y": ["0", "1"]})
+    with pytest.raises(ValueError, match="not supported"):
+        Dataset(df, ["a"], ["y"], check_stand_ins=False)
+
+
+# SPEC: DATA-1
+@pytest.mark.parametrize(
+    "column",
+    [
+        pd.arrays.SparseArray([1.0, "x"], fill_value=None, dtype=object),
+        pd.arrays.SparseArray([1.0, 0.0]),
+    ],
+)
+def test_a_whole_float_in_a_sparse_column_reads_as_its_integer_text(column):
+    df = pd.DataFrame({"a": column, "y": ["0", "1"]})
+    assert "1" in Dataset(df, ["a"], ["y"], check_stand_ins=False).domain("a")
+
+
 def test_an_unused_fractional_category_is_not_a_value():
     # Filtering rows leaves unused categories behind.
     column = pd.Categorical([1.0, 2.0, 1.0], categories=[1.0, 2.0, 2.5])
