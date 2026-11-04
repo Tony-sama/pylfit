@@ -617,16 +617,17 @@ as with the default `n_jobs=1`, which starts no process.
 The speedup grows with the number of heads that take long to learn.
 On a 16-CPU Linux machine, on the full transition table of a random
 15-variable Boolean network (32,768 rows, 30 heads), `GULA` took
-15.2 s with `n_jobs=1`, 4.2 s with 4 and 1.8 s with 16; `PRIDE` took
-1.2 s, 0.35 s and 0.2 s. These are fits after a first fit with
+4.3 s with `n_jobs=1`, 1.2 s with 4 and 0.55 s with 16. `PRIDE` took
+0.02 s with `n_jobs=1` and gained nothing, 0.04 s with 16: there is
+too little to share out. These are fits after a first fit with
 `n_jobs=1` on the same `Dataset`, so that each figure times the fit
 alone: a first fit also builds the dataset's row caches, a fraction of
 a second more on a table this size. That warm-up is how the figures
 were taken, not a step to copy. A parallel fit builds the caches
 before it starts its processes, which inherit them, and keeps them
 for the next fit. On a 12-variable network `GULA`
-gained little past 4 processes (0.78 s, then 0.69 s with 8), as one
-head took 0.64 s alone: no `n_jobs` brings a fit below its slowest
+gained little past 4 processes (0.19 s, then 0.15 s with 8), as one
+head took 0.13 s alone: no `n_jobs` brings a fit below its slowest
 head ([the benchmark_n_jobs
 example](../auto_examples/benchmark_n_jobs.rst)).
 
@@ -637,12 +638,14 @@ caches, and rebuilds the caches of the heads it learns. On the same
 network and machine:
 
 - Linux from Python 3.14 copies each process from a server process
-  (`forkserver`): `GULA` took 4.3 s with 4 processes and 2.0 s with
-  16, close to the figures above; `PRIDE` 0.5 s and 0.4 s.
+  (`forkserver`): `GULA` took 1.4 s with 4 processes and 0.8 s with
+  16, close to the figures above; `PRIDE` 0.3 s and 0.4 s, slower
+  than with `n_jobs=1`.
 - macOS and Windows start Python afresh in each process (`spawn`),
-  which also imports pylfit there: `GULA` took 5.3 s with 4 and 4.7 s
-  with 16, and `PRIDE` was slower than with `n_jobs=1`, 1.9 s and
-  3.0 s. There, use `n_jobs` only for fits of several seconds. (These
+  which also imports pylfit there: `GULA` took 2.7 s with 4 and 3.3 s
+  with 16, and `PRIDE` 1.9 s and 3.0 s, far slower than with
+  `n_jobs=1`. There, use `n_jobs` only for fits of several seconds.
+  (These
   are Linux forced to `spawn`, not a Mac or a Windows machine.)
 
 Under both, each new process also imports your script again, so a

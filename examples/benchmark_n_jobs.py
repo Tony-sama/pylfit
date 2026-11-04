@@ -17,11 +17,11 @@ its full transition table is 4096 rows and it has 24 heads.
 by one process, so no number of processes brings a fit below the time
 of its longest head. The script measures every head alone and prints
 that floor next to the fits. On a 16-CPU Linux machine with Python
-3.11 the serial fit took about 2.6 s, 2 processes halved it, 4 brought
-it to 0.75 s — and 8 gained little more, because one head alone takes
-0.6 s. On a network whose heads cost about the same, the curve goes on
+3.11 the serial fit took about 0.63 s, 2 processes halved it, 4 brought
+it to 0.19 s — and 8 gained little more, because one head alone takes
+0.13 s. On a network whose heads cost about the same, the curve goes on
 further; set ``NETWORK`` below to ``"randomnet_n15k3.bnet"`` (15
-variables, about 15 s serial and 45 s for the whole script) to see one.
+variables, about 4 s serial and 15 s for the whole script) to see one.
 
 **The rules do not depend on the process count, and the script checks
 it.** Every run must return the same rule set as the serial one.
@@ -51,7 +51,7 @@ from _bnet import build_dataset_arguments
 from pylfit import GULA, Dataset
 
 #: The network to learn, from the corpus the test suite vendors. Kept
-#: near 10 s for the whole script, since the docs build runs it.
+#: under 10 s for the whole script, since the docs build runs it.
 NETWORK = "n12c5.bnet"
 
 #: Process counts to time, the serial run first: it is the baseline the
