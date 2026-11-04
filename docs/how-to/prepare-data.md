@@ -256,15 +256,15 @@ and grows much more slowly. Measured on the data the scripts in
 
 | Data | `GULA.fit` | `PRIDE.fit` |
 | --- | --- | --- |
-| car evaluation: 6 features, 1382 training rows | 0.3 s | 0.08 s |
-| soybean: 35 features, 37 training rows | 1.3 s | under 0.01 s |
-| Boolean network `faure_cellcycle`, 10 variables, 1024 rows | 0.18 s | 0.02 s |
-| Boolean network `tournier_apoptosis`, 12 variables, 4096 rows | 1.0 s | 0.08 s |
-| Boolean network `saadatpour_guardcell`, 13 variables, 8192 rows | 2.3 s | 0.14 s |
-| Boolean network `randomnet_n15k3`, 15 variables, 32,768 rows | 15 s | 1.0 s |
-| Boolean network `mendoza_thelper`, 23 variables, 10,000 sampled rows | stopped after 3 h | 0.5 s |
-| Boolean network `klamt_tcr`, 40 variables, 10,000 sampled rows | stopped after 2 h | 1.3 s |
-| Boolean network `jaoude_thdiff`, 103 variables, 1000 sampled rows | not run | 0.8 s |
+| car evaluation: 6 features, 1382 training rows | 0.08 s | 0.004 s |
+| soybean: 35 features, 37 training rows | 0.3 s | 0.001 s |
+| Boolean network `faure_cellcycle`, 10 variables, 1024 rows | 0.06 s | 0.002 s |
+| Boolean network `tournier_apoptosis`, 12 variables, 4096 rows | 0.3 s | 0.004 s |
+| Boolean network `saadatpour_guardcell`, 13 variables, 8192 rows | 0.7 s | 0.006 s |
+| Boolean network `randomnet_n15k3`, 15 variables, 32,768 rows | 4.3 s | 0.02 s |
+| Boolean network `mendoza_thelper`, 23 variables, 10,000 sampled rows | stopped after 3 h | 0.02 s |
+| Boolean network `klamt_tcr`, 40 variables, 10,000 sampled rows | stopped after 2 h | 0.06 s |
+| Boolean network `jaoude_thdiff`, 103 variables, 1000 sampled rows | not run | 0.2 s |
 
 The last three networks are too large for a full table, which would
 have 8.4 million rows for the smallest, so each is a sample of
@@ -272,9 +272,9 @@ distinct states with the state that follows each. `GULA` ran on the
 first two only, and was stopped unfinished both times.
 
 On the full tables each variable added doubles the rows. `PRIDE`'s time
-about doubles with them, `GULA`'s grows two to three times, so the gap
-widens: ten times at 10 variables, fifteen at 15 ([the benchmark_bnet
-example](../auto_examples/benchmark_bnet.rst) prints the curve).
+grows about 1.5 times per variable, `GULA`'s two to three times, so the
+gap widens: over twenty times at 10 variables, two hundred at 15 ([the
+benchmark_bnet example](../auto_examples/benchmark_bnet.rst) prints the curve).
 
 **If `GULA` takes more than a few seconds, use `PRIDE`.** Its rules
 are some of `GULA`'s, enough to cover every row, so there are far
@@ -288,7 +288,7 @@ data supports.
 `min_support` is the other lever. It drops rules that fewer rows back
 than the threshold, and the rules it keeps are exactly the unrestricted
 rules that meet it: with `min_support=1`, soybean's `GULA` fit takes
-0.12 s. The cost is completeness: a feature state only a dropped rule
+0.03 s. The cost is completeness: a feature state only a dropped rule
 matched is no longer matched by any rule. `GULA` and `PRIDE` warn when
 that leaves rows of your data uncovered, and
 `pylfit.coverage(dataset, rules)` gives the covered share per head.

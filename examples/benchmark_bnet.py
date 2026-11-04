@@ -19,21 +19,22 @@ exhaustively, ``GULA`` specializes away from what the data forbids, and
 ``PRIDE`` covers each example with one rule and stops.
 
 The interesting part is how the gap *grows*. On the 3-variable
-networks ``BruteForce`` is two or three times slower than ``GULA``; at
-5 variables about four times, at 7 about fifteen, and at 9, the last
-network here, about seventy: four seconds against under a tenth of one.
+networks ``BruteForce`` is three to five times slower than ``GULA``; at
+5 variables about nine times, at 7 about forty, and at 9, the last
+network here, about two hundred: four seconds against two hundredths.
 That curve, not any single row, is the reason ``GULA`` exists.
 It is also why the list below stops at 9 variables: one more would
 turn a script meant to be run into one that has to be waited for.
 
 **Past that, ``GULA`` meets the same curve against ``PRIDE``.** A
 second table times only those two, on networks of 10 to 13 variables.
-At 10 variables ``GULA`` takes about ten times ``PRIDE``'s time; at
-13, about seventeen: two seconds against a tenth of one. At 15 variables
-(``dinwoodie_life``, 32,768 rows, not run here) ``GULA`` took 13 s and
-``PRIDE`` 0.9 s. A full transition table doubles its rows with each
-variable, so both grow; ``GULA`` grows faster. Where ``GULA`` takes
-seconds, ``PRIDE`` is the algorithm to start with.
+At 10 variables ``GULA`` takes about seventeen times ``PRIDE``'s time;
+at 13, about seventy-five: 0.8 s against a hundredth of one. At 15
+variables (``dinwoodie_life``, 32,768 rows, not run here) ``GULA`` took
+4 s and ``PRIDE`` 0.02 s, the second of two fits on one dataset. A
+full transition table doubles its rows with each variable, so both
+grow; ``GULA`` grows faster. Where ``GULA`` takes seconds, ``PRIDE`` is
+the algorithm to start with.
 
 **Further still, only ``PRIDE`` runs.** A third table times it on
 networks of 23, 40 and 103 variables, too large for a full table: the
