@@ -197,9 +197,10 @@ a value's matching rules, `p` and `n` their sums and `k` the number of
 values, it is blind to how much evidence there is once the rules have
 negatives. Rules have negatives whenever the
 data conflicts, or when they are made more general than the data
-allows, and there the vote predicts better: on a split of the UCI
-breast cancer data, `GULA`'s rules score 0.76 under the vote and 0.66
-under the Laplace estimate. Where no rule has negatives, the two pick
+allows, and there the vote predicts a little better: over ten random
+80/20 splits of the UCI breast cancer data, `GULA`'s rules score 0.73
+under the vote and 0.71 under the Laplace estimate, the vote ahead on
+seven splits and behind on two. Where no rule has negatives, the two pick
 the same values for a state without unknowns.
 
 `predict_likelihood` returns these raw scores. `predict_proba`

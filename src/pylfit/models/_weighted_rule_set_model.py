@@ -48,9 +48,10 @@ def _vote(rule_scores: _RuleScores) -> float:
     rules by ([Clark1991]_, Eq. 1): purity is blind to how much
     evidence there is once ``n > 0``, so a pooled ``(8, 0)`` outranks a
     pooled ``(68, 7)``. Rules with negatives, learned from conflicting
-    data or made more general than the data allows, then predict badly:
-    on a split of the UCI breast cancer data, ``GULA``'s rules score
-    0.66 under the Laplace estimate and 0.76 under this vote. Where no
+    data or made more general than the data allows, then predict a
+    little worse: over ten random 80/20 splits of the UCI breast cancer
+    data, ``GULA``'s rules score 0.71 under the Laplace estimate and
+    0.73 under this vote. Where no
     rule has negatives, the two pick the same values for a state
     without unknowns, and this vote's ``predict_proba`` shares are the
     better probabilities (a lower Brier score on the UCI heart disease
