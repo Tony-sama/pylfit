@@ -15,8 +15,9 @@ pip install "pylfit<1" numpy pandas
 `numpy` and `pandas` have to be named: 0.5.1 uses both but does not
 declare them, so `pip install "pylfit<1"` alone installs a package that
 fails on `import pylfit`. With them, 0.5.1's two main examples ran
-unchanged on Python 3.11 with numpy 2.4 and pandas 3.1. The source is
-the `v0.5.1` tag of the repository.
+unchanged on Python 3.11 with numpy 2.4 and pandas 3.1, given the
+`tmp/` folder one of them saves to. The source is the `v0.5.1` tag of
+the repository.
 
 Stay on 0.x if your code needs anything listed under
 [No equivalent in 1.0](#no-equivalent-in-10), or reproduces a published
@@ -91,7 +92,7 @@ prediction = model.predict([("1", "0", "1")], semantics="synchronous")
 import pandas as pd
 from pylfit import GULA, Dataset, RuleSetModel
 
-# next_states: copied from examples/migrate_from_0x.py
+# next_states, State and import itertools: from examples/migrate_from_0x.py
 features, targets = ["p_t_1", "q_t_1", "r_t_1"], ["p_t", "q_t", "r_t"]
 df = pd.DataFrame([s + t for s, t in data], columns=features + targets)
 dataset = Dataset(df, features=features, targets=targets)
@@ -172,10 +173,13 @@ per value. In practice:
 
 ### Speed and memory
 
-1.0's `GULA` learns the same rules as 0.5.1's, faster but with more
-memory. On the full transition table of a 10-variable Boolean network
-(1024 rows), 1.0 took 0.2 s against 0.35 s for 0.5.1, and the fit
-added about 0.5 MB of memory against 0.3 MB.
+1.0's `GULA` learns the same rules as 0.5.1's, four to six times
+faster. On the full transition table of a 10-variable Boolean network
+(1024 rows), a fit took 0.08 s in 1.0 against 0.4 to 0.5 s in 0.5.1. A
+first fit in 1.0 also builds the dataset's row caches: it peaked at
+about 0.8 MB of memory, against 0.45 MB for 0.5.1, and the caches,
+about 0.7 MB, stay with the `Dataset`. A later fit peaked at about
+0.1 MB.
 
 ## No equivalent in 1.0
 
