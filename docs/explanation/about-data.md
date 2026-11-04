@@ -71,8 +71,8 @@ first: every feature must be present and every known value a `str`
 within its feature's domain. Other keys are ignored, where `predict`
 refuses a column that is not a feature.
 
-Only pandas' missing values, `NaN`, `None`, `pd.NA` and `NaT`, are
-unknown. A string such as `"?"`, `""` or `"unknown"` is an ordinary
+Only what `pandas.isna` calls missing is unknown: `NaN`, `None`,
+`pd.NA`, `NaT`, and rarer markers such as `Decimal("NaN")`. A string such as `"?"`, `""` or `"unknown"` is an ordinary
 value: pylfit can't tell a stand-in from a real answer, such as a vote
 of `"?"` meaning "neither". `find_missing_stand_ins` lists the values
 worth a look, and zeros far from the rest of a numeric column, outside
