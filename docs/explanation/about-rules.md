@@ -259,7 +259,9 @@ a state the data never shows still needs a rule, and the minimal rules
 that match it are learned with the rest. `min_support` drops
 those rules, giving up completeness. `PRIDE` learns rules that are
 correct and minimal, but only some of them: enough to cover the rows
-present, so it is complete only over those rows.
+present, so it is complete only over those rows, and not on a row with
+unknowns that no known feature separates from a negative, which no
+correct rule can match.
 
 In the tests, each property is checked directly on every fixture, and
 `GULA`'s rule set is checked equal to `BruteForce`'s exhaustive one. The
