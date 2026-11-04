@@ -398,7 +398,7 @@ def rule_recovery(
     with ``"too_specific"`` and ``"too_general"`` from inductive logic
     programming. As in the biclustering scores of Prelić et al.
     [Prelic2006]_, both sides are scored, and several rules may share
-    one partner.
+    one partner. A rule given twice counts once.
 
     A rule with the right conditions and the wrong value is
     ``"spurious"`` or ``"partial"``: only rules of the same head are
@@ -440,8 +440,11 @@ def rule_recovery(
         same share of true rules; ``"learned"``, each category's share
         of learned rules, ``"exact"`` to ``"spurious"``; and ``"true"``,
         each category's share of true rules, ``"exact"`` to
-        ``"missing"``. Each side's shares sum to 1, except the learned
-        side's, all 0, when no learned rule is given or matches.
+        ``"missing"``. Each side's shares sum to 1, up to float
+        rounding, except the learned side's, all 0, when no learned rule
+        is given. With ``states`` they are means: a state no learned
+        rule matches adds 0 to the learned side, whose shares then sum
+        to less.
 
     Raises:
         TypeError: If ``true_rules`` or ``learned_rules`` is a single
@@ -501,8 +504,8 @@ def rule_recovery(
         >>> rule_recovery(truth, GULA.fit(train, min_support=1), unseen)["precision"]
         1.0
     """
-    truth = _rule_list(true_rules, "true_rules")
-    learned = _rule_list(learned_rules, "learned_rules")
+    truth = list(dict.fromkeys(_rule_list(true_rules, "true_rules")))
+    learned = list(dict.fromkeys(_rule_list(learned_rules, "learned_rules")))
     if not truth:
         raise ValueError("true_rules must be non-empty")
     targets = sorted({rule.head[0] for rule in truth})

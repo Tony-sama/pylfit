@@ -370,6 +370,29 @@ def test_rule_recovery_puts_a_pair_in_the_same_category_on_both_sides(
     assert scores["true"][category or "missing"] == 1.0
 
 
+def test_rule_recovery_counts_a_rule_given_twice_once():
+    good, bad = TRUE, Rule.from_string("y(1) :- a(0), c(0).")
+    other = Rule.from_string("y(0) :- b(0).")
+    plain = rule_recovery([good, other], [good, bad])
+    assert rule_recovery([good, other], [good, good, good, bad]) == plain
+    assert rule_recovery([good, good, other], [good, bad]) == plain
+
+
+def test_rule_recovery_counts_a_rule_given_twice_once_at_a_state():
+    state = dict(TRUE.body)
+    twin = Rule((TRUE.head[0], "2"), {})
+    plain = rule_recovery([TRUE], [TRUE, twin], [state])
+    assert rule_recovery([TRUE], [TRUE, TRUE, TRUE, twin], [state]) == plain
+    assert plain["precision"] == 0.5
+
+
+def test_rule_recovery_learned_shares_are_means_with_states():
+    states = [dict(TRUE.body), dict.fromkeys(TRUE.body, "9")]
+    fallback = Rule((TRUE.head[0], "0"), {})
+    scores = rule_recovery([TRUE, fallback], [TRUE], states)
+    assert sum(scores["learned"].values()) == 0.5
+
+
 def test_rule_recovery_precision_and_recall_count_exact_and_too_specific():
     learned = [
         Rule.from_string(text)
