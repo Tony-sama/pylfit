@@ -25,7 +25,7 @@ on any table of categorical data.
 > on PyPI. Its API is incompatible with pylfit 0.x; see
 > [Migrate from pylfit 0.x][migration].
 
-[migration]: https://github.com/Tony-sama/pylfit/blob/next/docs/how-to/migration.md
+[migration]: https://tony-sama.github.io/pylfit/how-to/migration.html
 
 ## Installation
 
@@ -115,11 +115,11 @@ See also `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` and `AUTHORS.md`.
 
 <!-- Absolute links, so that they work on PyPI too. -->
 
-[getting-started]: https://github.com/Tony-sama/pylfit/blob/next/docs/getting-started.md
-[prepare-data]: https://github.com/Tony-sama/pylfit/blob/next/docs/how-to/prepare-data.md
-[about-rules]: https://github.com/Tony-sama/pylfit/blob/next/docs/explanation/about-rules.md
-[about-algorithms]: https://github.com/Tony-sama/pylfit/blob/next/docs/explanation/about-algorithms.md
+[getting-started]: https://tony-sama.github.io/pylfit/getting-started.html
+[prepare-data]: https://tony-sama.github.io/pylfit/how-to/prepare-data.html
+[about-rules]: https://tony-sama.github.io/pylfit/explanation/about-rules.html
+[about-algorithms]: https://tony-sama.github.io/pylfit/explanation/about-algorithms.html
 [contributing]: https://github.com/Tony-sama/pylfit/blob/next/CONTRIBUTING.md
-[citing]: https://github.com/Tony-sama/pylfit/blob/next/docs/citing.md
-[credits]: https://github.com/Tony-sama/pylfit/blob/next/docs/credits.md
-[ai]: https://github.com/Tony-sama/pylfit/blob/next/docs/credits.md#how-pylfit-10-was-written
+[citing]: https://tony-sama.github.io/pylfit/citing.html
+[credits]: https://tony-sama.github.io/pylfit/credits.html
+[ai]: https://tony-sama.github.io/pylfit/credits.html#how-pylfit-1-0-was-written
