@@ -66,13 +66,14 @@ from pylfit.algorithms._algorithm import (
     Uncovered,
 )
 
-#: A kept or candidate rule paired with the positives (bit ``i`` for
-#: its head's ``positives[i]``) it matches exactly, then those it
-#: possibly matches (an unknown counted as satisfying any condition) —
-#: each ``None`` when its threshold, ``min_support`` or
+#: A kept rule paired with its conditions as bits (one bit per
+#: condition this head can use), then the positives (bit ``i`` for its
+#: head's ``positives[i]``) it matches exactly, then those it possibly
+#: matches (an unknown counted as satisfying any condition) — each of
+#: the last two ``None`` when its threshold, ``min_support`` or
 #: ``min_possible_support``, is unset and that support isn't tracked at
 #: all.
-_Tracked = tuple[Rule, int | None, int | None]
+_Tracked = tuple[Rule, int, int | None, int | None]
 
 #: The orders ``fit`` can process negatives in; see its docstring.
 NegativeOrder = Literal["similarity", "lexicographic", "unordered"]
@@ -369,6 +370,12 @@ class GULA(Algorithm):
         never dominate each other, since the rules they come from don't,
         so each is checked against the rules kept before that negative.
 
+        Each body is also held as an ``int``, one bit per condition, so
+        a domination test is one AND and the check runs before the
+        candidate is built: only the specializations that pass become
+        a ``Rule``. On the published networks most are dominated, and
+        building them was half of the fit.
+
         With ``min_support`` set, support is tracked incrementally:
         every rule carries the positives it matches as the bits of an
         ``int``, and a specialization's are its parent's ANDed with
@@ -440,15 +447,28 @@ class GULA(Algorithm):
         matching, unknown = GULA._support_masks(positives, features)
         everyone = (1 << len(positives)) - 1
 
+        conditions = (
+            pool
+            if pool is not None
+            else [
+                (feature, domain_value)
+                for feature in dataset.features
+                for domain_value in dataset.domain(feature)
+            ]
+        )
+        bit = {condition: 1 << i for i, condition in enumerate(conditions)}
+
         kept: list[_Tracked] = []
-        # Each condition mapped to the kept rules that use it.
-        by_condition: dict[tuple[str, str], set[Rule]] = {}
+        # Each condition mapped to the bodies, as bits, of the kept
+        # rules that use it.
+        by_condition: dict[tuple[str, str], set[int]] = {}
         if len(positives) >= max(min_count, min_possible_count):
             # The empty body matches every positive, and has no
             # condition to index.
             kept.append(
                 (
                     Rule(head=(target, value)),
+                    0,
                     everyone if tracking else None,
                     everyone if tracking_possible else None,
                 )
@@ -465,22 +485,25 @@ class GULA(Algorithm):
                 else:
                     still_consistent.append(entry)
             kept = still_consistent
-            for rule, _, _ in inconsistent:
+            for rule, body, _, _ in inconsistent:
                 for condition in rule.body.items():
-                    by_condition[condition].discard(rule)
+                    by_condition[condition].discard(body)
 
             newly_kept: list[_Tracked] = []
-            for rule, matched, possible in inconsistent:
-                for candidate, condition in GULA._least_specializations(
+            for rule, body, matched, possible in inconsistent:
+                for condition in GULA._specializing_conditions(
                     rule, negative, dataset, pool
                 ):
                     # Domination first: its cost doesn't grow with the
                     # rows, while the support filters below AND masks
                     # as long as the positives. Both only skip, so the
-                    # order changes the time, never the rules.
-                    size = candidate.size()
+                    # order changes the time, never the rules. No kept
+                    # body equals the candidate's: that rule would be
+                    # dominated by `rule`, kept alongside it. So the
+                    # subset test is a strict one.
+                    candidate_body = body | bit[condition]
                     if any(
-                        other.size() <= size and other.is_more_general_than(candidate)
+                        other & candidate_body == other
                         for other in by_condition.get(condition, ())
                     ):
                         continue
@@ -497,18 +520,23 @@ class GULA(Algorithm):
                         if candidate_possible.bit_count() < min_possible_count:
                             continue
                     newly_kept.append(
-                        (candidate, candidate_matched, candidate_possible)
+                        (
+                            rule.with_condition(*condition),
+                            candidate_body,
+                            candidate_matched,
+                            candidate_possible,
+                        )
                     )
 
             for entry in newly_kept:
                 kept.append(entry)
                 for condition in entry[0].body.items():
-                    by_condition.setdefault(condition, set()).add(entry[0])
+                    by_condition.setdefault(condition, set()).add(entry[1])
 
             if verbose:
                 progress.update(step)
 
-        rules = [rule for rule, _, _ in kept]
+        rules = [rule for rule, _, _, _ in kept]
 
         if verbose:
             elapsed = time.perf_counter() - start
@@ -557,17 +585,17 @@ class GULA(Algorithm):
         return int.from_bytes(np.packbits(rows, bitorder="little").tobytes(), "little")
 
     @staticmethod
-    def _least_specializations(
+    def _specializing_conditions(
         rule: Rule,
         negative: Mapping[str, str | None],
         dataset: Dataset,
         pool: list[tuple[str, str]] | None = None,
-    ) -> list[tuple[Rule, tuple[str, str]]]:
-        """Generates a rule's minimal specializations that miss a negative.
+    ) -> list[tuple[str, str]]:
+        """Lists the conditions of a rule's minimal specializations.
 
         For every feature ``rule`` doesn't already have a condition on,
-        adds one condition fixing that feature to a domain value other
-        than the negative's — the smallest possible change that makes
+        one condition fixing that feature to a domain value other than
+        the negative's — added, the smallest possible change that makes
         the rule stop matching ``negative``. Features already
         constrained are skipped: since ``rule`` matches ``negative``,
         any existing condition already agrees with ``negative``'s value
@@ -588,9 +616,10 @@ class GULA(Algorithm):
                 ``_expand_allowed``, or ``None`` for unrestricted.
 
         Returns:
-            The one-condition-more-specific rules that no longer match
-            ``negative``, each paired with the ``(feature, value)``
-            condition it adds.
+            The ``(feature, value)`` conditions whose addition makes
+            ``rule`` stop matching ``negative``. Only the conditions:
+            ``_fit_target_value`` builds a rule from the few that
+            survive its domination check.
         """
         if pool is None:
             # `domain` is sorted, so the order is the same on every run.
@@ -606,15 +635,11 @@ class GULA(Algorithm):
         else:
             candidate_pairs = iter(pool)
 
-        specializations: list[tuple[Rule, tuple[str, str]]] = []
-        for feature, candidate_value in candidate_pairs:
-            if rule.has_condition(feature):
-                continue
-            if candidate_value == negative[feature]:
-                continue
-            specialized = rule.with_condition(feature, candidate_value)
-            specializations.append((specialized, (feature, candidate_value)))
-        return specializations
+        return [
+            (feature, candidate_value)
+            for feature, candidate_value in candidate_pairs
+            if not rule.has_condition(feature) and candidate_value != negative[feature]
+        ]
 
     @staticmethod
     def _order_negatives(

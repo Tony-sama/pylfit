@@ -708,7 +708,7 @@ class Dataset:
         # `domain` only depends on `_data` too, same as
         # positives/negatives above — cached per variable for the same
         # reason. Unlike those, a caller (e.g.
-        # `GULA._least_specializations`) typically re-derives the same
+        # `GULA._specializing_conditions`) typically re-derives the same
         # variable's domain many times per negative example, so an
         # uncached `.unique()` rescans the whole column every single
         # call.
