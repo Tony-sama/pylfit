@@ -818,3 +818,62 @@ def test_a_forced_condition_narrows_the_positives_its_rule_is_scored_on():
         "y(1) :- f1(1).",
         "y(1) :- f2(1).",
     ]
+
+
+@pytest.mark.parametrize("option", ["min_support", "min_possible_support"])
+def test_a_rule_exactly_at_a_support_threshold_is_kept(option):
+    # The plain search finds y(1) :- f3(0), with a support of exactly 2.
+    # Searching again with the threshold reaches a dead end instead.
+    df = pd.DataFrame(
+        {
+            "f1": list("02212"),
+            "f2": list("00022"),
+            "f3": list("10101"),
+            "y": list("01011"),
+        }
+    )
+    dataset = Dataset(df, features=["f1", "f2", "f3"], targets=["y"])
+    rules = PRIDE.fit(dataset, heads=[("y", "1")], **{option: 2})
+    assert [rule.to_string() for rule in rules] == [
+        "y(1) :- f2(2).",
+        "y(1) :- f3(0).",
+    ]
+
+
+def test_try_all_conditions_goes_past_an_unknown_feature():
+    df = pd.DataFrame(
+        {
+            "f1": ["1", "0"],
+            "f2": ["0", None],
+            "f3": [None, "2"],
+            "y": ["1", "0"],
+        }
+    )
+    dataset = Dataset(df, features=["f1", "f2", "f3"], targets=["y"])
+    rules = PRIDE.fit(
+        dataset, heads=[("y", "0")], try_all_conditions=True, warn_uncovered=False
+    )
+    assert [rule.to_string() for rule in rules] == [
+        "y(0) :- f1(0).",
+        "y(0) :- f3(2).",
+    ]
+
+
+@pytest.mark.filterwarnings("ignore::pylfit.ConflictWarning")
+def test_a_feature_with_no_known_value_changes_no_rule():
+    for seed in range(30):
+        df = blanked_frame(seed, rate=0.4).head(8)
+        df = df.loc[:, df.notna().any()]
+        features = list(df.columns[:-1])
+        expected = PRIDE.fit(
+            Dataset(df, features=features, targets=["y"]),
+            try_all_conditions=True,
+            warn_uncovered=False,
+        )
+        blank = df.assign(blank=None)
+        rules = PRIDE.fit(
+            Dataset(blank, features=["blank", *features], targets=["y"]),
+            try_all_conditions=True,
+            warn_uncovered=False,
+        )
+        assert rules == expected

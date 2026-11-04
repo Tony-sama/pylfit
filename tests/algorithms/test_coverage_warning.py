@@ -80,6 +80,28 @@ def test_allowed_conditions_cost_is_reported_as_such(algorithm, support_dataset)
         algorithm.fit(support_dataset, allowed_conditions=allowed)
 
 
+@pytest.mark.parametrize(
+    ("first_rows", "threshold", "cause"),
+    [
+        ("01", 2, "2 left out by min_support. "),
+        ("00", 1, "1 because of unknown values"),
+    ],
+)
+def test_a_row_is_blamed_on_what_left_it_out(first_rows, threshold, cause):
+    # With "01", the row with an unknown can be told from the negative,
+    # so only min_support leaves it out. With "00", it never can be.
+    df = pd.DataFrame(
+        {
+            "a": [first_rows[0], first_rows[1], "1"],
+            "b": [None, "0", "1"],
+            "y": ["1", "0", "1"],
+        }
+    )
+    dataset = Dataset(df, features=["a", "b"], targets=["y"])
+    with pytest.warns(PylfitWarning, match=cause):
+        GULA.fit(dataset, heads=[("y", "1")], min_support=threshold)
+
+
 def test_gula_names_every_option_that_restricted_the_head(support_dataset):
     # GULA can't tell which option left a row out, so it names them all;
     # PRIDE knows, per row.

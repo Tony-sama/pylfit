@@ -330,6 +330,12 @@ def test_float_column_with_a_non_whole_value_still_raises(value):
         Dataset(df, features=["a"], targets=["y"])
 
 
+def test_a_float_of_exactly_2_to_the_63_is_refused_as_a_float():
+    df = pd.DataFrame({"x": [2.0**63, 1.0], "y": ["0", "1"]})
+    with pytest.raises(ValueError, match="float columns"):
+        Dataset(df, features=["x"], targets=["y"])
+
+
 def test_a_whole_float_too_large_for_an_integer_is_refused():
     df = pd.DataFrame({"a": [1e19, 0.0], "y": ["0", "1"]})
     with pytest.raises(ValueError, match="float columns are not supported"):
@@ -543,6 +549,17 @@ def test_max_categories_warns_only_above_its_default_of_5():
     df.loc[10] = [5, "1"]
     with pytest.warns(PylfitWarning, match="6 distinct values.*continuous"):
         Dataset(df, features=["a"], targets=["y"], check_stand_ins=False)
+
+
+def test_check_values_warns_above_a_default_of_5():
+    with pytest.warns(PylfitWarning, match="max_categories=5"):
+        Dataset.check_values(pd.DataFrame({"x": list("abcdef")}))
+
+
+def test_exactly_nine_values_in_ten_rows_read_as_an_identifier():
+    df = pd.DataFrame({"x": list("abcdefghia")})
+    with pytest.warns(PylfitWarning, match="Nearly one value per row"):
+        Dataset.check_values(df, max_categories=3)
 
 
 def test_max_categories_counts_a_whole_float_column_too():
@@ -1402,3 +1419,22 @@ def test_a_pickled_dataset_leaves_its_row_caches_behind(toy_dataset):
     assert restored.positives("y", "1") == positives
     assert restored.negatives("y", "1") == negatives
     assert restored.domains() == toy_dataset.domains()
+
+
+def test_exactly_as_many_stand_ins_as_shown_mention_no_others():
+    df = pd.DataFrame({column: ["?", "1"] for column in "abcdy"})
+    with pytest.warns(PylfitWarning) as record:
+        Dataset(df, features=list("abcd"), targets=["y"])
+    assert not any("more" in str(warning.message) for warning in record)
+
+
+def test_a_partial_negative_does_not_hide_a_known_negative():
+    df = pd.DataFrame(
+        {"a": ["0", None, "1"], "b": ["0", "0", "1"], "y": ["0", "0", "1"]}
+    )
+    dataset = Dataset(
+        df, features=["a", "b"], targets=["y"], assume_nondeterministic=True
+    )
+    negatives = dataset.negatives("y", "1")
+    assert {"a": "0", "b": "0"} in negatives
+    assert len(negatives) == 2

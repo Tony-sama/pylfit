@@ -249,6 +249,31 @@ def test_allowed_conditions_reports_every_problem_at_once(and_function_dataset):
     assert str(error.value).count("head") == 3
 
 
+def test_allowed_conditions_are_checked_past_an_unrestricted_head():
+    df = pd.DataFrame({"a": ["0", "1"], "y": ["0", "1"]})
+    dataset = Dataset(df, features=["a"], targets=["y"])
+    with pytest.raises(ValueError, match="5: not a feature"):
+        GULA.fit(dataset, allowed_conditions={("y", "0"): None, ("y", "1"): [5]})
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"heads": [1, 2]},
+        {"allowed_conditions": {1: None, 2: None}},
+        {"allowed_conditions": {("y", "0"): "a", ("y", "1"): "a"}},
+        {"allowed_conditions": {("y", "0"): {"a": "0"}, ("y", "1"): {"a": "0"}}},
+        {"allowed_conditions": {("y", "0"): [1, 2]}},
+    ],
+)
+def test_both_problems_of_one_kind_are_listed(options):
+    df = pd.DataFrame({"a": ["0", "1"], "y": ["0", "1"]})
+    dataset = Dataset(df, features=["a"], targets=["y"])
+    with pytest.raises(ValueError, match=";") as error:
+        GULA.fit(dataset, **options)
+    assert str(error.value).count(";") == 1
+
+
 # --- min_support: minimum-support filter ---
 
 
