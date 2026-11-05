@@ -593,7 +593,8 @@ class RuleSetModel:
             "features": list(self._features),
             "targets": list(self._targets),
             "domain": {
-                variable: sorted(values) for variable, values in self._domain.items()
+                variable: sorted(self._domain[variable])
+                for variable in (*self._features, *self._targets)
             },
             "rules": rules_payload,
         }

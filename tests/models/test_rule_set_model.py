@@ -956,6 +956,21 @@ def test_a_save_that_fails_leaves_the_file_as_it_was(tmp_path):
 
 
 # SPEC: FILE-4
+def test_save_does_not_depend_on_the_order_a_domain_was_assigned_in(tmp_path):
+    df = pd.DataFrame({"a": ["0", "1"], "y": ["0", "1"]})
+    dataset = Dataset(df, features=["a"], targets=["y"])
+    first = RuleSetModel(dataset, [])
+    second = RuleSetModel(dataset, [])
+    second.domain = {"y": ["0", "1"], "a": ["0", "1"]}
+    first.save(tmp_path / "first.json")
+    second.save(tmp_path / "second.json")
+    assert first == second
+    assert (tmp_path / "first.json").read_bytes() == (
+        tmp_path / "second.json"
+    ).read_bytes()
+
+
+# SPEC: FILE-4
 @pytest.mark.slow
 def test_save_writes_the_same_bytes_in_every_process(tmp_path):
     # The domain's sets and the rules' set iterate in an order that
