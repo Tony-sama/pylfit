@@ -416,18 +416,16 @@ class Rule:
         """
         for variable, value in self._body.items():
             observed = state.get(variable, _ABSENT)
-            if observed is _NA:
-                # Checked first: comparing pandas' NA gives NA, which
-                # has no truth value.
-                return False
-            if observed != value:
-                # Checked only on a mismatch, which every non-str value
-                # is (body values are str): a consistent state pays
-                # nothing for it.
-                if observed is _ABSENT:
-                    raise KeyError(_absent_message(variable))
-                if isinstance(observed, str) or _is_unknown(observed):
+            # The type comes first: comparing pandas' NA gives NA, and a
+            # numpy array gives an array, neither of them an answer.
+            if isinstance(observed, str):
+                if observed != value:
                     return False
+            elif observed is _ABSENT:
+                raise KeyError(_absent_message(variable))
+            elif _is_unknown(observed):
+                return False
+            else:
                 raise TypeError(_not_str_message(variable, observed))
         return True
 

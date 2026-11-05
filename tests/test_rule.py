@@ -173,8 +173,16 @@ def test_empty_body_matches_any_state():
 
 @pytest.mark.parametrize(
     ("value", "shown"),
-    [(1, "1 \\(int\\)"), (["1", "2"], "\\['1', '2'\\] \\(list\\)")],
-    ids=["int", "list"],
+    [
+        (1, "1 \\(int\\)"),
+        (["1", "2"], "\\['1', '2'\\] \\(list\\)"),
+        # An array compares element by element: to an array that has no
+        # truth value, or with one element, to one that reads as a match.
+        (np.array(["1", "2"]), "array\\("),
+        (np.array(["1"]), "array\\("),
+        (np.array([np.nan]), "array\\("),
+    ],
+    ids=["int", "list", "array", "one-element array", "array of a NaN"],
 )
 def test_matches_rejects_a_non_str_value_instead_of_not_matching(value, shown):
     # An int never equals a str body value, so without the check this
