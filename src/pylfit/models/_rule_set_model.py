@@ -556,7 +556,9 @@ class RuleSetModel:
         different class refuses it. Each rule also gets a readable
         ``display`` string, which ``from_file`` ignores. The file is
         UTF-8, with names and values written as they are rather than
-        escaped.
+        escaped. A name or value UTF-8 can't write, such as a lone
+        surrogate from a file decoded with ``surrogateescape``, raises
+        ``UnicodeEncodeError`` and leaves an existing file as it was.
 
         Args:
             path: Path of the JSON file to write. An existing file is
@@ -597,9 +599,10 @@ class RuleSetModel:
         }
         payload.update(self._extra_save_payload())
 
+        text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+        text.encode("utf-8")  # before the open, which empties the file
         with open(path, "w", encoding="utf-8") as file:
-            json.dump(payload, file, indent=2, ensure_ascii=False)
-            file.write("\n")
+            file.write(text)
 
     def _init_extra_state(self) -> None:
         """Initializes subclass-specific mutable state before a load.

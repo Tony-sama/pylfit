@@ -942,6 +942,19 @@ RuleSetModel(dataset, rules).save(sys.argv[1])
 """
 
 
+# SPEC: FILE-1
+def test_a_save_that_fails_leaves_the_file_as_it_was(tmp_path):
+    df = pd.DataFrame({"a": ["0", "1"], "y": ["0", "1"]})
+    model = RuleSetModel(Dataset(df, features=["a"], targets=["y"]), [])
+    path = tmp_path / "model.json"
+    model.save(path)
+    saved = path.read_bytes()
+    model.domain = {"a": ["0", "\udcff"], "y": ["0", "1"]}
+    with pytest.raises(UnicodeEncodeError):
+        model.save(path)
+    assert path.read_bytes() == saved
+
+
 # SPEC: FILE-4
 @pytest.mark.slow
 def test_save_writes_the_same_bytes_in_every_process(tmp_path):
