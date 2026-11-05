@@ -349,10 +349,14 @@ class Dataset:
         kinds = [
             column
             for column in dataframe.columns
-            if pd.api.types.is_complex_dtype(dataframe[column])
-            or pd.api.types.is_datetime64_any_dtype(dataframe[column])
-            or pd.api.types.is_timedelta64_dtype(dataframe[column])
-            or isinstance(dataframe[column].dtype, pd.PeriodDtype)
+            if (
+                pd.api.types.is_complex_dtype(dataframe[column])
+                or pd.api.types.is_datetime64_any_dtype(dataframe[column])
+                or pd.api.types.is_timedelta64_dtype(dataframe[column])
+                or isinstance(dataframe[column].dtype, pd.PeriodDtype)
+            )
+            # With no known value, nothing here is a date: only unknowns.
+            and dataframe[column].notna().any()
         ]
         if kinds:
             raise ValueError(

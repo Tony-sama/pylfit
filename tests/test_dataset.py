@@ -735,6 +735,14 @@ def test_check_stand_ins_false_silences_the_warning():
         Dataset(df, features=["a"], targets=["y"], check_stand_ins=False)
 
 
+# SPEC: DATA-3
+@pytest.mark.parametrize("dtype", ["datetime64[ns]", "timedelta64[ns]", "complex128"])
+def test_a_column_of_unknowns_is_accepted_whatever_its_type(dtype):
+    df = pd.DataFrame({"a": pd.Series([None, None], dtype=dtype), "y": ["0", "1"]})
+    dataset = Dataset(df, features=["a"], targets=["y"], check_stand_ins=False)
+    assert dataset.domain("a") == []
+
+
 # SPEC: DATA-9
 @pytest.mark.parametrize(
     ("values", "warned"),
