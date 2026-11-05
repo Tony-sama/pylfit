@@ -172,6 +172,14 @@ def test_a_date_or_a_duration_is_not_a_number_here(values):
     assert find_missing_stand_ins(pd.DataFrame({"a": values})).empty
 
 
+# SPEC: RUN-2
+def test_no_numpy_warning_escapes_on_a_float_too_large_to_cast():
+    df = pd.DataFrame({"c": pd.Series([1e39, np.float32(0.0)], dtype=object)})
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        find_missing_stand_ins(df)
+
+
 def test_stand_ins_are_left_out_before_the_zero_check():
     df = pd.DataFrame({"pressure": ["120", "?", "135", "0", "110", "160"]})
     assert _findings(find_missing_stand_ins(df)) == [

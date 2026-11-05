@@ -11,6 +11,7 @@ Why it works this way: :doc:`/explanation/about-data`.
 """
 
 import datetime
+import warnings
 from collections.abc import Iterable, Set
 from typing import Literal
 
@@ -56,6 +57,26 @@ _NOT_NUMBERS = (
     np.datetime64,
     np.timedelta64,
 )
+
+
+def _value_counts(values: pd.Series) -> pd.Series:
+    """Counts a column's distinct values, keeping pandas' warnings in.
+
+    Before pandas 3, ``value_counts`` warns of a future change on an
+    ``object`` column of dates, durations, periods or intervals, and at
+    any version NumPy warns on a float too large to cast. Neither says
+    anything about the caller's data.
+
+    Args:
+        values: One column.
+
+    Returns:
+        Each distinct known value's count, unsorted.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", "The behavior of value_counts", FutureWarning)
+        warnings.filterwarnings("ignore", "overflow encountered", RuntimeWarning)
+        return values.value_counts(sort=False)
 
 
 def _check_collection(name: str, argument: object) -> None:
@@ -205,7 +226,7 @@ def find_missing_stand_ins(
         values = dataframe[column]
         # Each test below runs once per distinct value, not once per
         # row.
-        counts = values.value_counts(sort=False)
+        counts = _value_counts(values)
         # A categorical column also counts its unused categories, as
         # zeros.
         counts = counts[counts > 0]
