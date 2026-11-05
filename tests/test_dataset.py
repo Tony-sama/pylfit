@@ -735,6 +735,25 @@ def test_check_stand_ins_false_silences_the_warning():
         Dataset(df, features=["a"], targets=["y"], check_stand_ins=False)
 
 
+# SPEC: DATA-9
+@pytest.mark.parametrize(
+    ("values", "warned"),
+    [([1, True], True), ([1, "1"], False), ([[1], [1]], False), ([[1], [2]], True)],
+)
+def test_max_categories_counts_the_values_as_stored(values, warned):
+    df = pd.DataFrame({"a": pd.Series(values, dtype=object), "y": ["0", "0"]})
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        Dataset(
+            df,
+            features=["a"],
+            targets=["y"],
+            max_categories=1,
+            check_stand_ins=False,
+        )
+    assert bool(record) is warned
+
+
 # SPEC: DATA-3
 def test_unknowns_are_not_stand_ins():
     df = pd.DataFrame({"a": ["0", None], "y": ["0", "1"]})

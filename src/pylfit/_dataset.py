@@ -263,6 +263,27 @@ class Dataset:
             )
 
     @staticmethod
+    def _count_stored_values(values: pd.Series) -> int:
+        """Counts a column's distinct values as ``Dataset`` will store them.
+
+        They can differ from its cells only in an ``object`` column of
+        mixed types: pandas counts ``1`` and ``True`` as one value, and
+        they are stored as two, ``1`` and ``"1"`` as two, stored as one.
+
+        Args:
+            values: A column ``_check_floats`` accepted.
+
+        Returns:
+            The number of distinct known values.
+        """
+        if (
+            values.dtype != object
+            or pd.api.types.infer_dtype(values, skipna=True) == "string"
+        ):
+            return int(values.nunique())
+        return int(Dataset._as_str(values.to_frame()).iloc[:, 0].nunique())
+
+    @staticmethod
     def _check_values(dataframe: pd.DataFrame, max_categories: int) -> None:
         """Does ``check_values``' work, for it and for ``__init__``.
 
@@ -276,10 +297,7 @@ class Dataset:
         Dataset._check_floats(dataframe)
         for column in dataframe.columns:
             values = dataframe[column]
-            try:
-                nunique = values.nunique()
-            except TypeError:  # an unhashable value, such as a list
-                nunique = values.dropna().astype(str).nunique()
+            nunique = Dataset._count_stored_values(values)
             if nunique <= max_categories:
                 continue
             if nunique >= _ID_SHARE * values.count():
