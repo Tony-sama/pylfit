@@ -244,8 +244,9 @@ is correct and minimal, and that set is also complete:
   of its head. On non-deterministic data that is weaker than "never
   contradicted by a row", since a state seen with the head value isn't
   a negative of it.
-- Complete: for each target, every feature state is matched by at
-  least one rule. That includes feature states the data never shows.
+- Complete: for each target, every combination of the features' domain
+  values is matched by at least one rule. That includes combinations
+  the data never shows.
 - Minimal: a consistent rule from which dropping any condition makes
   it match a negative example. Equivalently, no rule with only some of
   its conditions is consistent: such a rule is more general than one of
@@ -311,7 +312,7 @@ see [About the prediction models](about-models.md).
 | More general, subsumes | `Rule.is_more_general_than`; strict, unlike subsumption |
 | Dominates | is more general than; a dominated rule is discarded |
 | Consistent, correct | matches no negative example of its head |
-| Complete (rule set) | every feature state is matched, for each target |
+| Complete (rule set) | every combination of domain values is matched, for each target |
 | Minimal (rule) | consistent, and dropping any condition makes it match a negative example |
 | Positive examples | `Dataset.positives(target, value)` |
 | Negative examples | `Dataset.negatives(target, value)` |

@@ -545,6 +545,7 @@ def test_rule_recovery_refuses_a_state_no_true_rule_matches():
         rule_recovery([TRUE], [TRUE], [{"a": "0", "b": "1"}])
 
 
+# SPEC: METRIC-3
 def test_rule_recovery_refuses_empty_inputs():
     with pytest.raises(ValueError, match="true_rules must be non-empty"):
         rule_recovery([], [TRUE])
@@ -555,6 +556,7 @@ def test_rule_recovery_refuses_empty_inputs():
         rule_recovery([constant], [constant], pd.DataFrame({"a": []}))
 
 
+# SPEC: METRIC-3
 def test_rule_recovery_refuses_a_learned_rule_on_another_target():
     with pytest.raises(ValueError, match="concludes on 'z', which no true rule"):
         rule_recovery([TRUE], [Rule.from_string("z(1) :- a(1).")])

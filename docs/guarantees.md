@@ -19,9 +19,9 @@ Terms: a *head* is a `(target, value)` pair; a rule's *negatives* and
   `1`, a whole float `1.0` and `"1"` all read as `"1"`, whatever the
   column's type, and `True` reads as `"True"`.
 - **DATA-2.** `Dataset` MUST raise `ValueError` for a known float that
-  is not a whole number, and for a known complex, date, duration,
-  `bytes` or `Decimal` value, whatever the column's type and whatever
-  equal value it sits beside.
+  is not a whole number or is 2^63 or more in size, and for a known
+  complex, date, duration, `bytes` or `Decimal` value, whatever the
+  column's type and whatever equal value it sits beside.
 - **DATA-3.** Whatever `pandas.isna` calls missing (`NaN`, `None`,
   `pd.NA`, `NaT`) MUST be read as unknown, and every other value as a
   value: `"?"` and `""` included.
@@ -69,8 +69,9 @@ Terms: a *head* is a `(target, value)` pair; a rule's *negatives* and
 ## Rules: `Rule`
 
 - **RULE-1.** `rule.matches(state)` MUST be true if and only if `state`
-  holds the `str` value of every condition of `rule`. An unknown value
-  MUST NOT satisfy any condition.
+  holds the `str` value of every condition of `rule`. An unknown value,
+  `None` or anything `pandas.isna` calls missing, MUST NOT satisfy any
+  condition.
 - **RULE-2.** `matches` MUST raise `KeyError` for a tested variable
   missing from `state`, and `TypeError` for a known value that is not a
   `str`. It MAY return `False` before it reaches one of them.
@@ -120,7 +121,7 @@ These hold for all three algorithms and every combination of options.
 - **LEARN-7.** `fit` MUST raise `TypeError` when `dataset` is not a
   `Dataset`. It MUST raise `ValueError` when `heads` or
   `allowed_conditions` names a target, feature or value the dataset
-  lacks.
+  lacks, and `TypeError` for a head's value that is not a `str`.
 
 - **LEARN-8.** `coverage(dataset, rules)` MUST map each target of
   `dataset` and value of its domain, and nothing else, to the share of
@@ -144,8 +145,9 @@ These hold for all three algorithms and every combination of options.
   it on every feature the row knows.
 - **GULA-5.** `min_support=k` MUST keep exactly the unrestricted rules
   matching at least `k` positive rows, a row with an unknown in a tested
-  feature not matching. A float `k` means that share of the positive
-  rows, rounded up.
+  feature not matching. An int `k` MUST be 0 or more. A float `k` MUST
+  be above 0 and at most 1, and means that share of the positive rows,
+  rounded up. It MUST raise `ValueError` otherwise.
 - **GULA-6.** `min_possible_support` MUST do the same, counting a row
   where each condition holds or falls on an unknown. With both set, a
   rule MUST meet both.
@@ -184,8 +186,10 @@ True
 
 ## Rule post-processing: `generalize`
 
-These hold for every `alpha`, with or without `max_rules`, whatever
-rules are given, unless a statement says otherwise.
+These hold for every `alpha` above 0 and at most 1, with or without a
+`max_rules` of at least 1, whatever rules are given, unless a statement
+says otherwise. `generalize` MUST raise `ValueError` for any other
+`alpha` or `max_rules`.
 
 - **GEN-1.** `generalize` MUST return a list of distinct rules sorted by
   text. Each MUST have the head of a given rule and a body that is a
@@ -212,7 +216,8 @@ rules are given, unless a statement says otherwise.
 
 - **MODEL-1.** A model's `rules` MUST be the distinct rules it was
   given, as a tuple sorted by text. Its `features`, `targets` and
-  `domain` MUST be those of the dataset it was built from.
+  `domain` MUST be those of the dataset it was built from, `domain`
+  until a new one is assigned.
 - **MODEL-2.** With `unknowns="strict"`,
   `RuleSetModel.predict_candidates` MUST give each target the sorted
   head values of the rules matching the state, or its whole domain if
@@ -272,6 +277,8 @@ rules are given, unless a statement says otherwise.
 
 - **FILE-1.** `cls.from_file(path)` after `model.save(path)` MUST return
   a model of `model`'s class equal to `model`, for both model classes.
+  A name or value UTF-8 can't write MUST make `save` raise
+  `UnicodeEncodeError` and leave any file at `path` as it was.
 - **FILE-2.** `from_file` MUST raise `ValueError` for a file another
   model class saved, or with a `schema_version` it does not read.
 - **FILE-3.** A saved file MUST be a UTF-8 JSON object holding
@@ -298,22 +305,30 @@ True
 
 - **METRIC-1.** `accuracy_score` MUST be the share of rows with a known
   actual value whose prediction equals it, both written as DATA-1 writes
-  them; an unknown or `None` prediction is wrong. It MUST raise
+  them and any other value by its `str()`; an unknown or `None`
+  prediction is wrong. It MUST raise
   `ValueError` when `y_true` and `y_pred` differ in length or no actual
   value is known.
 - **METRIC-2.** `accuracy_by_target` MUST map each target of `targets`,
   once and in order, to what `accuracy_score` gives for it.
-- **METRIC-3.** Without `states`, `rule_recovery` MUST put each rule in
-  the first of `exact`, `too_specific`, `too_general` and `partial` that
-  it has with a rule of its head on the other side, else in `spurious`
-  or `missing`. `precision` and `recall` MUST be the learned and true
-  shares of `exact` plus `too_specific`. Each side's shares MUST sum to
-  1 up to float rounding, the learned side's being all 0 when no learned
-  rule is given. A rule given twice MUST count once, with `states` too.
+- **METRIC-3.** `rule_recovery(true_rules, learned_rules)`, without
+  `states`, MUST put each rule in the first of `exact`, `too_specific`,
+  `too_general` and `partial` that it has with a rule of its head on the
+  other side, else in `spurious` or `missing`. Both sides name a pair
+  from the learned rule: `too_specific` when it is more specific than
+  the true rule, on the true side too. `partial` means neither is more
+  general and no variable is tested with two different values, so some
+  state matches both. `precision` and `recall` MUST be the learned and
+  true shares of `exact` plus `too_specific`. Each side's shares MUST
+  sum to 1 up to float rounding, the learned side's being all 0 when no
+  learned rule is given. A rule given twice MUST count once, with
+  `states` too. It MUST raise `ValueError` when `true_rules` is empty,
+  or a learned rule concludes on a target no true rule concludes on.
 - **METRIC-4.** With `states`, every number `rule_recovery` returns MUST
   be its mean, over each state and each target of a true rule, between
   the rules matching that state. It MUST raise `ValueError` when no true
-  rule of a target matches a state.
+  rule of a target matches a state, or a state holds an unknown in a
+  feature some rule tests.
 
 ## Checks: `find_missing_stand_ins`
 

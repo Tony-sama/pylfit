@@ -14,7 +14,8 @@ rules, models, saved files, can rely on that without checking again. A
 `DataFrame` you pass to `Dataset`, `predict` or `predict_proba` is
 converted for you, so an integer column of `1`s reads as `"1"`. A
 single state you pass as a `dict` is not converted: its values must be
-strings, or `None` for an unknown value, and `Rule.matches` raises
+strings, or an unknown, `None` or anything `pandas.isna` calls missing,
+and `Rule.matches` raises
 `TypeError` on any other type it reaches rather than silently not
 matching. It checks conditions in variable order and stops at the
 first that fails, so a wrong value after that one goes unnoticed.
