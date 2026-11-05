@@ -15,7 +15,8 @@ authors:
   - family-names: Ribeiro
     given-names: Tony
     orcid: "https://orcid.org/0000-0002-1793-2854"
-version: 1.0.0.dev0
+version: 1.0.0a1
+date-released: 2026-11-05
 license: GPL-3.0-only
 repository-code: "https://github.com/Tony-sama/pylfit"
 abstract: >-

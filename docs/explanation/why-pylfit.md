@@ -75,8 +75,8 @@ is the better choice.
 
 ## Status
 
-pylfit 1.0 is a ground-up rewrite, in development and not yet
-released. The core is complete for classification: data, rules, the
+pylfit 1.0 is a ground-up rewrite, in alpha: 1.0.0a1 is on PyPI as a
+pre-release. The core is complete for classification: data, rules, the
 three algorithms, `generalize`, the two models, saving and loading,
 and metrics.
 

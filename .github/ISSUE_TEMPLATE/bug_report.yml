@@ -8,8 +8,8 @@ body:
         Thanks for taking the time to report this. Before you start:
 
         - Check the bug happens with the latest release
-          (`pip install --upgrade pylfit`). Fixes go into the latest
-          release only, and 0.x (`pylfit<1`) is no longer maintained.
+          (`pip install --upgrade "pylfit>=1.0.0a1"`). Fixes go into the
+          latest release only, and 0.x (`pylfit<1`) is no longer maintained.
         - Search the [existing issues](https://github.com/Tony-sama/pylfit/issues?q=is%3Aissue)
           for the same problem.
         - For a security problem, don't open an issue: follow the

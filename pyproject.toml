@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pylfit"
-version = "1.0.0.dev0"
+version = "1.0.0a1"
 description = "Learn interpretable logic rules from data (LFIT-family algorithms)."
 readme = "README.md"
 requires-python = ">=3.11"

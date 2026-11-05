@@ -21,18 +21,23 @@ variable is on or off and its next value depends on the others', such
 as gene regulatory networks, from observed state transitions. It works
 on any table of categorical data.
 
-> pylfit 1.0 is a ground-up rewrite, still in development and not yet
-> on PyPI. Its API is incompatible with pylfit 0.x; see
-> [Migrate from pylfit 0.x][migration].
+> pylfit 1.0 is a ground-up rewrite, released as alpha pre-releases on
+> PyPI; its API may still change before 1.0.0. It is incompatible with
+> pylfit 0.x; see [Migrate from pylfit 0.x][migration].
 
 [migration]: https://tony-sama.github.io/pylfit/how-to/migration.html
 
 ## Installation
 
 pylfit needs Python 3.11 or later, pandas 2.3 or later and NumPy 2.2 or
-later, which `pip` installs for you. 1.0 is not on PyPI yet:
-`pip install pylfit` still installs the 0.5.1 release. Until it is,
-install 1.0 from the repository's `next` branch, where it is developed:
+later, which `pip` installs for you. 1.0 is a pre-release, so name it:
+
+```bash
+pip install --upgrade "pylfit>=1.0.0a1"
+```
+
+Plain `pip install pylfit` still installs 0.5.1, the last 0.x release.
+The development version is on the repository's `next` branch:
 
 ```bash
 pip install "git+https://github.com/Tony-sama/pylfit.git@next"

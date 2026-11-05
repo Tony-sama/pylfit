@@ -30,7 +30,9 @@ version. A release that changes the file format says so here.
 
 ## [Unreleased]
 
-To be released as 1.0.0. A ground-up rewrite, incompatible with 0.x; see
+## [1.0.0a1] - 2026-11-05
+
+First alpha of 1.0. A ground-up rewrite, incompatible with 0.x; see
 [Migrate from pylfit 0.x](how-to/migration.md).
 
 ### Added
@@ -122,4 +124,5 @@ Thanks to Juliette Audemard, who used the development versions: her
 feedback shaped `Dataset`'s positive and negative examples, and her
 prototype led to `GULA`'s `allowed_conditions`.
 
-[Unreleased]: https://github.com/Tony-sama/pylfit/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Tony-sama/pylfit/compare/v1.0.0a1...next
+[1.0.0a1]: https://github.com/Tony-sama/pylfit/compare/v0.5.1...v1.0.0a1

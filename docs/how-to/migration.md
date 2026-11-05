@@ -25,6 +25,12 @@ result.
 
 ## Option 2: port to 1.0
 
+1.0 is a pre-release for now, and `--upgrade` replaces an installed 0.x:
+
+```bash
+pip install --upgrade "pylfit>=1.0.0a1"
+```
+
 ### What maps to what
 
 | 0.x | 1.0 |
