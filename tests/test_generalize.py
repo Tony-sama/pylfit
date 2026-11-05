@@ -19,7 +19,7 @@ import pandas as pd
 import pytest
 
 from pylfit import Dataset, PylfitWarning, Rule, generalize
-from pylfit._generalize import _nested_pairs, fisher_greater
+from pylfit._generalize import _extensions, _nested_pairs, fisher_greater
 from pylfit.algorithms import GULA
 from pylfit.models import RuleSetModel, WeightedRuleSetModel
 
@@ -512,3 +512,41 @@ def test_a_cap_can_leave_the_given_rules_at_alpha_1(dataset):
     # alpha.
     rules = [_rule("y(1) :- a(1), b(0)."), _rule("y(1) :- a(1), b(1).")]
     assert generalize(rules, dataset, alpha=1, max_rules=1) == [_rule("y(1) :- a(1).")]
+
+
+def test_extensions_counts_every_choice_of_features_and_values():
+    broad = Rule.from_string("y(1) :- a(0).")
+    sizes = {"a": 2, "b": 2, "c": 3, "d": 4}
+    assert _extensions(sizes, broad, 1) == 2 + 3 + 4
+    assert _extensions(sizes, broad, 2) == 2 * 3 + 2 * 4 + 3 * 4
+    assert _extensions(sizes, broad, 3) == 2 * 3 * 4
+
+
+def test_a_tie_drops_the_first_condition_in_variable_order():
+    df = pd.DataFrame(
+        {
+            "a": ["1", "1", "0", "0", "0", "0"],
+            "b": ["0", "1", "1", "0", "0", "1"],
+            "c": ["1", "1", "0", "1", "0", "1"],
+            "y": ["1", "0", "0", "0", "0", "1"],
+        }
+    )
+    dataset = Dataset(df, features=["a", "b", "c"], targets=["y"])
+    rule = Rule.from_string("y(1) :- a(0), b(1), c(1).")
+    assert generalize([rule], dataset, alpha=0.5) == [Rule.from_string("y(1) :- c(1).")]
+
+
+@pytest.mark.parametrize("order", [1, -1], ids=["as written", "reversed"])
+def test_nested_pairs_are_settled_in_order_of_their_text(order):
+    df = pd.DataFrame(
+        {"a": ["0", "0"], "b": ["0", "1"], "c": ["1", "1"], "y": ["1", "1"]}
+    )
+    dataset = Dataset(df, features=["a", "b", "c"], targets=["y"])
+    rules = [
+        Rule.from_string("y(1) :- a(0), b(1)."),
+        Rule.from_string("y(1) :- a(0), c(1)."),
+        Rule.from_string("y(1) :- a(0), b(1), c(1)."),
+    ]
+    assert generalize(rules[::order], dataset, alpha=1) == [
+        Rule.from_string("y(1) :- a(0), c(1).")
+    ]
