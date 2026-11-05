@@ -323,6 +323,11 @@ def test_predict_reports_missing_target_and_unexpected_columns_together(toy_mode
     assert "unexpected column" in message
 
 
+def test_an_unknown_does_not_stop_the_check_of_the_other_values(toy_model):
+    with pytest.raises(ValueError, match="out-of-domain"):
+        toy_model.predict_candidates({"a": None, "b": "7", "c": "1"})
+
+
 def test_predict_out_of_domain_value_raises(toy_model):
     dataframe = pd.DataFrame([{"a": "9", "b": "0", "c": "1"}])
     with pytest.raises(ValueError, match="out-of-domain"):

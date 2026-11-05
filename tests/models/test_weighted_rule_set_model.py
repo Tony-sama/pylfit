@@ -957,3 +957,58 @@ def test_a_file_saved_by_an_earlier_version_still_loads(model_class, name):
     path = Path(__file__).resolve().parent.parent / "data" / "models" / name
     model = model_class.from_file(path)
     assert model.predict_proba({"a": "1", "b": None})["y"]["1"] == 1.0
+
+
+def _two_values_model():
+    df = pd.DataFrame({"a": ["0", "1"], "y": ["1", "0"]})
+    return Dataset(df, features=["a"], targets=["y"])
+
+
+def test_a_rule_with_no_positives_does_not_stop_the_vote():
+    # y(0) sorts first and has no positive row: the next rule still votes.
+    rules = [Rule.from_string("y(0) :- a(0)."), Rule.from_string("y(1) :- a(0).")]
+    model = WeightedRuleSetModel(_two_values_model(), rules)
+    assert model.predict_proba({"a": "0"}) == {"y": {"0": 0.0, "1": 1.0}}
+
+
+def test_a_target_with_an_empty_domain_does_not_stop_the_others():
+    df = pd.DataFrame({"a": ["0", "1"], "y": [None, None], "z": ["0", "1"]})
+    dataset = Dataset(df, features=["a"], targets=["y", "z"])
+    model = WeightedRuleSetModel(dataset, [Rule.from_string("z(1) :- a(1).")])
+    assert model.predict_proba({"a": "1"}) == {"y": {}, "z": {"0": 0.0, "1": 1.0}}
+
+
+@pytest.mark.parametrize(
+    ("votes", "shares"),
+    [
+        ({"0": 0.0, "1": 0.0}, {"0": 0.5, "1": 0.5, "2": 0.0}),
+        ({"0": 0.75, "1": 0.25}, {"0": 0.75, "1": 0.25, "2": 0.0}),
+    ],
+    ids=["too small for a float", "summing to 1"],
+)
+def test_predict_proba_shares_the_votes(monkeypatch, votes, shares):
+    df = pd.DataFrame({"a": ["0", "1", "2"], "y": ["0", "1", "2"]})
+    dataset = Dataset(df, features=["a"], targets=["y"])
+    model = WeightedRuleSetModel(dataset, [])
+    monkeypatch.setattr(model, "_likelihood", lambda _state, _unknowns: {"y": votes})
+    assert model.predict_proba({"a": "0"}) == {"y": shares}
+
+
+@pytest.mark.parametrize("share", [0, 1, 0.5])
+def test_from_file_reads_a_share_up_to_its_bounds(tmp_path, share):
+    path = tmp_path / "model.json"
+    WeightedRuleSetModel(_two_values_model(), []).save(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["value_frequencies"]["a"]["0"] = share
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert WeightedRuleSetModel.from_file(path).value_frequencies["a"]["0"] == share
+
+
+def test_from_file_refuses_a_share_above_1(tmp_path):
+    path = tmp_path / "model.json"
+    WeightedRuleSetModel(_two_values_model(), []).save(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["value_frequencies"]["a"]["0"] = 1.5
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="value_frequencies gives a=0"):
+        WeightedRuleSetModel.from_file(path)
