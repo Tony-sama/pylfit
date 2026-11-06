@@ -30,7 +30,7 @@ version. A release that changes the file format says so here.
 
 ## [Unreleased]
 
-## [1.0.0a1] - 2026-11-05
+## [1.0.0a1] - 2026-11-06
 
 First alpha of 1.0. A ground-up rewrite, incompatible with 0.x; see
 [Migrate from pylfit 0.x](how-to/migration.md).
