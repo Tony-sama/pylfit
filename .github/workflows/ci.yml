@@ -58,6 +58,14 @@ jobs:
             python-version: "3.11"
             dependencies: "oldest"
             tier: "all"
+          # One more with pyarrow, which pandas then uses for its strings
+          # and which a few tests need. 3.13 is the newest Python that
+          # forks in the test process itself (`n_jobs`), where pyarrow's
+          # thread sets off a `DeprecationWarning`.
+          - os: ubuntu-latest
+            python-version: "3.13"
+            dependencies: "pyarrow"
+            tier: "all"
           # macOS and Windows start worker processes differently
           # (`n_jobs`), and Windows writes paths and line endings its own
           # way. The fast tier covers both; the slow tests only repeat
@@ -90,6 +98,10 @@ jobs:
         # The `dependencies` floors in `pyproject.toml`, at their first
         # release; raise them together.
         run: pip install "pandas==2.3.0" "numpy==2.2.0"
+
+      - name: Add pyarrow
+        if: matrix.dependencies == 'pyarrow'
+        run: pip install pyarrow
 
       - name: Run the whole suite, slow tests included, with coverage
         if: matrix.tier == 'all'
