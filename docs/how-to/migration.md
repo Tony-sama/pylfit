@@ -200,7 +200,9 @@ These 0.x features are not in 1.0. Code that needs them stays on 0.x
   `postprocessing.hamming_distance`
 - continuous datasets (`continuous_state_transitions_dataset_from_*`)
 - loading a model from a Boolean network file
-  (`dmvlp_from_boolean_network_file`)
+  (`dmvlp_from_boolean_network_file`). It also dropped brackets, reading
+  `(a | b) & c` as `a | b & c`, so results on such a network won't carry
+  over
 - `PRIDE`'s `max_diversity` and `multi_thread_at_rule_level`
   heuristics
 - `model.extend(dataset, feature_states)` and the
