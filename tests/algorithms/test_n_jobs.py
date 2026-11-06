@@ -40,7 +40,11 @@ def _fit_and_warnings(algorithm, dataset, **options):
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         rules = algorithm.fit(dataset, **options)
-    return rules, [str(w.message) for w in caught]
+    # Python 3.12 and 3.13 warn at each fork of a multi-threaded process,
+    # with its pid, and pyarrow starts a thread on import.
+    return rules, [
+        str(w.message) for w in caught if "use of fork()" not in str(w.message)
+    ]
 
 
 # SPEC: LEARN-5
@@ -136,6 +140,7 @@ def _later_heads_first(_dataset, target, value, _verbose):
     return [], [((target, value), {"a": value}, "unknown values")]
 
 
+@pytest.mark.filterwarnings(r"ignore:.*use of fork\(\):DeprecationWarning")
 def test_n_jobs_joins_the_results_in_head_order():
     # The heads finish in reverse order; the warning still lists them in
     # head order, as a sequential run does.
@@ -143,7 +148,8 @@ def test_n_jobs_joins_the_results_in_head_order():
     dataset = Dataset(df, features=["a"], targets=["y"])
     with pytest.warns(PylfitWarning) as record:
         Algorithm._fit_heads(dataset, _later_heads_first, verbose=True, n_jobs=3)
-    listed = [line.split(":")[0] for line in str(record[0].message).splitlines()[1:]]
+    message = str(record.pop(PylfitWarning).message)
+    listed = [line.split(":")[0] for line in message.splitlines()[1:]]
     assert listed == ["  y=0", "  y=1", "  y=2"]
 
 

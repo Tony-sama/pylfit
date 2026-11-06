@@ -156,7 +156,11 @@ def main():
                 [Rule.from_string(f"y({value}) :- a(black).") for value in colors[:3]],
             )
         )
-    out.extend(str(warning.message) for warning in caught)
+    out.extend(
+        str(warning.message)
+        for warning in caught
+        if "use of fork()" not in str(warning.message)
+    )
     print("\\n".join(out))
 
 
