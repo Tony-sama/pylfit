@@ -35,6 +35,12 @@ Cite the papers behind the algorithms you use as well:
   International Joint Conference on Learning and Reasoning (IJCLR
   2021)*, late-breaking abstract, 2021.
   [hal-03347026](https://hal.science/hal-03347026)
+- Learning from unknown values: T. Ribeiro, M. Folschette, M. Magnin,
+  K. Okazaki, K.-Y. Lo, A. Roquilly, J. Poschmann, K. Inoue. Learning
+  from interpretation transitions with unknowns. *4th International
+  Joint Conference on Learning and Reasoning (IJCLR 2024)*, pp.
+  66-85, 2024. <https://doi.org/10.1007/978-3-032-09087-4_5>;
+  [hal-04634356](https://hal.science/hal-04634356)
 
 The people who developed LFIT are credited on the [Credits](credits.md)
 page.

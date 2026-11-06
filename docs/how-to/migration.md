@@ -145,6 +145,11 @@ partial one, three random Boolean systems of 4 to 6 variables, and
   1.0 does it with `Dataset(..., assume_nondeterministic=True)`. On a
   deterministic system those rows are true negatives, so 1.0 keeps
   them by default, and its rules are less general than 0.x's there.
+- **Unknown target values.** 0.x counted a row whose target was unknown
+  as a positive example of every value of that target. 1.0 leaves the
+  row out for that target only, since those positives never happened.
+  So on data with unknown targets 1.0's rules differ from 0.x's, with
+  `assume_nondeterministic=True` too.
 - **The weighted model** works differently, below.
 
 ### The weighted model
