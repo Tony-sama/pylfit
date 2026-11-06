@@ -653,6 +653,12 @@ script must call `fit` under `if __name__ == "__main__":`. Without it
 the fit fails with `BrokenProcessPool`, and its message says to add
 the guard.
 
+With pyarrow installed, a process that forks has a background thread,
+so Python's `-W default` shows a `DeprecationWarning` that the fork
+may deadlock; about 30,000 forks in a stress test never hung, though
+that is no proof. `multiprocessing.set_start_method("spawn")` avoids
+it, at the cost above; `forkserver` doesn't.
+
 ## Restricting the search
 
 These options keep every rule correct, and all give up completeness: a
