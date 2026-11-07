@@ -165,6 +165,14 @@ missing.
 
 ## What is not covered
 
+- With `assume_nondeterministic=True` and unknown target values, the
+  rules may miss some of what the system does: a row with an unknown
+  target rules nothing in or out, so a rule of the true system can be
+  lost to another row that could be the same state. 0.x treated that
+  target as possibly every value, which keeps every true rule covered,
+  but at 30% unknowns on Boolean networks it left almost no conditions
+  in the rules and lost 6 to 8 points of accuracy. On a deterministic
+  system, the default, this doesn't arise.
 - Rules that only hold because of how the unknowns fell are not pruned:
   every rule consistent with the data is kept, as on complete data.
 - The measurements behind these choices use unknowns drawn at random,
