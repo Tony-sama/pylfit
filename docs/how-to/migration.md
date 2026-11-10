@@ -46,7 +46,8 @@ pip install --upgrade "pylfit>=1.0.0a1"
 | `fit(dataset, options={"heuristics": ["try_all_atoms"]})` with `"pride"` | `PRIDE.fit(dataset, try_all_conditions=True)` |
 | `"max_coverage_dynamic"` or `"max_coverage_static"` in `heuristics` | Nothing: 1.0's `PRIDE` always picks conditions by coverage |
 | `model.rules` | `model.rules` (a `tuple` of `Rule`, sorted by text; for other rules, build a new model: `RuleSetModel(dataset, rules)`) |
-| `rule.add_condition(...)`, `rule.remove_condition(variable)`, `rule.copy()` | `rule.with_condition(variable, value)`, `rule.without_condition(variable)`: a `Rule` is immutable, so both return a new rule and no copy is needed |
+| `rule.add_condition(variable, value)`, `rule.remove_condition(variable)` | `new = rule.with_condition(variable, value)`, `new = rule.without_condition(variable)`: each returns a new rule and leaves `rule` as it was. `r = rule.copy(); r.add_condition(v, x)` becomes `r = rule.with_condition(v, x)` |
+| `rule.copy()` | Nothing: a rule can't be changed after it's made, so use the rule itself wherever a copy was used |
 | `model.summary()` | `print(model)` |
 | `model.predict([state], semantics=...)` | `model.predict_candidates(...)` plus a few lines per semantics — `next_states` in the example |
 | `model.feature_states()` | `itertools.product` over `dataset.domain(...)` — `feature_states` in the example |

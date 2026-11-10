@@ -133,8 +133,9 @@ class Rule:
     A rule is immutable and hashable, like a ``frozenset``, so models
     can hold it in a ``set``. ``with_condition`` and
     ``without_condition`` return a new rule instead of changing this
-    one. Rules sort by their text, so ``sorted(rules)`` lists them as
-    ``to_string`` writes them.
+    one. There is no ``copy``: nothing can change a rule, so the rule
+    itself can be shared wherever a copy was used. Rules sort by their
+    text, so ``sorted(rules)`` lists them as ``to_string`` writes them.
 
     Attributes:
         head: The conclusion of the rule, as a ``(variable, value)``
