@@ -21,7 +21,11 @@ class PylfitWarning(UserWarning):
 
 
 class ConflictWarning(PylfitWarning):
-    """Rows with the same features have different values of a target.
+    """Two rows with the same features, all known, differ on a target.
+
+    Rows with an unknown feature are not compared, since the unknown
+    could hide a difference between their states;
+    ``Dataset.conflicting_targets`` lists the targets that conflict.
 
     ``Dataset`` emits it unless built with
     ``assume_nondeterministic=True``. Filter it to keep the default on
