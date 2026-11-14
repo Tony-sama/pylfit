@@ -157,6 +157,20 @@ def main():
             Rule(("y", "1"), {"a(1), b": "1"}),
         ]
         out.append(repr(generalize(twin_rules, twins_dataset)))
+        # Nested pairs whose order changes the result: settled by text.
+        nested = pd.DataFrame(
+            {"a": ["0", "0"], "b": ["0", "1"], "c": ["1", "1"], "y": ["1", "1"]}
+        )
+        nested_rules = [
+            Rule.from_string(text)
+            for text in (
+                "y(1) :- a(0), b(1).",
+                "y(1) :- a(0), c(1).",
+                "y(1) :- a(0), b(1), c(1).",
+            )
+        ]
+        nested_dataset = Dataset(nested, features=["a", "b", "c"], targets=["y"])
+        out.append(repr(generalize(nested_rules, nested_dataset, alpha=1)))
         out.append(repr(rule_recovery(learned["gula"], learned["pride"])))
         out.append(
             repr(rule_recovery(learned["gula"], learned["pride"], states.dropna()))
