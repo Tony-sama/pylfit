@@ -141,6 +141,22 @@ def main():
             error(lambda: model_class.from_file(path))
         out.append(repr(coverage(dataset, learned["gula_support"])))
         out.append(repr(generalize(learned["gula_support"], dataset, alpha=0.5)))
+        # Two rules with the same text: a feature is named "a(1), b".
+        twins = pd.DataFrame(
+            [
+                {"a": a, "b": b, "a(1), b": c, "y": str(int(a == b == "1" or c == "1"))}
+                for a in "01"
+                for b in "01"
+                for c in "01"
+            ]
+            * 10
+        )
+        twins_dataset = Dataset(twins, features=["a", "b", "a(1), b"], targets=["y"])
+        twin_rules = [
+            Rule(("y", "1"), {"a": "1", "b": "1"}),
+            Rule(("y", "1"), {"a(1), b": "1"}),
+        ]
+        out.append(repr(generalize(twin_rules, twins_dataset)))
         out.append(repr(rule_recovery(learned["gula"], learned["pride"])))
         out.append(
             repr(rule_recovery(learned["gula"], learned["pride"], states.dropna()))

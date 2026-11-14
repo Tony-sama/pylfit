@@ -468,7 +468,7 @@ def _generalize_all(
             for rule in found
             if rule.body or (rule.head not in heads and rows.head(*rule.head)[0])
         ),
-        key=str,
+        key=Rule._sort_key,
     )
 
 
@@ -532,7 +532,10 @@ def _minimal(
     pairs are taken in order of their text, skipping those that lost a
     rule already; a rule with no condition is left to the caller.
     """
-    pairs = sorted(_nested_pairs(rules), key=lambda pair: (str(pair[0]), str(pair[1])))
+    pairs = sorted(
+        _nested_pairs(rules),
+        key=lambda pair: (pair[0]._sort_key(), pair[1]._sort_key()),
+    )
     dropped: set[Rule] = set()
     for broad, narrow in pairs:
         if broad in dropped or narrow in dropped:
