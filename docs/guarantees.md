@@ -189,7 +189,7 @@ True
 These hold for every `alpha` above 0 and at most 1, with or without a
 `max_rules` of at least 1, whatever rules are given, unless a statement
 says otherwise. `generalize` MUST raise `ValueError` for any other
-`alpha` or `max_rules`.
+`alpha` or `max_rules` value, and `TypeError` for one of another type.
 
 - **GEN-1.** `generalize` MUST return a list of distinct rules sorted by
   text. Each MUST have the head of a given rule and a body that is a

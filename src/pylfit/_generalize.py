@@ -255,8 +255,9 @@ def _checked_rules(rules: Iterable[Rule], dataset: Dataset) -> list[Rule]:
     Raises:
         TypeError: As ``generalize`` documents, for ``rules`` and
             ``dataset``.
-        ValueError: If a rule names a variable in a role ``dataset``
-            does not give it.
+        ValueError: If a rule concludes on a variable that is not a
+            target of ``dataset`` or tests one that is not a feature of
+            it.
     """
     given: object = rules  # checked as the caller may pass it
     if isinstance(given, Dataset):
@@ -271,10 +272,18 @@ def _checked_rules(rules: Iterable[Rule], dataset: Dataset) -> list[Rule]:
             raise TypeError(f"rules must be Rule objects, got {rule!r}")
     features, targets = set(dataset.features), set(dataset.targets)
     for rule in rules:
-        if rule.head[0] not in targets or not set(rule.body) <= features:
+        # Each role named on its own, as `coverage` does: a feature in a
+        # head, or a target in a body, is in the dataset.
+        if rule.head[0] not in targets:
             raise ValueError(
-                f"rule {rule} names a variable that is not one of the "
-                "dataset's features and targets"
+                f"rule {rule} concludes on {rule.head[0]!r}, which is not "
+                "a target of the dataset"
+            )
+        unknown = sorted(set(rule.body) - features)
+        if unknown:
+            raise ValueError(
+                f"rule {rule} tests {unknown[0]!r}, which is not a feature "
+                "of the dataset"
             )
     return rules
 

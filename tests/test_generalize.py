@@ -226,9 +226,19 @@ def test_alpha_1_keeps_every_condition(dataset):
 
 
 # SPEC: GEN-7
-@pytest.mark.parametrize("text", ["y(1) :- d(1).", "w(1) :- a(1).", "a(1) :- b(1)."])
-def test_a_rule_off_the_targets_and_features_is_refused(dataset, text):
-    with pytest.raises(ValueError, match="names a variable"):
+@pytest.mark.parametrize(
+    ("text", "match"),
+    [
+        ("y(1) :- d(1).", "tests 'd', which is not a feature"),
+        ("y(1) :- z(1).", "tests 'z', which is not a feature"),
+        ("w(1) :- a(1).", "concludes on 'w', which is not a target"),
+        ("a(1) :- b(1).", "concludes on 'a', which is not a target"),
+    ],
+)
+def test_a_rule_off_the_targets_and_features_is_refused(dataset, text, match):
+    # A target in a body, or a feature in a head, is in the dataset: the
+    # message names the role.
+    with pytest.raises(ValueError, match=match):
         generalize([_rule(text)], dataset)
 
 
