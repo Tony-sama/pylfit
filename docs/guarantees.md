@@ -361,7 +361,9 @@ Do not rely on the following. Each MAY change in any release.
   on the message.
 - **Run time, memory, and the speedup from `n_jobs`.**
 - **Which rules `generalize` returns for a given `alpha`**, and which
-  of a nested pair it keeps. The test and its levels MAY improve. A
+  of a nested pair it keeps, or that it keeps either: pairs are settled
+  in order of the rules' text, so renaming a feature can change the
+  result. The test and its levels MAY improve. A
   lower `alpha` usually gives fewer rules and conditions, but not
   always.
 - **Which `alpha` the `max_rules` search settles on.** It MAY return

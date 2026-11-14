@@ -16,18 +16,18 @@ Rows are counted as ``Rule.matches`` counts them: an unknown value
 matches no condition.
 
 Each rule is generalized on its own, so a rule can come out beside a
-broader one of its head; one of the two is then dropped, so that no
-rule returned is more general than another of its head. The narrow
-rule is kept when, among the broad rule's rows, those it matches hold
-the head value significantly more often than the rest, by the same
-test with ``alpha`` divided by the number of rules that add as many
-conditions to the broad one, on any feature it leaves free, with any
-value. This is Webb's layered critical values [Webb2008]_: the learner
-chose the narrow rule among all of those, so without the division a
-condition that only dodges a few mislabelled rows passes. When the
-narrow rule has one condition more, the table is that condition's own
-test, which ``alpha`` alone already passed, so only the division can
-drop it.
+broader one of its head; one of the two, sometimes both, is then
+dropped, so that no rule returned is more general than another of its
+head. The narrow rule is kept when, among the broad rule's rows, those
+it matches hold the head value significantly more often than the rest,
+by the same test with ``alpha`` divided by the number of rules that add
+as many conditions to the broad one, on any feature it leaves free, with
+any value. This is Webb's layered critical values [Webb2008]_: the
+learner chose the narrow rule among all of those, so without the
+division a condition that only dodges a few mislabelled rows passes.
+When the narrow rule has one condition more, the table is that
+condition's own test, which ``alpha`` alone already passed, so only the
+division can drop it.
 
 References:
     .. [Webb2006] Webb, G. I. (2006). Discovering significant rules. In
@@ -307,6 +307,20 @@ def generalize(
     conditions, by the same test at a stricter level (the module's
     description gives it), so that no rule returned is more general
     than another of its head, as in ``GULA``'s rules.
+
+    The pairs are settled one at a time, in order of the rules' text,
+    and a pair one of whose rules has already lost is skipped. So a
+    narrow rule can lose to a broad one that then loses to another
+    narrow rule, leaving neither of the first pair, and a narrow rule
+    can stay without passing the test against a broad rule that lost
+    first. Renaming a feature changes the text order, and with it,
+    sometimes, the rules returned: on 9 to 11-variable networks with
+    flipped labels, the rules after renaming every feature differed in
+    17 or 18 of 20 fits at each noise level. A settling with no order,
+    deciding every pair first, returns the same rules whatever the
+    names, but was not nearer the true rules: more rules (34 against
+    27 on heart disease), and on ``car.csv`` and at 30% noise a few
+    points fewer correct.
 
     Rules learned from partial or noisy data carry conditions that only
     dodge a few rows, and some rules hold on the rows seen but not on

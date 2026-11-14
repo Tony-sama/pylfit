@@ -521,13 +521,14 @@ for `y=0`. The rules returned are the true ones.
 ````
 
 On this table no rule left is more general than another of its head.
-When one is, `generalize` keeps one of the two: the narrow rule only
-when, among the broad rule's rows, its extra conditions pass the same
-test at a stricter level, as section 5 of [the heart disease
+When one is, `generalize` usually keeps one of the two: the narrow
+rule only when, among the broad rule's rows, its extra conditions pass
+the same test at a stricter level, as section 5 of [the heart disease
 tutorial](../auto_examples/tutorial_heart_disease.rst) shows with one
 pair settled each way. The [`generalize`](../api/generalize.md)
-reference gives that level and what the test costs: a true rule that
-matches few rows loses conditions, even on clean data.
+reference gives that level, what the test costs (a true rule that
+matches few rows loses conditions, even on clean data), and when a
+chain of such pairs keeps neither.
 
 ```pycon
 >>> import itertools
