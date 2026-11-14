@@ -298,7 +298,9 @@ other options that restrict the search.
 Two more help with a slow fit:
 
 - `verbose=True` prints each head's progress and an estimate of the
-  time left, so you know early whether a fit will finish.
+  time left on that head. On `GULA` the estimate is a lower bound,
+  since each negative costs more than the one before, so a head whose
+  estimate keeps growing will take longer still.
 - `n_jobs` learns several heads at once in separate processes; it pays
   off on fits of a few seconds or more. A script using it must fit
   under `if __name__ == "__main__":`, or the fit fails on macOS, on

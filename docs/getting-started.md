@@ -110,8 +110,9 @@ days. A rule two days back is kept for `no` and dropped for `yes`, and
 
 ```
 
-If a fit is slow, pass `verbose=True` to see its progress and an
-estimate of the time left. `min_support=1` usually makes `GULA` much
+If a fit is slow, pass `verbose=True` to see its progress, head by
+head, and an estimate of the time left on the current head.
+`min_support=1` usually makes `GULA` much
 faster, since it has fewer rules to keep. `PRIDE` learns a smaller set
 of rules, faster, and `n_jobs=-1` learns several targets' values at
 once; [Keep the problem a comfortable

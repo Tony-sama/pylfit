@@ -92,6 +92,13 @@ class Progress:
     already printed one, so a stage whose progress was shown ends at
     100%, and a quick stage prints nothing: each caller prints its own
     summary line after the loop, with the count and the time.
+
+    The time left is estimated from the rate since the previous line,
+    not since the start: an item often costs more than the one before
+    it (each negative ``GULA`` processes grows the rule set the next is
+    checked against), and the mean rate since the start lags that,
+    while the recent rate follows it. The estimate is still a lower
+    bound when items keep getting slower, and it covers this stage only.
     """
 
     #: Minimum time between two progress lines, in seconds. Throttled by
@@ -113,6 +120,7 @@ class Progress:
         self.start = time.perf_counter()
         self._last_report = self.start
         self._printed = False
+        self._last_count = 0
 
     def update(self, current: int) -> None:
         """Reports that ``current`` items are done, if a line is due.
@@ -127,7 +135,8 @@ class Progress:
         elif now - self._last_report < self.INTERVAL_SECONDS:
             return
         elapsed = now - self.start
-        rate = current / elapsed if elapsed > 0 else 0.0
+        since = now - self._last_report
+        rate = (current - self._last_count) / since if since > 0 else 0.0
         if rate > 0:
             try:
                 left = (self.total - current) / rate
@@ -144,4 +153,5 @@ class Progress:
             indent=True,
         )
         self._last_report = now
+        self._last_count = current
         self._printed = True
