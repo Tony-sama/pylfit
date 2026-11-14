@@ -182,6 +182,14 @@ def test_a_value_the_dataset_lacks_matches_no_row(dataset):
     WeightedRuleSetModel(dataset, rules)
 
 
+def test_two_values_the_dataset_lacks_leave_the_condition_it_needs(dataset):
+    # With two, no row matches the rest of any condition: every
+    # condition ties at p = 1 on 0 rows, and variable order dropped
+    # a(1) first, the one the data needs.
+    rules = generalize([_rule("y(1) :- a(1), b(2), c(2).")], dataset)
+    assert rules == [_rule("y(1) :- a(1).")]
+
+
 def test_a_head_value_the_dataset_lacks_loses_its_rule(dataset):
     # No row to need a condition, and no model would take the rule.
     rules = [_rule("y(2) :- a(1)."), _rule("y(1) :- a(1), b(1).")]

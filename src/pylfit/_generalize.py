@@ -201,10 +201,12 @@ def _generalize(rule: Rule, rows: _Rows, alpha: float) -> Rule:
     Each pass tests every condition left and drops the one with the
     highest p-value, unless it is at most ``alpha``. On a tie it drops
     the one whose removal leaves the rule matching the most rows, then
-    the first in variable order: when a value matches no row, every
-    condition's p-value is 1, and this drops that value's condition
-    first rather than whichever variable sorts first. A last condition
-    is tested against every row.
+    the one whose own value the fewest rows hold, then the first in
+    variable order. When a value matches no row, every condition's
+    p-value is 1, and the second key drops that value's condition
+    first rather than whichever variable sorts first; with two such
+    values no row matches the rest of any condition, and the third key
+    drops one of the two. A last condition is tested against every row.
 
     Args:
         rule: The rule to generalize.
@@ -218,11 +220,12 @@ def _generalize(rule: Rule, rows: _Rows, alpha: float) -> Rule:
     positive, negative = rows.head(*rule.head)
     body = dict(rule.body)
     while body:
-        worst, worst_key = "", (-1.0, -1)
+        worst, worst_key = "", (-1.0, -1, -math.inf)
         for variable in sorted(body):
             others = frozenset((v, w) for v, w in body.items() if v != variable)
             rest = rows.body(others)
-            inside = rest & rows.condition(variable, body[variable])
+            holding = rows.condition(variable, body[variable])
+            inside = rest & holding
             outside = rest & ~inside
             p = rows.p_value(
                 (inside & positive).bit_count(),
@@ -230,8 +233,9 @@ def _generalize(rule: Rule, rows: _Rows, alpha: float) -> Rule:
                 (outside & positive).bit_count(),
                 (outside & negative).bit_count(),
             )
-            if (p, rest.bit_count()) > worst_key:
-                worst, worst_key = variable, (p, rest.bit_count())
+            key = (p, rest.bit_count(), -holding.bit_count())
+            if key > worst_key:
+                worst, worst_key = variable, key
         if worst_key[0] <= alpha:
             return Rule(rule.head, body)
         del body[worst]
