@@ -2,6 +2,10 @@
 
 Every warning pylfit emits is a ``PylfitWarning``, itself a
 ``UserWarning``, so a filter on ``UserWarning`` still catches them all.
+That is the filter to use on the command line (``python -W
+ignore::UserWarning``) or in ``PYTHONWARNINGS``: Python reads those
+before it can import pylfit, so it ignores a ``pylfit.ConflictWarning``
+there, with "Invalid -W option ignored: invalid module name".
 A kind of warning gets a class of its own when a caller has a reason to
 silence it alone and no option of pylfit's does it.
 """
