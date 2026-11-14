@@ -65,6 +65,17 @@ def test_progress_throttles_but_always_reports_the_last_item(capsys, monkeypatch
     assert lines[-1].startswith("[GULA]   stage: 5/5 (100%)")
 
 
+def test_progress_prints_at_most_once_a_second(capsys, monkeypatch):
+    # The interval itself: 0.9s after a line is too soon, 1.0s is due.
+    _clock(monkeypatch, 0.0, 1.0, 1.9, 2.0)
+    progress = Progress("GULA", "stage", 10)
+    progress.update(1)  # 1.0: due
+    progress.update(2)  # 1.9: too soon
+    progress.update(3)  # 2.0: due
+    lines = capsys.readouterr().err.splitlines()
+    assert [line.split(":")[1].split()[0] for line in lines] == ["1/10", "3/10"]
+
+
 def test_progress_reports_an_empty_stage_as_complete(capsys):
     Progress("GULA", "stage", 0).update(0)
     assert capsys.readouterr().err.startswith("[GULA]   stage: 0/0 (100%)")
