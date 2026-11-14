@@ -65,11 +65,42 @@ def test_fisher_greater_matches_exact_comb_sums(table):
 )
 def test_fisher_greater_is_exactly_one_on_the_whole_tail(table):
     # `a` is the smallest count the margins allow, so every table is
-    # summed. Without the shortcut, (0, 3, 3, 6) gives
-    # 0.9999999999999968 on glibc, and (0, 3, 3, 0) 0.9999999999999998
-    # on macOS.
+    # summed.
     assert _exact(*table) == 1
     assert fisher_greater(*table) == 1.0
+
+
+def test_fisher_greater_is_the_exact_value_rounded_on_small_tables():
+    # Every table of up to 20 rows, against the exact sum rounded once.
+    for total in range(21):
+        for a, b, c in itertools.product(range(total + 1), repeat=3):
+            d = total - a - b - c
+            if d >= 0:
+                assert fisher_greater(a, b, c, d) == float(_exact(a, b, c, d))
+
+
+def test_fisher_greater_gives_a_p_value_of_exactly_alpha_as_alpha():
+    # 3/300 and 1/2: the float sum of lgamma terms gave
+    # 0.010000000000000085 and 0.5000000000000002.
+    assert fisher_greater(2, 0, 1, 22) == 0.01
+    assert fisher_greater(1, 0, 0, 1) == 0.5
+
+
+def test_fisher_greater_on_a_large_table_is_one_on_the_whole_tail():
+    # Past the exact rows, the float sum of (900, 700, 800, 0) is
+    # 0.9999999999990338 on glibc: only the shortcut makes it 1.
+    assert fisher_greater(900, 700, 800, 0) == 1.0
+
+
+def test_fisher_greater_on_a_large_table_is_at_most_one():
+    # Its float sum is 1.0000000000032163 on glibc.
+    assert fisher_greater(1232, 1061, 1472, 776) <= 1.0
+
+
+def test_fisher_greater_on_a_large_table_is_the_same_for_its_transpose():
+    # Summed as written, the two gave 0.10743598247031623 and
+    # 0.10743598247031669 on glibc.
+    assert fisher_greater(357, 720, 317, 721) == fisher_greater(357, 317, 720, 721)
 
 
 @pytest.fixture
@@ -533,7 +564,40 @@ def test_a_tie_drops_the_first_condition_in_variable_order():
     )
     dataset = Dataset(df, features=["a", "b", "c"], targets=["y"])
     rule = Rule.from_string("y(1) :- a(0), b(1), c(1).")
-    assert generalize([rule], dataset, alpha=0.5) == [Rule.from_string("y(1) :- c(1).")]
+    # Each condition's p-value is 1/2: above 0.45, so one goes.
+    assert generalize([rule], dataset, alpha=0.45) == [
+        Rule.from_string("y(1) :- c(1).")
+    ]
+
+
+def test_a_condition_at_exactly_alpha_is_kept():
+    # p = 3/300: at the default alpha, not above it.
+    rows = [("1", "1")] * 2 + [("0", "1")] + [("0", "0")] * 22
+    df = pd.DataFrame(rows, columns=["a", "y"])
+    dataset = Dataset(df, features=["a"], targets=["y"], assume_nondeterministic=True)
+    rule = Rule.from_string("y(1) :- a(1).")
+    assert generalize([rule], dataset) == [rule]
+
+
+def test_a_tie_between_equal_p_values_keeps_the_rule_matching_the_most_rows():
+    # Both conditions' p-values are 2/3, from different tables: dropping
+    # b(1) leaves 6 rows, dropping a(1) 3, so b(1) goes. As floats from
+    # lgamma, b(1)'s came out lower, and a(1) went.
+    counts = {
+        ("0", "0", "0"): 2,
+        ("0", "1", "0"): 1,
+        ("0", "1", "1"): 1,
+        ("1", "0", "0"): 2,
+        ("1", "0", "1"): 3,
+        ("1", "1", "1"): 1,
+    }
+    rows = [row for row, k in counts.items() for _ in range(k)]
+    df = pd.DataFrame(rows, columns=["a", "b", "y"])
+    dataset = Dataset(
+        df, features=["a", "b"], targets=["y"], assume_nondeterministic=True
+    )
+    rule = Rule.from_string("y(1) :- a(1), b(1).")
+    assert generalize([rule], dataset, alpha=0.3) == [Rule.from_string("y(1) :- a(1).")]
 
 
 @pytest.mark.parametrize("order", [1, -1], ids=["as written", "reversed"])

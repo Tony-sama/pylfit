@@ -64,6 +64,12 @@ _ALPHA_FLOOR = 1e-12
 _SEARCH_STEPS = 10
 
 
+#: Tables of at most this many rows get the exact p-value. The integer
+#: sum costs about the square of the rows: as fast as the float one up
+#: to about 2000, 9 times slower at 32768.
+_EXACT_ROWS = 2000
+
+
 def _log_comb(n: int, k: int) -> float:
     """``log(math.comb(n, k))``, through ``math.lgamma``."""
     return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
@@ -73,13 +79,26 @@ def fisher_greater(a: int, b: int, c: int, d: int) -> float:
     """The one-sided Fisher exact test's p-value for ``[[a, b], [c, d]]``.
 
     The chance, with the margins fixed, of ``a`` or more in the top left
-    cell: a sum of hypergeometric terms, each from ``math.lgamma``. The
-    same value as ``scipy.stats.fisher_exact(table,
-    alternative="greater")``, without the dependency. When ``a`` is the
-    smallest count the margins allow, the sum covers every table and is
-    1 exactly; it is returned as such, since the terms' rounding,
-    which depends on the platform's ``lgamma`` and ``exp``, can leave
-    it just below.
+    cell: a sum of hypergeometric terms, the same value as
+    ``scipy.stats.fisher_exact(table, alternative="greater")``, without
+    the dependency. When ``a`` is the smallest count the margins allow,
+    the sum covers every table, and 1 is returned without summing.
+
+    On a table of at most 2000 rows the terms are summed as integers,
+    each from the one before by an exact multiply and divide, and the
+    sum is divided by ``math.comb(total, row)`` once, which Python
+    rounds correctly: the result is the exact p-value rounded to the
+    nearest float, on every platform. So a p-value of exactly
+    ``alpha``, such as 3/300 at the default 0.01, is not above it, and
+    two tables with the same p-value give the same float. These
+    coincidences need a small table: a p-value's denominator is
+    ``math.comb(total, row)``.
+
+    On a larger table the integers would cost too much (9 times the
+    float sum's time at 32768 rows), so each term is a float from
+    ``math.lgamma``, whose last digit depends on the platform. A table
+    and its transpose, which have the same p-value, are summed the same
+    way, so they still give the same float.
 
     Args:
         a: Rows with the condition holding the head value.
@@ -93,17 +112,31 @@ def fisher_greater(a: int, b: int, c: int, d: int) -> float:
     Examples:
         >>> round(fisher_greater(8, 2, 1, 5), 6)
         0.024476
+        >>> fisher_greater(2, 0, 1, 22)
+        0.01
         >>> fisher_greater(0, 3, 3, 0)
         1.0
     """
+    if b > c:
+        b, c = c, b  # the transpose: the same p-value, summed one way
     row, column, total = a + b, a + c, a + b + c + d
     if a <= max(0, row + column - total):
         return 1.0
+    if total <= _EXACT_ROWS:
+        # The term for x rows in the top left cell is
+        # comb(column, x) * comb(total - column, row - x).
+        term = math.comb(column, a) * math.comb(total - column, row - a)
+        tail = 0
+        for x in range(a, min(row, column) + 1):
+            tail += term
+            term = term * (column - x) * (row - x) // ((x + 1) * (d - a + x + 1))
+        return tail / math.comb(total, row)
     denominator = _log_comb(total, row)
     terms = (
         _log_comb(column, x) + _log_comb(total - column, row - x) - denominator
         for x in range(a, min(row, column) + 1)
     )
+    # The terms' rounding can leave the sum just above 1.
     return min(1.0, math.fsum(math.exp(term) for term in terms))
 
 
