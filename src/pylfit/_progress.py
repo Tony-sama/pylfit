@@ -25,6 +25,11 @@ def log(tag: str, message: str, indent: bool = False) -> None:
         indent: If True, adds extra indentation for lines nested under a
             named stage.
     """
+    if sys.stderr is None:
+        # No stderr (fd 2 closed at startup, or pythonw.exe): drop the
+        # line, as ``warnings`` does, since ``print`` would fall back to
+        # stdout.
+        return
     prefix = f"[{tag}]   " if indent else f"[{tag}] "
     print(prefix + message, file=sys.stderr, flush=True)
 

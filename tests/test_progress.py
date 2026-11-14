@@ -41,6 +41,14 @@ def test_log_flushes_each_line(monkeypatch):
     assert stream.flushed == "[GULA] done\n"
 
 
+def test_log_prints_nothing_without_stderr(capsys, monkeypatch):
+    # Python sets `sys.stderr` to None when fd 2 is closed at startup
+    # (`2>&-`); `print` would then write to stdout.
+    monkeypatch.setattr(sys, "stderr", None)
+    log("GULA", "done")
+    assert capsys.readouterr().out == ""
+
+
 # --- Progress ---
 
 
