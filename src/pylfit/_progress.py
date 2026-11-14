@@ -10,6 +10,7 @@ follows scikit-learn and the rest of the scientific Python stack:
 ``verbose=True`` shows output without any logging setup.
 """
 
+import math
 import sys
 import time
 from datetime import timedelta
@@ -62,6 +63,26 @@ def duration(seconds: float, digits: int = 2) -> str:
     return str(timedelta(seconds=round(seconds)))
 
 
+def _count(n: int) -> str:
+    """Formats an item count: in full up to 15 digits, ``3.4e+4342`` beyond.
+
+    Python refuses to write out an ``int`` of more than 4300 digits, and
+    ``BruteForce`` on 9,100 binary features has ``3**9100`` candidates;
+    ``math.log10`` takes an ``int`` of any size.
+
+    Args:
+        n: The count.
+
+    Returns:
+        The count as text.
+    """
+    if n < 10**15:
+        return str(n)
+    exponent = math.log10(n)
+    whole = math.floor(exponent)
+    return f"{10 ** (exponent - whole):.1f}e+{whole}"
+
+
 class Progress:
     """Throttled progress for one stage of work: count, elapsed, time left.
 
@@ -112,7 +133,7 @@ class Progress:
         fraction = current / self.total if self.total else 1.0
         log(
             self.tag,
-            f"{self.stage}: {current}/{self.total} ({fraction:.0%}), "
+            f"{self.stage}: {_count(current)}/{_count(self.total)} ({fraction:.0%}), "
             f"elapsed {duration(elapsed, 1)}, ~{eta} remaining",
             indent=True,
         )

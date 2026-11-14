@@ -110,6 +110,22 @@ def test_progress_prints_an_estimate_beyond_any_float(capsys, monkeypatch):
     assert "~100+ years remaining" in capsys.readouterr().err
 
 
+def test_progress_prints_a_total_beyond_python_s_digit_limit(capsys, monkeypatch):
+    # BruteForce on 9,100 binary features: 3**9100 candidates, more
+    # digits than `str(int)` accepts (4300).
+    _clock(monkeypatch, 0.0, 1.0)
+    Progress("BruteForce", "stage", 3**9100).update(1)
+    err = capsys.readouterr().err
+    assert "stage: 1/6.4e+4341 (0%)" in err
+    assert "~100+ years remaining" in err
+
+
+def test_progress_writes_counts_in_full_up_to_fifteen_digits(capsys, monkeypatch):
+    _clock(monkeypatch, 0.0, 1.0)
+    Progress("BruteForce", "stage", 10**15 - 1).update(1)
+    assert f"stage: 1/{10**15 - 1} (0%)" in capsys.readouterr().err
+
+
 # --- duration ---
 
 
