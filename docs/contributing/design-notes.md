@@ -74,9 +74,10 @@ a list or a dict, or sort, whichever costs no running time: `fit` and
 domains and candidates are sorted lists, as scikit-learn's `classes_`
 is a sorted array. Inside, sets stay where they are fastest, such as
 `RuleSetModel`'s rules and domains, and an error message that lists
-what it found in one sorts it first. Only elapsed times, and the order
-of `verbose` lines when heads are learned in parallel, may change
-between runs. `tests/test_reproducibility.py` runs one workflow under
+what it found in one sorts it first. Only `verbose` output may change
+between runs: its times, which progress lines are printed, since they
+are throttled by the clock, and their order when heads are learned in
+parallel. `tests/test_reproducibility.py` runs one workflow under
 several hash seeds and compares every output.
 
 A list makes one comparison a trap: `<=` between two lists compares
