@@ -53,12 +53,11 @@ if "__file__" not in globals():
 # sphinx_gallery_end_ignore
 
 import time
-import warnings
 from pathlib import Path
 
 import pandas as pd
 
-from pylfit import GULA, Dataset, PylfitWarning
+from pylfit import GULA, Dataset
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -93,13 +92,9 @@ def training_split(filename: str) -> Dataset:
     shuffled = frame.sample(frac=1.0, random_state=RANDOM_SEED).reset_index(drop=True)
     train = shuffled.iloc[: int(len(shuffled) * TRAIN_FRACTION)].reset_index(drop=True)
     features = [column for column in frame.columns if column != TARGET]
-    with warnings.catch_warnings():
-        # Soybean's `date` is the month a sample was taken, seven values
-        # that are all needed; `Dataset` warns about any column over five.
-        warnings.filterwarnings(
-            "ignore", message="Column 'date'", category=PylfitWarning
-        )
-        return Dataset(train, features=features, targets=[TARGET])
+    # Soybean's `date` is the month a sample was taken, seven values
+    # that are all needed; `Dataset` warns about any column over five.
+    return Dataset(train, features=features, targets=[TARGET], max_categories=7)
 
 
 def well_supported(rules, dataset: Dataset, min_support: int) -> set:

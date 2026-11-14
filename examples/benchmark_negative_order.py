@@ -52,13 +52,12 @@ if "__file__" not in globals():
 # sphinx_gallery_end_ignore
 
 import time
-import warnings
 from pathlib import Path
 
 import pandas as pd
 from _bnet import build_dataset_arguments
 
-from pylfit import GULA, Dataset, PylfitWarning
+from pylfit import GULA, Dataset
 
 EXAMPLES_DIR = Path(__file__).resolve().parent
 
@@ -98,15 +97,11 @@ def datasets() -> dict[str, Dataset]:
     for filename in CSV_FILES:
         frame = pd.read_csv(EXAMPLES_DIR / "data" / filename).astype(str)
         features = [column for column in frame.columns if column != TARGET]
-        with warnings.catch_warnings():
-            # Soybean's `date` is the month a sample was taken, seven
-            # values that are all needed; `Dataset` warns over five.
-            warnings.filterwarnings(
-                "ignore", message="Column 'date'", category=PylfitWarning
-            )
-            built[filename] = Dataset(
-                shuffled(frame), features=features, targets=[TARGET]
-            )
+        # Soybean's `date` is the month a sample was taken, seven values
+        # that are all needed; `Dataset` warns about any column over five.
+        built[filename] = Dataset(
+            shuffled(frame), features=features, targets=[TARGET], max_categories=7
+        )
     return built
 
 
