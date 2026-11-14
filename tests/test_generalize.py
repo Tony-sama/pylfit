@@ -19,6 +19,7 @@ import pandas as pd
 import pytest
 
 from pylfit import Dataset, PylfitWarning, Rule, generalize
+from pylfit import _generalize as _generalize_module
 from pylfit._generalize import _extensions, _nested_pairs, fisher_greater
 from pylfit.algorithms import GULA
 from pylfit.models import RuleSetModel, WeightedRuleSetModel
@@ -433,6 +434,42 @@ def test_max_rules_searches_alpha_on_a_log_scale():
     assert generalize(rules, dataset, max_rules=1) == rules[:1]
 
 
+def test_max_rules_search_takes_enough_steps():
+    # a(1) is needed at p 7e-12, c(1) at 0.00018, e(1) at 0.0019: two
+    # rules fit from 0.00018 to 0.0019. From 1e-12 to 0.01 the first
+    # two steps try 1e-7 and 3e-5, where a(1) alone is left; only the
+    # third, 0.00056, keeps two.
+    rows = [
+        {"a": "1", "c": str(int(i < 16)), "e": str(int(i < 15)), "y": "1"}
+        for i in range(20)
+    ]
+    rows += [
+        {"a": "0", "c": str(int(i < 4)), "e": str(int(i < 5)), "y": "0"}
+        for i in range(20)
+    ]
+    dataset = Dataset(pd.DataFrame(rows), features=["a", "c", "e"], targets=["y"])
+    rules = [_rule("y(1) :- a(1)."), _rule("y(1) :- c(1)."), _rule("y(1) :- e(1).")]
+    assert generalize(rules, dataset) == rules
+    assert generalize(rules, dataset, max_rules=2) == rules[:2]
+
+
+def test_max_rules_tries_no_level_above_alpha(weak_and_strong, monkeypatch):
+    # alpha is the largest level tried: the search runs from the floor
+    # up to it, not to 1.
+    tried = []
+    original = _generalize_module._generalize_all
+
+    def recording(rules, rows, sizes, alpha):
+        tried.append(alpha)
+        return original(rules, rows, sizes, alpha)
+
+    monkeypatch.setattr(_generalize_module, "_generalize_all", recording)
+    rules = [_rule("y(1) :- a(1)."), _rule("y(1) :- c(1).")]
+    generalize(rules, weak_and_strong, alpha=0.01, max_rules=1)
+    assert len(tried) > 2
+    assert max(tried) == 0.01
+
+
 # SPEC: GEN-5
 def test_max_rules_already_met_changes_nothing(weak_and_strong):
     # alpha is c(1)'s own p-value. A search, which never tries alpha
@@ -458,7 +495,7 @@ def test_max_rules_out_of_reach_warns_and_returns_the_floor_rules():
     rows = [{"a": a, "y": a} for a in "01"] * 100
     dataset = Dataset(pd.DataFrame(rows), features=["a"], targets=["y"])
     rules = [_rule("y(0) :- a(0)."), _rule("y(1) :- a(1).")]
-    with pytest.warns(PylfitWarning, match="meets max_rules=1") as record:
+    with pytest.warns(PylfitWarning, match="no alpha down to 1e-12 meets") as record:
         assert generalize(rules, dataset, max_rules=1) == rules
     assert record[0].filename == __file__
 
