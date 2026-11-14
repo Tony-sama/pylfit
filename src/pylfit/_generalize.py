@@ -242,6 +242,43 @@ def _generalize(rule: Rule, rows: _Rows, alpha: float) -> Rule:
     return Rule(rule.head, {})
 
 
+def _checked_rules(rules: Iterable[Rule], dataset: Dataset) -> list[Rule]:
+    """``generalize``'s ``rules`` and ``dataset``, checked.
+
+    Args:
+        rules: ``generalize``'s argument.
+        dataset: ``generalize``'s argument.
+
+    Returns:
+        The rules, as a list.
+
+    Raises:
+        TypeError: As ``generalize`` documents, for ``rules`` and
+            ``dataset``.
+        ValueError: If a rule names a variable in a role ``dataset``
+            does not give it.
+    """
+    given: object = rules  # checked as the caller may pass it
+    if isinstance(given, Dataset):
+        # `coverage` and the models take the dataset first.
+        raise TypeError("generalize takes the rules first: generalize(rules, dataset)")
+    _check_dataset(dataset)
+    if isinstance(given, str):
+        raise TypeError("rules must be a collection of Rule, not a str")
+    rules = list(rules)
+    for rule in rules:
+        if not isinstance(rule, Rule):
+            raise TypeError(f"rules must be Rule objects, got {rule!r}")
+    features, targets = set(dataset.features), set(dataset.targets)
+    for rule in rules:
+        if rule.head[0] not in targets or not set(rule.body) <= features:
+            raise ValueError(
+                f"rule {rule} names a variable that is not one of the "
+                "dataset's features and targets"
+            )
+    return rules
+
+
 def generalize(
     rules: Iterable[Rule],
     dataset: Dataset,
@@ -378,8 +415,10 @@ def generalize(
         is more general than another of its head.
 
     Raises:
-        TypeError: If ``rules`` is not iterable, is a single ``str`` or
-            holds something other than a ``Rule``, ``dataset`` is not a
+        TypeError: If ``rules`` is not iterable, is a single ``str``, is
+            a ``Dataset`` (the arguments swapped: ``coverage`` and the
+            models take the dataset first), or holds something other
+            than a ``Rule``, ``dataset`` is not a
             ``Dataset``, ``alpha`` is not a number, or ``max_rules`` is
             not an integer (NumPy numbers count as numbers and
             integers).
@@ -400,14 +439,7 @@ def generalize(
         >>> generalize([Rule.from_string("y(1) :- a(1), b(0).")], dataset)
         [Rule(head=('y', '1'), body={'a': '1'})]
     """
-    _check_dataset(dataset)
-    given: object = rules  # checked as the caller may pass it
-    if isinstance(given, str):
-        raise TypeError("rules must be a collection of Rule, not a str")
-    rules = list(rules)
-    for rule in rules:
-        if not isinstance(rule, Rule):
-            raise TypeError(f"rules must be Rule objects, got {rule!r}")
+    rules = _checked_rules(rules, dataset)
     level: object = alpha  # checked as the caller may pass it
     if isinstance(level, bool) or not isinstance(level, numbers.Real):
         raise TypeError(f"alpha must be a number, got {alpha!r}")
@@ -421,13 +453,6 @@ def generalize(
         max_rules = int(cap)
         if max_rules < 1:
             raise ValueError(f"max_rules must be at least 1, got {cap!r}")
-    features, targets = set(dataset.features), set(dataset.targets)
-    for rule in rules:
-        if rule.head[0] not in targets or not set(rule.body) <= features:
-            raise ValueError(
-                f"rule {rule} names a variable that is not one of the "
-                "dataset's features and targets"
-            )
     rows = _Rows(dataset)
     sizes = {variable: len(dataset.domain(variable)) for variable in dataset.features}
     found = _generalize_all(rules, rows, sizes, alpha)

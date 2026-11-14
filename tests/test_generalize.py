@@ -245,6 +245,14 @@ def test_wrong_types_are_refused(dataset, rules, dataset_ok, match):
         generalize(rules, dataset if dataset_ok else "data")
 
 
+def test_swapped_arguments_are_named(dataset):
+    # `coverage` and the models take the dataset first; the plain check
+    # said "expected a Dataset, got list" to a caller who passed one.
+    rules = [_rule("y(1) :- a(1).")]
+    with pytest.raises(TypeError, match=r"rules first: generalize\(rules, dataset\)"):
+        generalize(dataset, rules)
+
+
 def _nested(both: int, *, constant: bool = False) -> Dataset:
     """80 rows: 20 per value pair of ``a``, ``b``; ``c`` if ``constant``.
 
