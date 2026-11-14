@@ -308,6 +308,31 @@ def test_the_narrow_test_counts_every_condition_it_could_have_added():
     assert generalize(NESTED, _nested(13, constant=True)) == NESTED[:1]
 
 
+def test_the_narrow_test_counts_rules_two_conditions_longer():
+    # Among a=1, 10 rows per (b, c): y=1 on 6 of 10 where b=1, c=1, 2 of
+    # 10 where both are 0, none elsewhere; d splits each group 5 and 5.
+    # The narrow rule keeps both conditions on its own. Against the
+    # broad one, p 0.0012 (6 of 10 against 2 of 30) times 12, the rules
+    # adding two conditions on b, c, d, is 0.015: it fails. Counted as
+    # one condition longer, times 6, it would pass.
+    rows = []
+    for b, c in itertools.product("01", repeat=2):
+        held = {("1", "1"): 6, ("0", "0"): 2}.get((b, c), 0)
+        for i in range(10):
+            d = str(i % 2)
+            rows.append(("0", b, c, d, "0"))
+            rows.append(("1", b, c, d, "1" if i < held else "0"))
+    df = pd.DataFrame(rows, columns=["a", "b", "c", "d", "y"])
+    dataset = Dataset(
+        df, features=["a", "b", "c", "d"], targets=["y"], assume_nondeterministic=True
+    )
+    narrow = _rule("y(1) :- a(1), b(1), c(1).")
+    assert generalize([narrow], dataset) == [narrow]
+    assert generalize([_rule("y(1) :- a(1)."), narrow], dataset) == [
+        _rule("y(1) :- a(1).")
+    ]
+
+
 def test_a_narrow_rule_at_exactly_the_level_is_kept():
     # alpha is _nested(13)'s p-value times 2: the test is
     # p * 2 <= alpha.
