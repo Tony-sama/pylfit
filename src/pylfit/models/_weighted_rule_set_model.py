@@ -182,7 +182,8 @@ class WeightedRuleSetModel(RuleSetModel):
                 Pass an empty iterable for a model without rules; there
                 is no default.
             verbose: If True, prints progress to stderr while scoring,
-                at most once a second. Scoring runs in this one process.
+                at most once a second, less often after 100 seconds.
+                Scoring runs in this one process.
 
         Raises:
             TypeError: If ``dataset`` is not a ``Dataset``, ``rules`` is
@@ -532,8 +533,8 @@ class WeightedRuleSetModel(RuleSetModel):
             dataset: The dataset to score every rule in ``self.rules``
                 against.
             verbose: If ``True``, prints throttled progress (at most
-                once per second, and a 100% line if one was printed) while
-                scoring.
+                once a second, less often after 100 seconds, and a 100%
+                line if one was printed) while scoring.
         """
         total = len(self._rules)
         tag = type(self).__name__

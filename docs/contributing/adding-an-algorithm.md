@@ -35,9 +35,9 @@ head function must be picklable: a static method is, and so is a
 `Algorithm` also gives two class methods for `verbose` output:
 `ShortRules._log(message)` prints one line to stderr, tagged with the
 class name, and `ShortRules._progress(stage, total)` returns an object
-whose `update(current)` prints a progress line at most about once a
-second, with an estimate of the time left. This one learns every
-consistent rule with at most one condition:
+whose `update(current)` prints a progress line at most once a second,
+less often after 100 seconds, with an estimate of the time left. This
+one learns every consistent rule with at most one condition:
 
 ```pycon
 >>> from pylfit import Rule

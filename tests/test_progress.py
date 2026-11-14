@@ -76,6 +76,18 @@ def test_progress_prints_at_most_once_a_second(capsys, monkeypatch):
     assert [line.split(":")[1].split()[0] for line in lines] == ["1/10", "3/10"]
 
 
+def test_progress_prints_less_often_after_100_seconds(capsys, monkeypatch):
+    # From 100 seconds in, the gap is 1% of the elapsed time: 2.01s
+    # after a line at 200s.
+    _clock(monkeypatch, 0.0, 200.0, 202.0, 202.1)
+    progress = Progress("GULA", "stage", 10)
+    progress.update(1)  # 200.0: due
+    progress.update(2)  # 202.0: 2.0s later, under 2.02s
+    progress.update(3)  # 202.1: 2.1s later, over 2.021s
+    lines = capsys.readouterr().err.splitlines()
+    assert [line.split(":")[1].split()[0] for line in lines] == ["1/10", "3/10"]
+
+
 def test_progress_estimates_from_the_rate_since_the_previous_line(capsys, monkeypatch):
     # Later items are slower, as GULA's negatives are: 5 items in the
     # first second, 1 in the next two. The mean rate since the start

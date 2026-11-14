@@ -88,10 +88,13 @@ class Progress:
 
     Create one before a loop over ``total`` items and call ``update``
     after each item. A line is printed at most once per
-    ``INTERVAL_SECONDS``. The last item gets a line only if the stage
-    already printed one, so a stage whose progress was shown ends at
-    100%, and a quick stage prints nothing: each caller prints its own
-    summary line after the loop, with the count and the time.
+    ``INTERVAL_SECONDS``, and from 100 seconds in at most once per
+    ``ELAPSED_SHARE`` of the stage's elapsed time: a 12-hour stage
+    prints about 700 lines, not 43,200. The last item gets a line only
+    if the stage already printed one, so a stage whose progress was
+    shown ends at 100%, and a quick stage prints nothing: each caller
+    prints its own summary line after the loop, with the count and the
+    time.
 
     The time left is estimated from the rate since the previous line,
     not since the start: an item often costs more than the one before
@@ -105,6 +108,12 @@ class Progress:
     #: time rather than item count, so the rate suits fast and slow
     #: loops alike without tuning.
     INTERVAL_SECONDS: ClassVar[float] = 1.0
+
+    #: Share of the stage's elapsed time between two progress lines,
+    #: once that is longer than ``INTERVAL_SECONDS``. The long stages,
+    #: the ones that need the estimate, often write to a notebook cell
+    #: or a file, where one line a second is 3,600 lines an hour.
+    ELAPSED_SHARE: ClassVar[float] = 0.01
 
     def __init__(self, tag: str, stage: str, total: int) -> None:
         """Starts the stage's clock.
@@ -132,7 +141,9 @@ class Progress:
         if current == self.total:
             if not self._printed:
                 return
-        elif now - self._last_report < self.INTERVAL_SECONDS:
+        elif now - self._last_report < max(
+            self.INTERVAL_SECONDS, (now - self.start) * self.ELAPSED_SHARE
+        ):
             return
         elapsed = now - self.start
         since = now - self._last_report

@@ -18,7 +18,7 @@ pandas.DataFrame ──► Dataset ──► algorithm.fit ──► list of Rul
 | `generalize` | `_generalize.py` | Rules and a `Dataset` to the rules without the conditions the data doesn't need, by a one-sided Fisher exact test at `alpha`. Imports no models or algorithms. |
 | Metrics | `_metrics.py` | Plain functions over `(y_true, y_pred)`, `coverage` over rules and a `Dataset`, and `rule_recovery` over two rule sets; no dependency on models. |
 | Warnings | `_exceptions.py` | `PylfitWarning`, the class of every warning pylfit gives, and its subclass `ConflictWarning`. |
-| Progress | `_progress.py` | The `verbose` output: one tagged line to stderr, and a progress line at most about once a second. Used by the algorithms and `WeightedRuleSetModel`. |
+| Progress | `_progress.py` | The `verbose` output: one tagged line to stderr, and a progress line at most once a second, less often after 100 seconds. Used by the algorithms and `WeightedRuleSetModel`. |
 
 Every module that defines code is private, its name starting with
 `_`: the public names are imported from `pylfit` (or from
