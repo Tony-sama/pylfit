@@ -77,8 +77,8 @@ def test_verbose_reports_to_stderr_only_and_changes_no_rule(
     assert loud == quiet
     assert output.out == ""
     assert f"[{algorithm.__name__}]" in output.err
-    # The last item of every stage is always reported.
-    assert "(100%)" in output.err
+    # The toy fit is quick: each stage prints only its summary line.
+    assert "(100%)" not in output.err
 
 
 @pytest.mark.parametrize("algorithm", [BruteForce, GULA, PRIDE])

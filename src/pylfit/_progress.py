@@ -88,8 +88,10 @@ class Progress:
 
     Create one before a loop over ``total`` items and call ``update``
     after each item. A line is printed at most once per
-    ``INTERVAL_SECONDS``, and always for the last item. A stage of no
-    items counts as complete: ``0/0 (100%)``.
+    ``INTERVAL_SECONDS``. The last item gets a line only if the stage
+    already printed one, so a stage whose progress was shown ends at
+    100%, and a quick stage prints nothing: each caller prints its own
+    summary line after the loop, with the count and the time.
     """
 
     #: Minimum time between two progress lines, in seconds. Throttled by
@@ -110,6 +112,7 @@ class Progress:
         self.total = total
         self.start = time.perf_counter()
         self._last_report = self.start
+        self._printed = False
 
     def update(self, current: int) -> None:
         """Reports that ``current`` items are done, if a line is due.
@@ -118,7 +121,10 @@ class Progress:
             current: Items processed so far, counting from 1.
         """
         now = time.perf_counter()
-        if current != self.total and now - self._last_report < self.INTERVAL_SECONDS:
+        if current == self.total:
+            if not self._printed:
+                return
+        elif now - self._last_report < self.INTERVAL_SECONDS:
             return
         elapsed = now - self.start
         rate = current / elapsed if elapsed > 0 else 0.0
@@ -130,7 +136,7 @@ class Progress:
             eta = duration(left, 0)
         else:
             eta = "?"
-        fraction = current / self.total if self.total else 1.0
+        fraction = current / self.total
         log(
             self.tag,
             f"{self.stage}: {_count(current)}/{_count(self.total)} ({fraction:.0%}), "
@@ -138,3 +144,4 @@ class Progress:
             indent=True,
         )
         self._last_report = now
+        self._printed = True

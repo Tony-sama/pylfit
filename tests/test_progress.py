@@ -52,14 +52,14 @@ def test_log_prints_nothing_without_stderr(capsys, monkeypatch):
 # --- Progress ---
 
 
-def test_progress_throttles_but_always_reports_the_last_item(capsys, monkeypatch):
+def test_progress_throttles_and_ends_a_shown_stage_at_100(capsys, monkeypatch):
     _clock(monkeypatch, 0.0, 0.1, 0.2, 1.5, 1.6, 1.7)
     progress = Progress("GULA", "stage", 5)  # starts at 0.0
     progress.update(1)  # 0.1: too soon
     progress.update(2)  # 0.2: too soon
     progress.update(3)  # 1.5: due
     progress.update(4)  # 1.6: too soon after 1.5
-    progress.update(5)  # 1.7: last item, always
+    progress.update(5)  # 1.7: last item, and a line was printed
     lines = capsys.readouterr().err.splitlines()
     assert [line.split(":")[1].split()[0] for line in lines] == ["3/5", "5/5"]
     assert lines[-1].startswith("[GULA]   stage: 5/5 (100%)")
@@ -74,11 +74,6 @@ def test_progress_prints_at_most_once_a_second(capsys, monkeypatch):
     progress.update(3)  # 2.0: due
     lines = capsys.readouterr().err.splitlines()
     assert [line.split(":")[1].split()[0] for line in lines] == ["1/10", "3/10"]
-
-
-def test_progress_reports_an_empty_stage_as_complete(capsys):
-    Progress("GULA", "stage", 0).update(0)
-    assert capsys.readouterr().err.startswith("[GULA]   stage: 0/0 (100%)")
 
 
 def test_progress_shows_an_unknown_eta_before_any_item_is_done(capsys, monkeypatch):
@@ -99,10 +94,17 @@ def test_progress_shows_seconds_under_a_minute(capsys, monkeypatch):
     assert capsys.readouterr().err.endswith("elapsed 12.3s, ~49s remaining\n")
 
 
-def test_progress_survives_a_clock_that_has_not_moved(capsys, monkeypatch):
-    _clock(monkeypatch, 0.0, 0.0)
-    Progress("GULA", "stage", 1).update(1)  # the last item: always reported
-    assert capsys.readouterr().err.endswith("elapsed 0.0s, ~? remaining\n")
+def test_progress_a_quick_stage_prints_nothing(capsys, monkeypatch):
+    # The caller's summary line follows the loop with the same count
+    # and the time; a 100% line alone would only repeat it.
+    _clock(monkeypatch, 0.0, 0.1, 0.2, 0.3, 2.3)
+    progress = Progress("GULA", "stage", 2)
+    progress.update(1)  # 0.1: too soon
+    progress.update(2)  # 0.2: last item, no line printed before
+    assert capsys.readouterr().err == ""
+    slow = Progress("GULA", "stage", 1)  # starts at 0.3
+    slow.update(1)  # 2.3: due by time, but the last item
+    assert capsys.readouterr().err == ""
 
 
 def test_progress_prints_an_estimate_beyond_a_century(capsys, monkeypatch):

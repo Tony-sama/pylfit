@@ -532,7 +532,8 @@ class WeightedRuleSetModel(RuleSetModel):
             dataset: The dataset to score every rule in ``self.rules``
                 against.
             verbose: If ``True``, prints throttled progress (at most
-                once per second, plus a final line) while scoring.
+                once per second, and a 100% line if one was printed) while
+                scoring.
         """
         total = len(self._rules)
         tag = type(self).__name__

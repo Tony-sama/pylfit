@@ -43,6 +43,7 @@ import pandas as pd
 import pytest
 
 from pylfit import GULA, PRIDE, Dataset, PylfitWarning, Rule
+from pylfit._progress import Progress
 from pylfit.algorithms._pride import _Rows
 from tests.algorithms._tables import as_question_marks, blanked_frame
 
@@ -701,10 +702,15 @@ def test_pride_allowed_conditions_bound_every_rule(toy_dataset):
     assert set(rules) <= set(GULA.fit(toy_dataset, allowed_conditions=allowed))
 
 
-def test_verbose_progress_counts_a_seed_skipped_as_already_failed(capsys):
+def test_verbose_progress_counts_a_seed_skipped_as_already_failed(monkeypatch):
     # Two equal positives that allowed_conditions can't separate from
     # the negative: the second is skipped on the first's failure, and
-    # still counted.
+    # still counted. The counts are read from the calls: a fit this
+    # quick prints no progress line.
+    counts = []
+    monkeypatch.setattr(
+        Progress, "update", lambda _self, current: counts.append(current)
+    )
     df = pd.DataFrame(
         {"a": ["1", "1", "0"], "b": ["0", "0", "0"], "y": ["1", "1", "0"]}
     )
@@ -716,7 +722,7 @@ def test_verbose_progress_counts_a_seed_skipped_as_already_failed(capsys):
         verbose=True,
         warn_uncovered=False,
     )
-    assert "covering positives: 2/2" in capsys.readouterr().err
+    assert counts[-1] == 2
 
 
 @pytest.mark.parametrize(
