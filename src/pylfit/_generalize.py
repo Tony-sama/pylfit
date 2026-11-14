@@ -323,8 +323,8 @@ def generalize(
     42% and 21%, while 21% overlap a true rule without being a
     generalization of it and 5% are spurious. On splits of the UCI
     heart disease data, ``GULA``'s ~12000 rules become ~27, and a
-    ``WeightedRuleSetModel`` of them scores 0.807 held-out, against
-    0.815. A lower ``alpha`` usually keeps fewer conditions and rules,
+    ``WeightedRuleSetModel`` of them scores 0.82 held-out, against
+    0.81. A lower ``alpha`` usually keeps fewer conditions and rules,
     though not on every table: each level can settle a nested pair
     differently.
 
