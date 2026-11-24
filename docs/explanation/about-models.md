@@ -28,7 +28,35 @@ nothing in the data ruled any value out, so every value stays possible.
 
 `predict_proba` splits probability evenly over the candidates, giving
 `0.0` to every other value of the domain, and `predict` picks the most
-probable value.
+probable value. A candidate's share does not depend on how many rules
+conclude it: below, one rule matches for `0` and three for `2`, and
+each gets half.
+
+```pycon
+>>> df = pd.DataFrame(
+...     {
+...         "a": ["0", "1", "1", "0"],
+...         "b": ["0", "1", "0", "1"],
+...         "y": ["0", "2", "2", "1"],
+...     }
+... )
+>>> dataset = Dataset(df, features=["a", "b"], targets=["y"])
+>>> rules = [
+...     Rule.from_string("y(0) :- a(1)."),
+...     Rule.from_string("y(2) :- a(1)."),
+...     Rule.from_string("y(2) :- b(1)."),
+...     Rule.from_string("y(2) :- a(1), b(1)."),
+... ]
+>>> model = RuleSetModel(dataset, rules)
+>>> model.predict_proba({"a": "1", "b": "1"})
+{'y': {'0': 0.5, '1': 0.0, '2': 0.5}}
+
+```
+
+A target no rule matches is uniform over its whole domain, not `0.0`
+everywhere: with `a=0` and `b=0` here, each value gets a third.
+[`WeightedRuleSetModel`](#weightedrulesetmodel-weigh-rules-by-support)
+weighs the same matches by the rows that back them.
 
 ## Ties are broken at random
 
@@ -60,6 +88,25 @@ rules' pooled positives. That total counts a row once per matching
 rule: rules of one value that match the same rows add those rows
 again, so a redundant rule, or a feature copied into a second column,
 raises its value's score.
+
+On the four rules from the `RuleSetModel` section above, the weighted
+model splits nothing. `y(0) :- a(1).` matches two rows, both with
+another value of `y`, so it has no positives and no vote; the three
+`y(2)` rules vote 1 + 2 + 0.5:
+
+```pycon
+>>> from pylfit import WeightedRuleSetModel
+>>> weighted = WeightedRuleSetModel(dataset, rules)
+>>> for rule in weighted.rules:
+...     print(rule.to_string(), weighted.get_score(rule))
+y(0) :- a(1). (0, 2)
+y(2) :- a(1), b(1). (1, 0)
+y(2) :- a(1). (2, 0)
+y(2) :- b(1). (1, 1)
+>>> weighted.predict_proba({"a": "1", "b": "1"})
+{'y': {'0': 0.0, '1': 0.0, '2': 1.0}}
+
+```
 
 On the table from [About the algorithms](about-algorithms.md), with
 half its rows hidden, the vote predicts three of the four. Step through

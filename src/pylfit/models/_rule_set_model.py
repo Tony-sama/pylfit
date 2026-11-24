@@ -307,9 +307,11 @@ class RuleSetModel:
     ) -> dict[str, dict[str, float]] | list[dict[str, dict[str, float]]]:
         """Predicts a uniform distribution over each target's candidates.
 
-        Each value ``predict_candidates`` returns for a target gets an
-        equal share. A target that no rule matches, nor under
-        ``"fallback"`` could match, is uniform over its whole domain.
+        Each value ``predict_candidates`` returns for a target gets
+        ``1 / (number of candidates)``, however many matching rules
+        conclude it, and every other value of the domain gets ``0.0``.
+        A target that no rule matches, nor under ``"fallback"`` could
+        match, is uniform over its whole domain.
 
         Args:
             state: One state, as a mapping of feature to ``str`` value,
@@ -344,18 +346,36 @@ class RuleSetModel:
 
         Examples:
             >>> import pandas as pd
-            >>> from pylfit import GULA, Dataset, RuleSetModel
+            >>> from pylfit import Dataset, Rule, RuleSetModel
             >>> df = pd.DataFrame(
             ...     {
-            ...         "a": ["0", "0", "1", "1"],
+            ...         "a": ["0", "1", "1", "0"],
             ...         "b": ["0", "1", "0", "1"],
-            ...         "y": ["0", "1", "1", "1"],
+            ...         "y": ["0", "2", "2", "1"],
             ...     }
             ... )
             >>> dataset = Dataset(df, features=["a", "b"], targets=["y"])
-            >>> model = RuleSetModel(dataset, GULA.fit(dataset))
-            >>> model.predict_proba({"a": "0", "b": "0"})
-            {'y': {'0': 1.0, '1': 0.0}}
+            >>> rules = [
+            ...     Rule.from_string("y(0) :- a(1)."),
+            ...     Rule.from_string("y(2) :- a(1)."),
+            ...     Rule.from_string("y(2) :- b(1)."),
+            ...     Rule.from_string("y(2) :- a(1), b(1)."),
+            ... ]
+            >>> model = RuleSetModel(dataset, rules)
+
+            With ``a=1`` and ``b=1``, one rule matches for ``0`` and three
+            for ``2``: each gets half, and ``1``, which no rule
+            concludes, gets ``0.0``.
+
+            >>> model.predict_proba({"a": "1", "b": "1"})
+            {'y': {'0': 0.5, '1': 0.0, '2': 0.5}}
+
+            With ``a=0`` and ``b=0`` no rule matches, so no value is
+            ruled out: each gets a third.
+
+            >>> proba = model.predict_proba({"a": "0", "b": "0"})["y"]
+            >>> {value: round(share, 3) for value, share in proba.items()}
+            {'0': 0.333, '1': 0.333, '2': 0.333}
         """
         check_unknowns(unknowns)
         if isinstance(state, pd.DataFrame):
